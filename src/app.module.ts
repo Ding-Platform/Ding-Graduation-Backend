@@ -21,6 +21,7 @@ import { PostModule } from './modules/post/post.module';
 import { FeedModule } from './modules/feed/feed.module';
 import { PrivacyModule } from './modules/privacy/privacy.module';
 import { HealthController } from './health.controller';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { HealthController } from './health.controller';
     PostModule,
     FeedModule,
     PrivacyModule,
+    ChatModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

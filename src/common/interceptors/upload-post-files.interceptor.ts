@@ -4,16 +4,14 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
-import { Observable } from 'rxjs/internal/Observable';
+import { Observable } from 'rxjs';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { uploadOptions } from 'src/configs/multer/upload-options';
 
 @Injectable()
-export class uploadPostFilesInterceptor implements NestInterceptor {
+export class UploadPostFilesInterceptor implements NestInterceptor {
   constructor(private readonly fieldsConfig: any) {}
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const ctx = context.switchToHttp();
-
     // Create a Multer-specific interceptor ON THE FLY
     const multerInterceptor = FileFieldsInterceptor(
       this.fieldsConfig,

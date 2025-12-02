@@ -14,41 +14,48 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
+  id            String  @id @default(uuid())
+  email         String  @unique
   name          String?
   image         String?
   password      String?
-  emailVerified Boolean  @default(false)
-  active        Boolean  @default(true)
+  emailVerified Boolean @default(false)
+  active        Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Session Session[]
-  Otp     Otp[]
-  Profile Profile?
-  Notification Notification[]
+  Session           Session[]
+  Otp               Otp[]
+  Profile           Profile?
+  Notification      Notification[]
   NotificationActor Notification[] @relation("NotificationActor")
-  Post    Post[]
-  Likes   Like[]
-  Comments Comment[]
+  Post              Post[]
+  Likes             Like[]
+  Comments          Comment[]
 
   // Social Graph Relations
   sentFriendRequests     Friendship[] @relation("SentFriendRequests")
   receivedFriendRequests Friendship[] @relation("ReceivedFriendRequests")
-  
-  following              Follow[]     @relation("Following")
-  followers              Follow[]     @relation("Followers")
-  
-  blockedUsers           Block[]      @relation("BlockedUsers")
-  blockedBy              Block[]      @relation("BlockedBy")
+
+  following Follow[] @relation("Following")
+  followers Follow[] @relation("Followers")
+
+  blockedUsers Block[] @relation("BlockedUsers")
+  blockedBy    Block[] @relation("BlockedBy")
+
+  // Messaging Relations
+  messages         Message[]
+  roomMemberships  RoomMember[]
+  createdRooms     Room[]            @relation("RoomCreator")
+  messageReactions MessageReaction[]
+  readReceipts     ReadReceipt[]
 }
 
 model Session {
-  id     String        @id @default(uuid())
-  status SessionStatus @default(ACTIVE)
-  refreshToken  String?
+  id           String        @id @default(uuid())
+  status       SessionStatus @default(ACTIVE)
+  refreshToken String?
 
   ipAddress String?
   userAgent String?
@@ -65,17 +72,17 @@ enum SessionStatus {
 }
 
 model Otp {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   otpHash      String
   otpExpiresAt DateTime
-  otpVerified  Boolean   @default(false)
+  otpVerified  Boolean  @default(false)
 
-  type         OtpType
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  type   OtpType
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([otpExpiresAt])
@@ -87,49 +94,49 @@ enum OtpType {
 }
 
 model Profile {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  bio         String?  @db.Text
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio         String?   @db.Text
   coverPhoto  String?
   dateOfBirth DateTime?
   location    String?
   website     String?
   phoneNumber String?
-  
+
   // Privacy settings
   privacySettings ProfilePrivacy?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model ProfilePrivacy {
-  id        String   @id @default(uuid())
-  profileId String   @unique
-  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  
+  id        String  @id @default(uuid())
+  profileId String  @unique
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
   // Who can see profile information
-  profileVisibility   VisibilityType @default(FRIENDS)
-  postsVisibility     VisibilityType @default(FRIENDS)
-  friendsVisibility   VisibilityType @default(FRIENDS)
-  bioVisibility       VisibilityType @default(FRIENDS)
-  emailVisibility     VisibilityType @default(PRIVATE)
-  phoneVisibility     VisibilityType @default(PRIVATE)
-  locationVisibility  VisibilityType @default(FRIENDS)
+  profileVisibility     VisibilityType @default(FRIENDS)
+  postsVisibility       VisibilityType @default(FRIENDS)
+  friendsVisibility     VisibilityType @default(FRIENDS)
+  bioVisibility         VisibilityType @default(FRIENDS)
+  emailVisibility       VisibilityType @default(PRIVATE)
+  phoneVisibility       VisibilityType @default(PRIVATE)
+  locationVisibility    VisibilityType @default(FRIENDS)
   dateOfBirthVisibility VisibilityType @default(FRIENDS)
-  
+
   // Who can interact
   whoCanSendFriendRequests VisibilityType @default(EVERYONE)
   whoCanMessageMe          VisibilityType @default(FRIENDS)
-  
+
   // Media permissions
-  allowCameraAccess      Boolean @default(false)
-  allowMicrophoneAccess  Boolean @default(false)
-  
+  allowCameraAccess     Boolean @default(false)
+  allowMicrophoneAccess Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -157,21 +164,21 @@ enum NotificationType {
 }
 
 model Notification {
-  id        String           @id @default(uuid())
-  type      NotificationType
-  title     String
-  message   String
-  read      Boolean          @default(false)
-  data      Json?
-  
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  actorId   String?
-  actor     User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  id      String           @id @default(uuid())
+  type    NotificationType
+  title   String
+  message String
+  read    Boolean          @default(false)
+  data    Json?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([userId, read])
@@ -179,16 +186,16 @@ model Notification {
 }
 
 model Post {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
-  mediaUrls String[] @default([])
+  id       String @id @default(uuid())
+  content  String @db.Text
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  mediaUrls String[]    @default([])
   privacy   PostPrivacy @default(PUBLIC)
 
   // Soft delete fields
-  isDeleted Boolean  @default(false)
+  isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
   createdAt DateTime @default(now())
@@ -207,13 +214,13 @@ model Post {
 }
 
 model Like {
-  id        String   @id @default(uuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(uuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
@@ -222,20 +229,20 @@ model Like {
 }
 
 model Comment {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
   // Self-referencing relation for nested comments
-  parentId  String?
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
-  
+  parentId String?
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -292,16 +299,16 @@ model Block {
 }
 
 model PostHistory {
-  id        String   @id @default(uuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  content   String   @db.Text
-  mediaUrls String[] @default([])
+  id     String @id @default(uuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  content   String      @db.Text
+  mediaUrls String[]    @default([])
   privacy   PostPrivacy
-  
+
   changeType PostChangeType
-  changedAt  DateTime @default(now())
+  changedAt  DateTime       @default(now())
 
   @@index([postId])
   @@index([changedAt])
@@ -315,17 +322,17 @@ enum PostChangeType {
 }
 
 model PostMedia {
-  id        String   @id @default(uuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  url       String
-  type      MediaType
-  publicId  String   // Cloudinary public ID for deletion
-  size      Int      // File size in bytes
-  width     Int?
-  height    Int?
-  
+  id     String @id @default(uuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  url      String
+  type     MediaType
+  publicId String // Cloudinary public ID for deletion
+  size     Int // File size in bytes
+  width    Int?
+  height   Int?
+
   createdAt DateTime @default(now())
 
   @@index([postId])
@@ -337,12 +344,12 @@ enum MediaType {
 }
 
 model PostAudience {
-  id        String   @id @default(uuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
-  userId    String
-  
+  id     String @id @default(uuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+
   createdAt DateTime @default(now())
 
   @@unique([postId, userId])
@@ -356,4 +363,217 @@ enum PostPrivacy {
   FRIENDS_OF_FRIENDS
   ONLY_ME
   CUSTOM
+}
+
+model Message {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  // Reply/Threading support
+  replyToId String?
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReplies")
+
+  // Message metadata
+  isEdited        Boolean @default(false)
+  isForwarded     Boolean @default(false)
+  forwardedFromId String?
+
+  // Soft delete
+  deletedAt          DateTime?
+  deletedForEveryone Boolean   @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reactions    MessageReaction[]
+  readReceipts ReadReceipt[]
+  media        MessageMedia[]
+  editHistory  MessageEditHistory[]
+  pinnedIn     PinnedMessage[]
+
+  @@index([userId])
+  @@index([roomId])
+  @@index([replyToId])
+  @@index([createdAt])
+}
+
+model MessageReaction {
+  id    String @id @default(uuid())
+  emoji String // Store emoji as unicode string
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji]) // One reaction type per user per message
+  @@index([messageId])
+  @@index([userId])
+}
+
+model ReadReceipt {
+  id String @id @default(uuid())
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  readAt DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model MessageMedia {
+  id String @id @default(uuid())
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  url  String
+  type MessageMediaType
+
+  // File metadata
+  fileName String?
+  fileSize Int? // Size in bytes
+  mimeType String?
+
+  // Media-specific metadata
+  width     Int?
+  height    Int?
+  duration  Int? // Duration in seconds for audio/video
+  thumbnail String? // Thumbnail URL for videos
+
+  // Cloud storage metadata
+  publicId String? // Cloudinary/S3 public ID
+
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+}
+
+enum MessageMediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE_NOTE
+  DOCUMENT
+  FILE
+}
+
+model MessageEditHistory {
+  id String @id @default(uuid())
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  content  String   @db.Text
+  editedAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([editedAt])
+}
+
+model Room {
+  id   String   @id @default(uuid())
+  type RoomType @default(DIRECT)
+
+  // Group chat metadata
+  name        String?
+  description String? @db.Text
+  imageUrl    String?
+
+  // Creator tracking
+  createdById String?
+  createdBy   User?   @relation("RoomCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  // Activity tracking
+  lastMessageAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  messages       Message[]
+  members        RoomMember[]
+  pinnedMessages PinnedMessage[]
+
+  @@index([type])
+  @@index([lastMessageAt])
+  @@index([createdById])
+}
+
+enum RoomType {
+  DIRECT // One-on-one chat
+  GROUP // Group chat
+  CHANNEL // Broadcast channel (optional for future)
+}
+
+model RoomMember {
+  id String @id @default(uuid())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Member role and permissions
+  role RoomMemberRole @default(MEMBER)
+
+  // User-specific room settings
+  isMuted    Boolean @default(false)
+  isArchived Boolean @default(false)
+
+  // Tracking
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  // Last read message for unread count
+  lastReadMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+  @@index([role])
+}
+
+enum RoomMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+model PinnedMessage {
+  id String @id @default(uuid())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  pinnedAt DateTime @default(now())
+
+  @@unique([roomId, messageId])
+  @@index([roomId])
+  @@index([messageId])
 }
