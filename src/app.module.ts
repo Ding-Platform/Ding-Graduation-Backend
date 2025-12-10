@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './configs/database/database.module';
 import { Neo4jModule } from './configs/neo4j/neo4j.module';
+import { MongodbModule } from './configs/mongodb/mongodb.module';
 import { LoggerModule } from './common/application/logger/logger.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/application/exceptions/exception-filter';
@@ -31,6 +32,7 @@ import { ChatModule } from './modules/chat/chat.module';
     LoggerModule,
     DatabaseModule,
     Neo4jModule,
+    MongodbModule,
     ContextModule,
     AuthModule,
     UserModule,

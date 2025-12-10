@@ -32,19 +32,22 @@ export class WsJwtGuard implements CanActivate {
 
     const client: Socket = context.switchToWs().getClient();
     const { authorization } = client.handshake.headers;
+    const { token: authToken } = client.handshake.auth;
 
-    if (!authorization) {
+    const tokenString = authorization || authToken;
+
+    if (!tokenString) {
       this.logger.warn(
-        'WebSocket connection rejected: No authorization header',
+        'WebSocket connection rejected: No authorization header or auth token',
       );
       throw new WsException('Unauthorized: No token provided');
     }
 
     try {
       // Extract token from "Bearer <token>" format
-      const token = authorization.startsWith('Bearer ')
-        ? authorization.substring(7)
-        : authorization;
+      const token = tokenString.startsWith('Bearer ')
+        ? tokenString.substring(7)
+        : tokenString;
 
       // Verify and decode the JWT token
       const payload = this.jwtService.verify<TokenPayload>(token);

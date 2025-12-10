@@ -17,16 +17,21 @@ export const SocketAuthMiddleware = (
   return async (socket: Socket, next: (err?: Error) => void) => {
     try {
       const { authorization } = socket.handshake.headers;
+      const { token: authToken } = socket.handshake.auth;
 
-      if (!authorization) {
-        logger.warn('Connection blocked: No authorization header');
+      const tokenString = authorization || authToken;
+
+      if (!tokenString) {
+        logger.warn(
+          'Connection blocked: No authorization header or auth token',
+        );
         return next(new Error('Unauthorized: No token provided'));
       }
 
       // Extract token from "Bearer <token>" format
-      const token = authorization.startsWith('Bearer ')
-        ? authorization.substring(7)
-        : authorization;
+      const token = tokenString.startsWith('Bearer ')
+        ? tokenString.substring(7)
+        : tokenString;
 
       // Verify and decode the JWT token
       const payload = jwtService.verify<TokenPayload>(token);
