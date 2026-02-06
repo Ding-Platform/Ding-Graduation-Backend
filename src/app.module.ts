@@ -28,6 +28,8 @@ import { GraphSyncModule } from './modules/graph/graph-sync.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { NoroModule } from './modules/noro/noro.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -87,6 +89,8 @@ try {
     CommentModule,
     ChatModule,
     NotificationModule,
+    NoroModule,
+    ModerationModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

@@ -22,6 +22,8 @@ model User {
   password      String?
   emailVerified Boolean  @default(false)
   active        Boolean  @default(true)
+  isBanned      Boolean  @default(false)
+  banReason     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -44,6 +46,10 @@ model User {
   
   blockedUsers           Block[]      @relation("BlockedUsers")
   blockedBy              Block[]      @relation("BlockedBy")
+
+  // Noro & Moderation
+  noroChats              NoroChat[]
+  filedReports           Report[]     @relation("Reporter")
 }
 
 model Session {
@@ -490,4 +496,57 @@ model PinnedMessage {
   
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+// Sprint 8: Noro & Moderation
+
+model NoroChat {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  message   String   @db.Text
+  response  String   @db.Text
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  VIOLENCE
+  NUDITY
+  FAKE_NEWS
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id            String       @id @default(uuid())
+  reporterId    String
+  reporter      User         @relation("Reporter", fields: [reporterId], references: [id])
+  
+  targetId      String       // ID of User, Post, or Comment
+  targetType    String       // "USER", "POST", "COMMENT"
+  
+  reason        ReportReason
+  description   String?      @db.Text
+  
+  status        ReportStatus @default(PENDING)
+  actionTaken   String?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([reporterId])
+  @@index([status])
 }
