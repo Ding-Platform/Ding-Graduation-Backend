@@ -31,6 +31,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { NoroModule } from './modules/noro/noro.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { CallModule } from './modules/call/call.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -93,6 +94,7 @@ try {
     NoroModule,
     ModerationModule,
     CallModule,
+    MarketplaceModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
