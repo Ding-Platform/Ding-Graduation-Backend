@@ -119,7 +119,9 @@ async function bootstrap(): Promise<NestExpressApplication> {
 
   if (get('NODE_ENV').asString() === 'production') initializeLogging();
 
-  const frontendUrl = get('FRONTEND_URL').default('http://localhost:5173').asString();
+  const frontendUrl = get('FRONTEND_URL')
+    .default('http://localhost:5173')
+    .asString();
   const isProduction = get('NODE_ENV').asString() === 'production';
 
   // Build allowed origins array: include frontendUrl from env, localhost:5173 for dev, and production frontend
@@ -149,7 +151,7 @@ async function bootstrap(): Promise<NestExpressApplication> {
   setupStaticFileServing(app);
   setupSwagger(app);
 
-  if (get('NODE_ENV').asString() === 'production') setupRateLimiter(app);
+  setupRateLimiter(app);
 
   // Initialize the app (without calling listen) for serverless
   await app.init();
@@ -159,7 +161,9 @@ async function bootstrap(): Promise<NestExpressApplication> {
     const port = get('PORT').default('3000').asString();
     await app.listen(port);
     console.log(`Application is running on: http://localhost:${port}`);
-    console.log(`Swagger documentation available at: http://localhost:${port}/${APP_CONSTANTS.API.DOCS_PATH}`);
+    console.log(
+      `Swagger documentation available at: http://localhost:${port}/${APP_CONSTANTS.API.DOCS_PATH}`,
+    );
   }
 
   cachedApp = app;
