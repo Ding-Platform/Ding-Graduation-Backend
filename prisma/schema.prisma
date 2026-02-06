@@ -50,6 +50,7 @@ model User {
   // Noro & Moderation
   noroChats              NoroChat[]
   filedReports           Report[]     @relation("Reporter")
+  savedPosts             SavedPost[]
 }
 
 model Session {
@@ -210,6 +211,7 @@ model Post {
   PostAudience PostAudience[]
   Likes        Like[]
   Comments     Comment[]
+  savedBy      SavedPost[]
 
   @@index([authorId])
   @@index([isDeleted])
@@ -549,4 +551,19 @@ model Report {
 
   @@index([reporterId])
   @@index([status])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  collectionId String? // Optional: for organizing saved posts
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
 }

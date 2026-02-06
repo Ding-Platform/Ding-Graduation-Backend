@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { FeedService } from './feed.service';
 import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.guard';
 import { currentUser } from '../../common/decorators/currentUser.decorator';
@@ -17,10 +24,10 @@ export class FeedController {
     @currentUser() user: any,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('type') type: 'HOME' | 'FOLLOWING' | 'EXPLORE' = 'HOME',
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    const result = await this.feedService.getFeed(user.id, pageNum, limitNum);
-    return result;
+    return this.feedService.getFeed(user.id, type, pageNum, limitNum);
   }
 }

@@ -24,7 +24,10 @@ export class PostController {
   constructor(private readonly postService: PostService) {}
 
   @Get('/')
-  async getAllPosts(@Query('page', ParseIntPipe) page = 1, @Query('limit', ParseIntPipe) limit = 20) {
+  async getAllPosts(
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+  ) {
     return this.postService.getAllPosts(undefined, page, limit);
   }
 
@@ -37,11 +40,18 @@ export class PostController {
     return this.postService.getPostsCount(profileId || userId);
   }
 
+  @Get('/saved')
+  @UseGuards(JwtAuthenticationGuard)
+  async getSavedPosts(
+    @currentUser('id') userId: string,
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+  ) {
+    return this.postService.getSavedPosts(userId, page, limit);
+  }
 
   @Get('/:id')
-  async getPostById(
-    @Param('id') postId: string,
-  ) {
+  async getPostById(@Param('id') postId: string) {
     return this.postService.getPostById(postId);
   }
 
@@ -80,6 +90,20 @@ export class PostController {
     return this.postService.toggleLike(postId, userId);
   }
 
+  @Post('/:id/save')
+  @UseGuards(JwtAuthenticationGuard)
+  async toggleSave(
+    @Param('id') postId: string,
+    @currentUser('id') userId: string,
+  ) {
+    return this.postService.toggleSave(postId, userId);
+  }
+
+  @Get('/:id/history')
+  async getPostHistory(@Param('id') postId: string) {
+    return this.postService.getPostHistory(postId);
+  }
+
   @Post('/:id/comments')
   @UseGuards(JwtAuthenticationGuard)
   async createComment(
@@ -116,7 +140,6 @@ export class PostController {
   ) {
     return this.postService.getPostLikes(postId, page, limit);
   }
-
 
   @Delete('/:id')
   @UseGuards(JwtAuthenticationGuard)

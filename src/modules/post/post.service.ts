@@ -33,7 +33,11 @@ export class PostService {
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
   ) {}
 
-  async getAllPosts(userId?: string, page = 1, limit = 20): Promise<SimplePostResponse[]> {
+  async getAllPosts(
+    userId?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<SimplePostResponse[]> {
     const skip = (page - 1) * limit;
     const posts = await this.prisma.post.findMany({
       where: {
@@ -190,7 +194,10 @@ export class PostService {
           action: 'CREATE',
         });
       } catch (queueError) {
-        console.error('Failed to enqueue post creation for graph sync', queueError);
+        console.error(
+          'Failed to enqueue post creation for graph sync',
+          queueError,
+        );
       }
 
       // Create post history
@@ -215,7 +222,11 @@ export class PostService {
     }
   }
 
-  async updatePost(postId: string, userId: string, data: UpdatePostDto): Promise<SimplePostResponse> {
+  async updatePost(
+    postId: string,
+    userId: string,
+    data: UpdatePostDto,
+  ): Promise<SimplePostResponse> {
     try {
       // Check post exists and user owns it
       await this.checkPostOwnership(postId, userId);
@@ -261,7 +272,10 @@ export class PostService {
           updatedAt: new Date(),
         });
       } catch (queueError) {
-        console.error('Failed to enqueue post update for graph sync', queueError);
+        console.error(
+          'Failed to enqueue post update for graph sync',
+          queueError,
+        );
       }
 
       // Create history record
@@ -315,7 +329,10 @@ export class PostService {
           action: 'DELETE',
         });
       } catch (queueError) {
-        console.error('Failed to enqueue post deletion for graph sync', queueError);
+        console.error(
+          'Failed to enqueue post deletion for graph sync',
+          queueError,
+        );
       }
 
       // Create history record
@@ -377,7 +394,9 @@ export class PostService {
 
   private mapPostToSimple(post: any): SimplePostResponse {
     const createdAt =
-      post?.createdAt instanceof Date ? post.createdAt : new Date(post?.createdAt);
+      post?.createdAt instanceof Date
+        ? post.createdAt
+        : new Date(post?.createdAt);
 
     return {
       id: post.id,
@@ -400,7 +419,9 @@ export class PostService {
     }
   }
 
-  private validateMediaCount(files: Record<string, Express.Multer.File[]>): void {
+  private validateMediaCount(
+    files: Record<string, Express.Multer.File[]>,
+  ): void {
     const imageCount = files.images?.length || 0;
     const videoCount = files.videos?.length || 0;
 
@@ -485,10 +506,67 @@ export class PostService {
       });
 
       // Notify post author
-      await this.notificationService.notifyPostLike(userId, post.authorId, postId);
+      await this.notificationService.notifyPostLike(
+        userId,
+        post.authorId,
+        postId,
+      );
 
       return { liked: true };
     }
+  }
+
+  async toggleSave(postId: string, userId: string) {
+    const existingSave = await this.prisma.savedPost.findUnique({
+      where: {
+        userId_postId: { userId, postId },
+      } as unknown as Prisma.SavedPostWhereUniqueInput,
+    });
+
+    if (existingSave) {
+      await this.prisma.savedPost.delete({
+        where: { id: existingSave.id },
+      });
+      return { saved: false };
+    } else {
+      await this.prisma.savedPost.create({
+        data: { userId, postId },
+      });
+      return { saved: true };
+    }
+  }
+
+  async getSavedPosts(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const saved = await this.prisma.savedPost.findMany({
+      where: { userId },
+      include: {
+        post: {
+          include: {
+            author: { select: { id: true, name: true, image: true } },
+            PostMedia: true,
+            _count: { select: { Likes: true, Comments: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+
+    const total = await this.prisma.savedPost.count({ where: { userId } });
+
+    return {
+      data: saved.map((s) => this.mapPostToSimple(s.post)),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getPostHistory(postId: string) {
+    return this.prisma.postHistory.findMany({
+      where: { postId },
+      orderBy: { changedAt: 'desc' },
+    });
   }
 
   async createComment(postId: string, userId: string, dto: CreateCommentDto) {
@@ -541,7 +619,10 @@ export class PostService {
         timestamp: comment.createdAt,
       });
     } catch (queueError) {
-      console.error('Failed to enqueue comment creation for graph sync', queueError);
+      console.error(
+        'Failed to enqueue comment creation for graph sync',
+        queueError,
+      );
     }
 
     // Notify post author
@@ -588,7 +669,10 @@ export class PostService {
         action: 'DELETE',
       });
     } catch (queueError) {
-      console.error('Failed to enqueue comment deletion for graph sync', queueError);
+      console.error(
+        'Failed to enqueue comment deletion for graph sync',
+        queueError,
+      );
     }
 
     return { success: true };

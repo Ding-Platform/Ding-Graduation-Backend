@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { Neo4jService } from '../../configs/neo4j/neo4j.service';
 import { FeedItemDto } from './dtos/response/feed.response';
-import { PaginationDto, PaginatedResponse } from '../../common/dtos/pagination.dto';
+import {
+  PaginationDto,
+  PaginatedResponse,
+} from '../../common/dtos/pagination.dto';
 
 @Injectable()
 export class FeedService {
@@ -11,14 +14,35 @@ export class FeedService {
     private readonly neo4jService: Neo4jService,
   ) {}
 
-  async getFeed(userId: string, page = 1, limit = 20): Promise<PaginatedResponse<FeedItemDto>> {
-    // Personalized feed backed by Neo4j; falls back to chronological feed.
+  async getFeed(
+    userId: string,
+    type: 'HOME' | 'FOLLOWING' | 'EXPLORE' = 'HOME',
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<FeedItemDto>> {
+    if (type === 'FOLLOWING') {
+      return this.getChronologicalFeed(userId, page, limit, true);
+    }
+
+    if (type === 'EXPLORE') {
+      return this.getExploreFeed(userId, page, limit);
+    }
+
+    // HOME: Personalized feed backed by Neo4j; falls back to chronological feed.
     const scoredPostIds = await this.getScoredPostsFromGraph(userId, limit * 2);
 
     if (!scoredPostIds.length) {
-      return this.getChronologicalFeed(userId, page, limit);
+      return this.getChronologicalFeed(userId, page, limit, false);
     }
 
+    return this.mapPosts(scoredPostIds, page, limit);
+  }
+
+  private async mapPosts(
+    scoredPostIds: { postId: string; score: number }[],
+    page: number,
+    limit: number,
+  ) {
     const posts = await this.prisma.post.findMany({
       where: {
         id: { in: scoredPostIds.map((p) => p.postId) },
@@ -35,7 +59,9 @@ export class FeedService {
       },
     });
 
-    const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score as number]));
+    const scoreMap = new Map(
+      scoredPostIds.map((s) => [s.postId, s.score as number]),
+    );
 
     const items = posts.map((p) => ({
       id: p.id,
@@ -63,6 +89,33 @@ export class FeedService {
     };
   }
 
+  private async getExploreFeed(userId: string, page: number, limit: number) {
+    // Explore: Popular posts from users I don't follow
+    const session = this.neo4jService.getSession();
+    try {
+      const result = await session.run(
+        `MATCH (user:User {id: $userId})
+             MATCH (post:Post)<-[:POSTED]-(author:User)
+             WHERE NOT (user)-[:FOLLOWS]->(author)
+             AND user.id <> author.id
+             RETURN post.id as postId, 1 as score
+             ORDER BY post.createdAt DESC
+             LIMIT toInteger($limit)`,
+        { userId, limit: limit * 2 },
+      );
+
+      const ids = result.records.map((r) => ({
+        postId: r.get('postId') as string,
+        score: 1,
+      }));
+      if (ids.length === 0)
+        return { data: [], total: 0, page, limit, totalPages: 0 };
+      return this.mapPosts(ids, page, limit);
+    } finally {
+      await session.close();
+    }
+  }
+
   /**
    * Legacy chronological feed used as a fallback when Neo4j
    * does not yet have enough interaction data.
@@ -71,6 +124,7 @@ export class FeedService {
     userId: string,
     page = 1,
     limit = 20,
+    onlyFollowing = false,
   ): Promise<PaginatedResponse<FeedItemDto>> {
     const skip = (page - 1) * limit;
     // Determine user ids to include: public posts + posts from followed users + friends (if needed)
@@ -95,14 +149,23 @@ export class FeedService {
               ? // Single value
                 [rawFollowing]
               : [];
+
       const authorIds = [userId, ...followingIds];
+
+      const whereCondition: any = { isDeleted: false };
+      if (onlyFollowing) {
+        // Strict following feed: only posts from people I follow (and myself)
+        whereCondition.authorId = { in: authorIds };
+      } else {
+        // Combined feed: Public OR Followed
+        whereCondition.OR = [
+          { privacy: 'PUBLIC' },
+          { authorId: { in: authorIds } },
+        ];
+      }
+
       const posts = await this.prisma.post.findMany({
-        where: {
-          OR: [
-            { privacy: 'PUBLIC' },
-            { authorId: { in: authorIds } },
-          ],
-        },
+        where: whereCondition,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -116,6 +179,7 @@ export class FeedService {
           },
         },
       });
+
       const data: FeedItemDto[] = posts.map((p) => ({
         id: p.id,
         author: p.author?.name ?? '',
@@ -126,12 +190,7 @@ export class FeedService {
         image: p.mediaUrls?.[0] ?? null,
       }));
       const total = await this.prisma.post.count({
-        where: {
-          OR: [
-            { privacy: 'PUBLIC' },
-            { authorId: { in: authorIds } },
-          ],
-        },
+        where: whereCondition,
       });
       const totalPages = Math.ceil(total / limit);
       return { data, total, page, limit, totalPages };
