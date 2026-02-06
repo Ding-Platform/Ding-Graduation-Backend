@@ -51,6 +51,10 @@ model User {
   noroChats              NoroChat[]
   filedReports           Report[]     @relation("Reporter")
   savedPosts             SavedPost[]
+
+  // Messaging
+  roomMemberships        RoomMember[]
+  messages               Message[]
 }
 
 model Session {
@@ -403,11 +407,7 @@ model RoomMember {
   joinedAt  DateTime @default(now())
   
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  // User relation is loose or explicit? User model has no 'RoomMember' field in view_file earlier.
-  // We can add relation if User model supports it, or keep loose if circular deps issue.
-  // User model at lines 17-47 did NOT have RoomMember.
-  // I will assume loose for now or add back-relation later if needed.
-  // But wait, referential integrity?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   // I should adding field to User? No, I can't easily Insert mid-file with cat.
   // I will just define relation here and 'User' side will be missing? Prisma requires both sides?
   // No, Prisma allows one-sided if explicit? NO.
@@ -443,7 +443,7 @@ model Message {
   updatedAt       DateTime @updatedAt
   
   room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  // User relation skipped for same reason
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   media           MessageMedia[]
   reactions       MessageReaction[]

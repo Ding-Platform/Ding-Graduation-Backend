@@ -8,6 +8,7 @@ import {
   UseGuards,
   UploadedFiles,
   UseInterceptors,
+  Delete,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { User } from '../../common/decorators/user.decorator';
@@ -58,5 +59,23 @@ export class ChatController {
     @Query() query: any,
   ) {
     return this.chatService.getMessages(userId, roomId, query);
+  }
+
+  @Post('rooms/:roomId/members')
+  async addMember(
+    @User('id') adminId: string,
+    @Param('roomId') roomId: string,
+    @Body('userId') userIdToAdd: string,
+  ) {
+    return this.chatService.addMember(roomId, userIdToAdd, adminId);
+  }
+
+  @Delete('rooms/:roomId/members/:userId')
+  async removeMember(
+    @User('id') requesterId: string,
+    @Param('roomId') roomId: string,
+    @Param('userId') userIdToRemove: string,
+  ) {
+    return this.chatService.removeMember(roomId, userIdToRemove, requesterId);
   }
 }
