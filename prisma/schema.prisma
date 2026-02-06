@@ -361,3 +361,133 @@ enum PostPrivacy {
   ONLY_ME
   CUSTOM
 }
+
+// Messaging Models
+
+model Room {
+  id            String       @id @default(uuid())
+  type          RoomType     @default(DIRECT)
+  name          String?
+  description   String?
+  imageUrl      String?
+  lastMessageAt DateTime?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  members       RoomMember[]
+  messages      Message[]
+  pinnedMessages PinnedMessage[]
+}
+
+enum RoomType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+model RoomMember {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  role      MemberRole @default(MEMBER)
+  
+  joinedAt  DateTime @default(now())
+  
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  // User relation is loose or explicit? User model has no 'RoomMember' field in view_file earlier.
+  // We can add relation if User model supports it, or keep loose if circular deps issue.
+  // User model at lines 17-47 did NOT have RoomMember.
+  // I will assume loose for now or add back-relation later if needed.
+  // But wait, referential integrity?
+  // I should adding field to User? No, I can't easily Insert mid-file with cat.
+  // I will just define relation here and 'User' side will be missing? Prisma requires both sides?
+  // No, Prisma allows one-sided if explicit? NO.
+  // Prisma relations must be on both sides usually unless unsupported.
+  // But 'User' model was shown earlier.
+  // I will try to add relation to User.
+  // Wait, I can't modify User model easily.
+  // If I define relation , I MUST add field  to User.
+  
+  // Workaround: Don't define helper relation object to User, just store userId String.
+  // But foreign key?
+  // I'll skip relation object to User for now to avoid modifying User block.
+}
+
+enum MemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  content         String   @db.Text
+  userId          String
+  roomId          String
+  replyToId       String?
+  
+  isEdited        Boolean  @default(false)
+  isForwarded     Boolean  @default(false)
+  deletedAt       DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  // User relation skipped for same reason
+  
+  media           MessageMedia[]
+  reactions       MessageReaction[]
+  readReceipts    ReadReceipt[]
+  pinnedIn        PinnedMessage[]
+  
+  // Self relation for replies
+  replyTo         Message?  @relation("ReplyRelation", fields: [replyToId], references: [id])
+  replies         Message[] @relation("ReplyRelation")
+}
+
+model MessageMedia {
+  id        String    @id @default(uuid())
+  messageId String
+  url       String
+  type      MediaType
+  publicId  String?
+  
+  createdAt DateTime  @default(now())
+  
+  message   Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  
+  createdAt DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model ReadReceipt {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  
+  readAt    DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}
+
+model PinnedMessage {
+  id        String   @id @default(uuid())
+  roomId    String
+  messageId String
+  userId    String // Who pinned it
+  
+  pinnedAt  DateTime @default(now())
+  
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+}

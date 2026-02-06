@@ -6,10 +6,11 @@ import { Queue } from 'bull';
 import { Prisma } from '@prisma/client';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
+import { NotificationService } from '../notification/notification.service';
 
 export enum LikeableType {
   POST = 'POST',
-  COMMENT = 'COMMENT'
+  COMMENT = 'COMMENT',
 }
 
 @Injectable()
@@ -17,6 +18,7 @@ export class LikeService {
   constructor(
     private prisma: DatabaseService,
     private neo4j: Neo4jService,
+    private readonly notificationService: NotificationService,
     @InjectQueue('graph-sync') private graphQueue: Queue,
   ) {}
 
@@ -64,6 +66,19 @@ export class LikeService {
       return like;
     });
 
+    // Send notification
+    try {
+      if (post.authorId !== userId) {
+        await this.notificationService.notifyPostLike(
+          userId,
+          post.authorId,
+          postId,
+        );
+      }
+    } catch (error) {
+      console.error('Failed to send like notification', error);
+    }
+
     // Get updated likes count for the post
     const likesCount = await this.prisma.like.count({
       where: { postId },
@@ -103,7 +118,7 @@ export class LikeService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.like.delete({ where: { id: like.id } });
-      
+
       // We intentionally don't maintain a manual likeCount column here.
     });
 
@@ -181,7 +196,7 @@ export class LikeService {
       });
       return !!like;
     }
-    
+
     if (commentId) {
       // Uses @@unique([userId, commentId]) index efficiently
       // Note: Type assertion needed because Prisma client may be out of sync

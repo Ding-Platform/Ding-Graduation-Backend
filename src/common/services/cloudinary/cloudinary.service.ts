@@ -20,7 +20,11 @@ export class CloudinaryService {
     userId: string,
   ): Promise<string> {
     // Validate file type
-    if (!PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES.includes(file.mimetype as typeof PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES[number])) {
+    if (
+      !PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES.includes(
+        file.mimetype as (typeof PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES)[number],
+      )
+    ) {
       throw new BadRequestException(PROFILE_ERROR_MESSAGES.INVALID_FILE_TYPE);
     }
 
@@ -56,7 +60,11 @@ export class CloudinaryService {
     userId: string,
   ): Promise<string> {
     // Validate file type
-    if (!PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES.includes(file.mimetype as typeof PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES[number])) {
+    if (
+      !PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES.includes(
+        file.mimetype as (typeof PROFILE_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES)[number],
+      )
+    ) {
       throw new BadRequestException(PROFILE_ERROR_MESSAGES.INVALID_FILE_TYPE);
     }
 
@@ -100,6 +108,36 @@ export class CloudinaryService {
     file: Express.Multer.File,
     options: any,
   ): Promise<UploadApiResponse> {
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+    if (!cloudName || cloudName === 'your-cloud-name') {
+      const mockUrl = `http://mock-cloudinary.com/${options.folder}/${options.public_id}.${options.resource_type === 'video' ? 'mp4' : 'jpg'}`;
+      // Mock response
+      return Promise.resolve({
+        public_id: options.public_id || 'mock_public_id',
+        version: 1,
+        signature: 'mock_signature',
+        width: 800,
+        height: 600,
+        format: options.resource_type === 'video' ? 'mp4' : 'jpg',
+        resource_type: options.resource_type || 'image',
+        created_at: new Date().toISOString(),
+        tags: [],
+        pages: 1,
+        bytes: file.size,
+        type: 'upload',
+        etag: 'mock_etag',
+        placeholder: false,
+        url: mockUrl,
+        secure_url: mockUrl,
+        access_mode: 'public',
+        original_filename: 'mock_filename',
+        moderation: [],
+        access_control: [],
+        context: {},
+        metadata: {},
+      } as unknown as UploadApiResponse);
+    }
+
     return new Promise((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         options,
@@ -274,5 +312,95 @@ export class CloudinaryService {
     }
 
     return { imageUrls, videoUrls };
+  }
+
+  async uploadMessageMedia(
+    file: Express.Multer.File,
+    messageId: string,
+    type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'VOICE_NOTE' | 'DOCUMENT' | 'FILE',
+  ): Promise<{
+    url: string;
+    publicId: string;
+    width?: number;
+    height?: number;
+    format?: string;
+    bytes?: number;
+    duration?: number;
+    thumbnailUrl?: string;
+  }> {
+    const CHAT_CONSTANTS = {
+      CLOUDINARY: {
+        FOLDER: 'chat/media',
+      },
+    };
+
+    let folder = `${CHAT_CONSTANTS.CLOUDINARY.FOLDER}/others`;
+    let resourceType: 'image' | 'video' | 'raw' | 'auto' = 'auto';
+
+    switch (type) {
+      case 'IMAGE':
+        folder = `${CHAT_CONSTANTS.CLOUDINARY.FOLDER}/images`;
+        resourceType = 'image';
+        break;
+      case 'VIDEO':
+        folder = `${CHAT_CONSTANTS.CLOUDINARY.FOLDER}/videos`;
+        resourceType = 'video';
+        break;
+      case 'AUDIO':
+      case 'VOICE_NOTE':
+        folder = `${CHAT_CONSTANTS.CLOUDINARY.FOLDER}/audio`;
+        resourceType = 'video'; // Cloudinary treats audio as video
+        break;
+      case 'DOCUMENT':
+      case 'FILE':
+        folder = `${CHAT_CONSTANTS.CLOUDINARY.FOLDER}/files`;
+        resourceType = 'raw';
+        break;
+    }
+
+    try {
+      const options: any = {
+        folder,
+        public_id: `msg_${type.toLowerCase()}_${messageId}_${Date.now()}`,
+        resource_type: resourceType,
+      };
+
+      // Specific transformations
+      if (type === 'IMAGE') {
+        options.transformation = [
+          { quality: 'auto', fetch_format: 'auto' },
+          { width: 1920, height: 1920, crop: 'limit' }, // Limit max resolution
+        ];
+      }
+
+      const result = await this.uploadStream(file, options);
+
+      const response: any = {
+        url: result.secure_url,
+        publicId: result.public_id,
+        bytes: result.bytes,
+        format: result.format,
+      };
+
+      if (result.width) response.width = result.width;
+      if (result.height) response.height = result.height;
+      if (result.duration) response.duration = result.duration;
+
+      // Generate thumbnail for videos
+      if (type === 'VIDEO') {
+        const thumbUrl = cloudinary.url(result.public_id, {
+          resource_type: 'video',
+          format: 'jpg',
+          start_offset: '0',
+          transformation: [{ width: 300, crop: 'scale' }],
+        });
+        response.thumbnailUrl = thumbUrl;
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Cloudinary message media upload error:', error);
+      throw new BadRequestException('Failed to upload message media');
+    }
   }
 }

@@ -26,6 +26,8 @@ import { HealthController } from './health.controller';
 import { LikeModule } from './modules/like/like.module';
 import { GraphSyncModule } from './modules/graph/graph-sync.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -83,6 +85,8 @@ try {
     LikeModule,
     GraphSyncModule,
     CommentModule,
+    ChatModule,
+    NotificationModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
