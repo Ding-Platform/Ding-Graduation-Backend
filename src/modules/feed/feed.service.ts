@@ -35,13 +35,14 @@ export class FeedService {
       return this.getChronologicalFeed(userId, page, limit, false);
     }
 
-    return this.mapPosts(scoredPostIds, page, limit);
+    return this.mapPosts(scoredPostIds, page, limit, userId);
   }
 
   private async mapPosts(
     scoredPostIds: { postId: string; score: number }[],
     page: number,
     limit: number,
+    userId: string,
   ) {
     const posts = await this.prisma.post.findMany({
       where: {
@@ -54,6 +55,14 @@ export class FeedService {
           select: {
             Likes: true,
             Comments: true,
+          },
+        },
+        Likes: {
+          where: {
+            userId: userId,
+          },
+          select: {
+            userId: true,
           },
         },
       },
@@ -71,6 +80,7 @@ export class FeedService {
       likes: p._count?.Likes ?? 0,
       comments: p._count?.Comments ?? 0,
       image: p.mediaUrls?.[0] ?? null,
+      liked: p.Likes && p.Likes.length > 0,
       score: scoreMap.get(p.id),
     }));
 
@@ -110,7 +120,7 @@ export class FeedService {
       }));
       if (ids.length === 0)
         return { data: [], total: 0, page, limit, totalPages: 0 };
-      return this.mapPosts(ids, page, limit);
+      return this.mapPosts(ids, page, limit, userId);
     } finally {
       await session.close();
     }
@@ -177,6 +187,14 @@ export class FeedService {
               Comments: true,
             },
           },
+          Likes: {
+            where: {
+              userId: userId,
+            },
+            select: {
+              userId: true,
+            },
+          },
         },
       });
 
@@ -188,6 +206,7 @@ export class FeedService {
         likes: p._count?.Likes ?? 0,
         comments: p._count?.Comments ?? 0,
         image: p.mediaUrls?.[0] ?? null,
+        liked: p.Likes && p.Likes.length > 0,
       }));
       const total = await this.prisma.post.count({
         where: whereCondition,

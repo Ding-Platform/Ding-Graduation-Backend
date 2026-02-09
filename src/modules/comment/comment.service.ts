@@ -11,22 +11,7 @@ import { Prisma } from '@prisma/client';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 
-type CommentWithAuthor = Prisma.CommentGetPayload<{
-  include: {
-    author: {
-      select: {
-        id: true;
-        name: true;
-        image: true;
-      };
-    };
-    _count: {
-      select: {
-        replies: true;
-      };
-    };
-  };
-}>;
+type CommentWithAuthor = any;
 
 @Injectable()
 export class CommentService {
@@ -102,6 +87,28 @@ export class CommentService {
         },
       });
 
+      // Update post comment count
+      await tx.post.update({
+        where: { id: postId },
+        data: {
+          commentCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      // Update parent comment reply count if this is a reply
+      if (dto.parentCommentId) {
+        await tx.comment.update({
+          where: { id: dto.parentCommentId },
+          data: {
+            replyCount: {
+              increment: 1,
+            },
+          },
+        });
+      }
+
       return createdComment;
     });
 
@@ -128,6 +135,7 @@ export class CommentService {
 
   async getPostComments(
     postId: string,
+    userId?: string,
     page = 1,
     limit = 20,
     sort: 'top' | 'recent' = 'top',
@@ -140,7 +148,15 @@ export class CommentService {
           postId,
           parentId: null,
         },
-        include: {
+        select: {
+          id: true,
+          content: true,
+          postId: true,
+          parentId: true,
+          createdAt: true,
+          updatedAt: true,
+          likeCount: true,
+          replyCount: true,
           author: {
             select: {
               id: true,
@@ -153,6 +169,16 @@ export class CommentService {
               replies: true,
             },
           },
+          ...(userId && {
+            likes: {
+              where: {
+                userId: userId,
+              },
+              select: {
+                userId: true,
+              },
+            },
+          }),
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -178,7 +204,7 @@ export class CommentService {
     }
 
     return {
-      data: comments.map((comment) => this.toCommentResponse(comment)),
+      data: comments.map((comment) => this.toCommentResponse(comment, userId)),
       total,
       page,
       limit,
@@ -188,6 +214,7 @@ export class CommentService {
 
   async getCommentReplies(
     commentId: string,
+    userId?: string,
     page = 1,
     limit = 10,
   ): Promise<PaginatedResponse<CommentResponseDto>> {
@@ -198,7 +225,15 @@ export class CommentService {
         where: {
           parentId: commentId,
         },
-        include: {
+        select: {
+          id: true,
+          content: true,
+          postId: true,
+          parentId: true,
+          createdAt: true,
+          updatedAt: true,
+          likeCount: true,
+          replyCount: true,
           author: {
             select: {
               id: true,
@@ -211,6 +246,16 @@ export class CommentService {
               replies: true,
             },
           },
+          ...(userId && {
+            likes: {
+              where: {
+                userId: userId,
+              },
+              select: {
+                userId: true,
+              },
+            },
+          }),
         },
         orderBy: { createdAt: 'asc' },
         skip,
@@ -224,7 +269,7 @@ export class CommentService {
     ]);
 
     return {
-      data: replies.map((reply) => this.toCommentResponse(reply)),
+      data: replies.map((reply) => this.toCommentResponse(reply, userId)),
       total,
       page,
       limit,
@@ -299,15 +344,54 @@ export class CommentService {
       );
     }
 
+    // Store postId before deletion for sync queue
+    const postId = comment.postId;
+
     await this.prisma.$transaction(async (tx) => {
+      // Get the comment details before deletion for counter updates
+      const commentToDelete = await tx.comment.findUnique({
+        where: { id: commentId },
+        select: { postId: true, parentId: true, replyCount: true }
+      });
+
+      if (!commentToDelete) {
+        throw GenericHttpException.createLocalized(
+          ERROR_MESSAGES.COMMENT_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
       await tx.comment.delete({
         where: { id: commentId },
       });
+
+      // Update post comment count (decrement by 1 + the number of replies this comment had)
+      const totalCommentsToRemove = 1 + commentToDelete.replyCount;
+      await tx.post.update({
+        where: { id: commentToDelete.postId },
+        data: {
+          commentCount: {
+            decrement: totalCommentsToRemove,
+          },
+        },
+      });
+
+      // Update parent comment reply count if this was a reply
+      if (commentToDelete.parentId) {
+        await tx.comment.update({
+          where: { id: commentToDelete.parentId },
+          data: {
+            replyCount: {
+              decrement: 1,
+            },
+          },
+        });
+      }
     });
 
     await this.enqueueCommentSync({
       userId: authorId,
-      postId: comment.postId,
+      postId,
       commentId,
       timestamp: new Date(),
       action: 'DELETE',
@@ -318,6 +402,7 @@ export class CommentService {
 
   private toCommentResponse(
     comment: CommentWithAuthor,
+    userId?: string,
   ): CommentResponseDto {
     return {
       id: comment.id,
@@ -325,6 +410,7 @@ export class CommentService {
       postId: comment.postId,
       parentCommentId: comment.parentId,
       replyCount: comment._count?.replies ?? 0,
+      likeCount: comment.likeCount ?? 0,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
       author: comment.author
@@ -334,6 +420,7 @@ export class CommentService {
             image: comment.author.image,
           }
         : null,
+      liked: userId ? (comment.likes && comment.likes.length > 0) : false,
     };
   }
 
@@ -345,6 +432,12 @@ export class CommentService {
     action?: 'DELETE';
   }) {
     try {
+      // Validate payload before queuing
+      if (!payload.userId || !payload.postId || !payload.commentId || !payload.timestamp) {
+        console.error('Invalid payload for comment sync:', payload);
+        return;
+      }
+      
       await this.graphQueue.add('sync-comment', payload);
     } catch (error) {
       console.error('Failed to enqueue comment sync job', error);

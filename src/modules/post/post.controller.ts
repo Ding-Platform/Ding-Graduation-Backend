@@ -19,6 +19,7 @@ import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.
 import { currentUser } from '../../common/decorators/currentUser.decorator';
 import { CreateCommentDto } from './dtos/create_comment.dto';
 
+@UseGuards(JwtAuthenticationGuard)
 @Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -27,12 +28,12 @@ export class PostController {
   async getAllPosts(
     @Query('page', ParseIntPipe) page = 1,
     @Query('limit', ParseIntPipe) limit = 20,
+    @currentUser('id') userId?: string,
   ) {
-    return this.postService.getAllPosts(undefined, page, limit);
+    return this.postService.getAllPosts(userId, page, limit);
   }
 
   @Get('/count')
-  @UseGuards(JwtAuthenticationGuard)
   async getPostsCount(
     @currentUser('id') userId: string,
     @Query('profileId') profileId?: string,
@@ -41,7 +42,6 @@ export class PostController {
   }
 
   @Get('/saved')
-  @UseGuards(JwtAuthenticationGuard)
   async getSavedPosts(
     @currentUser('id') userId: string,
     @Query('page', ParseIntPipe) page = 1,
@@ -51,12 +51,14 @@ export class PostController {
   }
 
   @Get('/:id')
-  async getPostById(@Param('id') postId: string) {
-    return this.postService.getPostById(postId);
+  async getPostById(
+    @Param('id') postId: string,
+    @currentUser('id') userId?: string,
+  ) {
+    return this.postService.getPostById(postId, userId);
   }
 
   @Post('/create')
-  @UseGuards(JwtAuthenticationGuard)
   @UploadPostFiles([
     { name: 'images', maxCount: 5 },
     { name: 'videos', maxCount: 2 },
@@ -72,7 +74,6 @@ export class PostController {
   }
 
   @Put('/:id')
-  @UseGuards(JwtAuthenticationGuard)
   async updatePost(
     @Param('id') postId: string,
     @Body() updatePostDto: UpdatePostDto,
@@ -82,7 +83,6 @@ export class PostController {
   }
 
   @Post('/:id/like')
-  @UseGuards(JwtAuthenticationGuard)
   async toggleLike(
     @Param('id') postId: string,
     @currentUser('id') userId: string,
@@ -91,7 +91,6 @@ export class PostController {
   }
 
   @Post('/:id/save')
-  @UseGuards(JwtAuthenticationGuard)
   async toggleSave(
     @Param('id') postId: string,
     @currentUser('id') userId: string,
@@ -105,7 +104,6 @@ export class PostController {
   }
 
   @Post('/:id/comments')
-  @UseGuards(JwtAuthenticationGuard)
   async createComment(
     @Param('id') postId: string,
     @currentUser('id') userId: string,
@@ -115,7 +113,6 @@ export class PostController {
   }
 
   @Delete('/comments/:id')
-  @UseGuards(JwtAuthenticationGuard)
   async deleteComment(
     @Param('id') commentId: string,
     @currentUser('id') userId: string,
@@ -142,7 +139,6 @@ export class PostController {
   }
 
   @Delete('/:id')
-  @UseGuards(JwtAuthenticationGuard)
   async deletePost(
     @Param('id') postId: string,
     @currentUser('id') userId: string,

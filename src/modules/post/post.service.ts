@@ -21,6 +21,7 @@ type SimplePostResponse = {
   likes: number;
   comments: number;
   image: string | null;
+  liked?: boolean;
 };
 
 @Injectable()
@@ -58,6 +59,14 @@ export class PostService {
             Comments: true,
           },
         },
+        Likes: userId ? {
+          where: {
+            userId: userId,
+          },
+          select: {
+            userId: true,
+          },
+        } : false,
       },
       orderBy: {
         createdAt: 'desc',
@@ -73,18 +82,19 @@ export class PostService {
       );
     }
 
-    return posts.map((post) => this.mapPostToSimple(post));
+    return posts.map((post) => this.mapPostToSimple(post, userId));
   }
 
-  async getPostById(postId: string): Promise<SimplePostResponse> {
-    const post = await this.getPostWithRelations(postId);
-    return this.mapPostToSimple(post);
+  async getPostById(postId: string, userId?: string): Promise<SimplePostResponse> {
+    const post = await this.getPostWithRelations(postId, userId);
+    return this.mapPostToSimple(post, userId);
   }
 
   async createPost(
     data: CreatePostDto,
     files?: Record<string, Express.Multer.File[]>,
   ): Promise<SimplePostResponse> {
+    const userId = data.authorId;
     try {
       // Validate content length
       this.validatePostContent(data.content);
@@ -209,7 +219,7 @@ export class PostService {
         'CREATED',
       );
 
-      return this.getPostById(newPost.id);
+      return this.getPostById(newPost.id, userId);
     } catch (error) {
       console.error('Post creation error:', error);
       if (error instanceof GenericHttpException) {
@@ -287,7 +297,7 @@ export class PostService {
         'UPDATED',
       );
 
-      return this.getPostById(postId);
+      return this.getPostById(postId, userId);
     } catch (error) {
       console.error('Post update error:', error);
       if (error instanceof GenericHttpException) {
@@ -357,7 +367,7 @@ export class PostService {
     }
   }
 
-  private async getPostWithRelations(postId: string) {
+  private async getPostWithRelations(postId: string, userId?: string) {
     const post = await this.prisma.post.findFirst({
       where: {
         id: postId,
@@ -379,6 +389,14 @@ export class PostService {
             Comments: true,
           },
         },
+        Likes: userId ? {
+          where: {
+            userId: userId,
+          },
+          select: {
+            userId: true,
+          },
+        } : false,
       },
     });
 
@@ -392,7 +410,7 @@ export class PostService {
     return post;
   }
 
-  private mapPostToSimple(post: any): SimplePostResponse {
+  private mapPostToSimple(post: any, userId?: string): SimplePostResponse {
     const createdAt =
       post?.createdAt instanceof Date
         ? post.createdAt
@@ -406,6 +424,7 @@ export class PostService {
       likes: post._count?.Likes ?? 0,
       comments: post._count?.Comments ?? 0,
       image: post.mediaUrls?.[0] ?? post.PostMedia?.[0]?.url ?? null,
+      liked: userId ? (post.Likes && post.Likes.length > 0) : false,
     };
   }
 
@@ -557,7 +576,7 @@ export class PostService {
     const total = await this.prisma.savedPost.count({ where: { userId } });
 
     return {
-      data: saved.map((s) => this.mapPostToSimple(s.post)),
+      data: saved.map((s) => this.mapPostToSimple(s.post, userId)),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

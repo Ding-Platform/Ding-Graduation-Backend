@@ -119,6 +119,17 @@ export class NotificationService {
     );
   }
 
+  async notifyCommentLike(actorId: string, targetUserId: string, commentId: string, postId: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.COMMENT_LIKE,
+      'New Like',
+      'liked your comment',
+      actorId,
+      { commentId, postId },
+    );
+  }
+
   async notifyPostComment(
     actorId: string,
     targetUserId: string,

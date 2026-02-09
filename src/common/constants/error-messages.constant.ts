@@ -157,6 +157,7 @@ export const ERROR_MESSAGES = {
   // Like Errors
   LIKE_NOT_FOUND: 'Like not found',
   POST_ALREADY_LIKED: 'Post is already liked',
+  COMMENT_ALREADY_LIKED: 'Comment is already liked',
   COMMENT_LIKES_NOT_SUPPORTED:
     'Comment likes are not supported in the current schema',
 } as const;

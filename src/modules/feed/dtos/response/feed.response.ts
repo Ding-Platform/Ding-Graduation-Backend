@@ -21,6 +21,9 @@ export class FeedItemDto {
 
   @Expose()
   image: string | null;
+
+  @Expose()
+  liked?: boolean;
 }
 
 export class FeedResponseDto {

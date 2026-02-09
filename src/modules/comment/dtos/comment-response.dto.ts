@@ -28,6 +28,9 @@ export class CommentResponseDto {
   replyCount: number;
 
   @Expose()
+  likeCount: number;
+
+  @Expose()
   createdAt: Date;
 
   @Expose()
@@ -36,6 +39,9 @@ export class CommentResponseDto {
   @Expose()
   @Type(() => CommentAuthorDto)
   author?: CommentAuthorDto | null;
+
+  @Expose()
+  liked?: boolean;
 }
 
 
