@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { Neo4jService } from '../../configs/neo4j/neo4j.service';
+import { RedisService } from '../../configs/redis/redis.service';
 import { FeedItemDto } from './dtos/response/feed.response';
 import {
   PaginationDto,
@@ -12,6 +13,7 @@ export class FeedService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly neo4jService: Neo4jService,
+    private readonly redisService: RedisService,
   ) {}
 
   async getFeed(
@@ -20,8 +22,31 @@ export class FeedService {
     page = 1,
     limit = 20,
   ): Promise<PaginatedResponse<FeedItemDto>> {
+    const cacheKey = `feed:${userId}:${type}:${page}:${limit}`;
+    const cached =
+      await this.redisService.get<PaginatedResponse<FeedItemDto>>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    let response: PaginatedResponse<FeedItemDto>;
+
     if (type === 'FOLLOWING') {
-      return this.getChronologicalFeed(userId, page, limit, true);
+      response = await this.getChronologicalFeed(userId, page, limit, true);
+    } else if (type === 'EXPLORE') {
+      response = await this.getExploreFeed(userId, page, limit);
+    } else {
+      // HOME: Personalized feed backed by Neo4j; falls back to chronological feed.
+      const scoredPostIds = await this.getScoredPostsFromGraph(
+        userId,
+        limit * 2,
+      );
+
+      if (!scoredPostIds.length) {
+        response = await this.getChronologicalFeed(userId, page, limit, false);
+      } else {
+        response = await this.mapPosts(scoredPostIds, page, limit, userId);
+      }
     }
 
     if (type === 'EXPLORE') {

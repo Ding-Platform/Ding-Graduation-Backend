@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Req,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { NoroService } from './noro.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../../common/decorators/user.decorator';
@@ -16,5 +26,16 @@ export class NoroController {
   @Get('history')
   async getHistory(@User() user: any) {
     return this.noroService.getHistory(user.id);
+  }
+
+  @Post('transcribe')
+  @UseInterceptors(FileInterceptor('audio'))
+  async transcribe(@UploadedFile() file: Express.Multer.File) {
+    return this.noroService.transcribe(file);
+  }
+
+  @Post('speak')
+  async speak(@Body('text') text: string) {
+    return this.noroService.speak(text);
   }
 }
