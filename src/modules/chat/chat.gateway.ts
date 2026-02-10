@@ -311,14 +311,27 @@ export class ChatGateway
       );
 
       // Broadcast to room
-      this.server.to(roomId).emit('message', {
+      const payloadToEmit = {
         ...fullMessage,
         user: {
           id: user.id,
           name: user.name,
           image: user.image,
         },
-      });
+      };
+
+      // Emit both event names for compatibility with different clients.
+      this.server.to(roomId).emit('message', payloadToEmit);
+      this.server.to(roomId).emit('newMessage', payloadToEmit);
+
+      // Also deliver to each room member's sockets so users receive messages even if they
+      // haven't joined the room (e.g. they are elsewhere in the app).
+      const room = await this.roomService.getRoomWithMembers(roomId);
+      const memberIds = room?.members?.map((m: any) => m.userId) ?? [];
+      for (const memberId of memberIds) {
+        if (!memberId || memberId === user.id) continue;
+        this.sendToUser(memberId, 'newMessage', payloadToEmit);
+      }
 
       // Clear typing indicator
       this.handleTypingInternal(client, roomId, false);

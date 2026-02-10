@@ -36,6 +36,7 @@ import {
   ReadReceiptService,
   ChatMediaService,
 } from './services';
+import { ChatGateway } from './chat.gateway';
 import {
   CreateMessageDto,
   UpdateMessageDto,
@@ -65,6 +66,7 @@ export class ChatController {
     private readonly reactionService: ReactionService,
     private readonly readReceiptService: ReadReceiptService,
     private readonly mediaService: ChatMediaService,
+    private readonly chatGateway: ChatGateway,
   ) {}
 
   // ============ ROOM ENDPOINTS ============
@@ -72,7 +74,16 @@ export class ChatController {
   @Post('rooms')
   @ApiOperation({ summary: 'Create a new room (direct or group)' })
   async createRoom(@currentUser() user: User, @Body() dto: CreateRoomDto) {
-    return this.roomService.createRoom(user.id, dto);
+    const room = await this.roomService.createRoom(user.id, dto);
+
+    // Notify invited members so the conversation appears instantly (no refresh/polling).
+    const memberIds = (room as any)?.members?.map((m: any) => m.userId) ?? [];
+    for (const memberId of memberIds) {
+      if (!memberId || memberId === user.id) continue;
+      this.chatGateway.sendToUser(memberId, 'roomCreated', room);
+    }
+
+    return room;
   }
 
   @Post('rooms/direct')
@@ -213,7 +224,30 @@ export class ChatController {
   ) {
     // Ensure roomId matches
     dto.roomId = roomId;
-    return this.messageService.sendMessage(user.id, dto);
+    const message = await this.messageService.sendMessage(user.id, dto);
+
+    // Broadcast to connected clients in the room so receivers update in real-time.
+    // Use `getMessage()` to enrich with user/media/reactions as needed by the UI.
+    if (message?._id) {
+      const fullMessage = await this.messageService.getMessage(
+        message._id!.toHexString(),
+        user.id,
+      );
+      // Deliver to all connected clients in the room (when they joined the room).
+      this.chatGateway.sendToRoom(roomId, 'newMessage', fullMessage);
+      this.chatGateway.sendToRoom(roomId, 'message', fullMessage);
+
+      // Also deliver to each room member's sockets so users receive messages even if
+      // they have not joined the room (e.g., they are browsing other tabs/pages).
+      const room = await this.roomService.getRoomWithMembers(roomId);
+      const memberIds = room?.members?.map((m: any) => m.userId) ?? [];
+      for (const memberId of memberIds) {
+        if (!memberId || memberId === user.id) continue;
+        this.chatGateway.sendToUser(memberId, 'newMessage', fullMessage);
+      }
+    }
+
+    return message;
   }
 
   @Post('rooms/:roomId/messages/media')
@@ -260,6 +294,23 @@ export class ChatController {
         messageId: message._id!.toHexString(),
       }));
       await this.mediaService.saveMultipleMedia(updatedMedia);
+    }
+
+    // Broadcast enriched message to the room for real-time UI updates.
+    if (message?._id) {
+      const fullMessage = await this.messageService.getMessage(
+        message._id!.toHexString(),
+        user.id,
+      );
+      this.chatGateway.sendToRoom(roomId, 'newMessage', fullMessage);
+      this.chatGateway.sendToRoom(roomId, 'message', fullMessage);
+
+      const room = await this.roomService.getRoomWithMembers(roomId);
+      const memberIds = room?.members?.map((m: any) => m.userId) ?? [];
+      for (const memberId of memberIds) {
+        if (!memberId || memberId === user.id) continue;
+        this.chatGateway.sendToUser(memberId, 'newMessage', fullMessage);
+      }
     }
 
     return message;
