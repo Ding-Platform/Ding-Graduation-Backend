@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './configs/database/database.module';
 import { RedisModule } from './configs/redis/redis.module';
 import { Neo4jModule } from './configs/neo4j/neo4j.module';
+import { MongodbModule } from './configs/mongodb/mongodb.module';
 import { LoggerModule } from './common/application/logger/logger.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { HttpExceptionFilter } from './common/application/exceptions/exception-filter';
@@ -58,6 +59,8 @@ try {
 } catch {
   // Keep default localhost:6379 if parsing fails
 }
+import { ChatModule } from './modules/chat/chat.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -70,6 +73,7 @@ try {
     }),
     DatabaseModule,
     Neo4jModule,
+    MongodbModule,
     ContextModule,
     AuthModule,
     UserModule,
@@ -83,6 +87,7 @@ try {
     LikeModule,
     GraphSyncModule,
     CommentModule,
+    ChatModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

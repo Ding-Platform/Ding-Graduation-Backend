@@ -29,8 +29,8 @@ services:
     image: neo4j:5.15-community
     container_name: ding-neo4j
     ports:
-      - '7474:7474'  # HTTP
-      - '7687:7687'  # Bolt
+      - '7474:7474' # HTTP
+      - '7687:7687' # Bolt
     environment:
       - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}
       - NEO4J_PLUGINS=["apoc"]
@@ -41,7 +41,11 @@ services:
     networks:
       - ding-network
     healthcheck:
-      test: ['CMD-SHELL', 'cypher-shell -u neo4j -p ${NEO4J_PASSWORD:-password} "RETURN 1"']
+      test:
+        [
+          'CMD-SHELL',
+          'cypher-shell -u neo4j -p ${NEO4J_PASSWORD:-password} "RETURN 1"',
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -68,7 +72,7 @@ services:
   backend:
     container_name: ding-backend
     env_file:
-      - .env
+      - ../.env
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ding-dev}
       - NEO4J_URI=bolt://neo4j:7687
