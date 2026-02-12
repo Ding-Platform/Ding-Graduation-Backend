@@ -22,6 +22,8 @@ model User {
   password      String?
   emailVerified Boolean @default(false)
   active        Boolean @default(true)
+  isBanned      Boolean @default(false)
+  banReason     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -52,6 +54,13 @@ model User {
   createdRooms     Room[]            @relation("RoomCreator")
   messageReactions MessageReaction[]
   readReceipts     ReadReceipt[]
+  
+  // Marketplace & Moderation & AI
+  products      Product[]
+  transactions  Transaction[] @relation("BuyerTransactions")
+  sales         Transaction[] @relation("SellerTransactions")
+  reports       Report[]      @relation("Reporter")
+  noroChats     NoroChat[]
 }
 
 model Session {
@@ -593,7 +602,120 @@ model SavedPost {
   postId    String
   createdAt DateTime @default(now())
 
-  @@unique([userId, postId])
   @@index([userId])
   @@index([postId])
+}
+
+// Enums
+enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  NUDITY
+  VIOLENCE
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  RESOLVED
+}
+
+enum ProductStatus {
+  ACTIVE
+  SOLD
+  INACTIVE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ReportTargetType {
+  USER
+  POST
+  COMMENT
+}
+
+// New Models
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  price       Float
+  currency    String   @default("USD")
+  images      String[] @default([])
+  categoryId  String?
+  status      ProductStatus @default(ACTIVE)
+  
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  
+  transaction Transaction?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  amount    Float
+  currency  String
+  status    TransactionStatus @default(PENDING)
+  
+  buyerId   String
+  buyer     User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  
+  sellerId  String
+  seller    User     @relation("SellerTransactions", fields: [sellerId], references: [id])
+  
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId])
+  @@index([sellerId])
+}
+
+model Report {
+  id          String           @id @default(uuid())
+  targetId    String
+  targetType  ReportTargetType
+  reason      ReportReason
+  description String?          @db.Text
+  status      ReportStatus     @default(PENDING)
+  actionTaken String?
+  
+  reporterId  String
+  reporter    User             @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([reporterId])
+  @@index([status])
+}
+
+model NoroChat {
+  id        String   @id @default(uuid())
+  message   String   @db.Text
+  response  String   @db.Text
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

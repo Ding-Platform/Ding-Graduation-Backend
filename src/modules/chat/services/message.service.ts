@@ -209,7 +209,7 @@ export class MessageService {
       .toArray();
 
     // Fetch user info from PostgreSQL
-    const userIds = [...new Set(messages.map((m) => m.userId))];
+    const userIds = [...new Set(messages.map((m) => m.userId))] as string[];
     const users = await this.databaseService.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true, image: true },
@@ -574,7 +574,7 @@ export class MessageService {
       .toArray();
 
     // Fetch user info
-    const userIds = [...new Set(messages.map((m) => m.userId))];
+    const userIds = [...new Set(messages.map((m) => m.userId))] as string[];
     const users = await this.databaseService.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true, image: true },
@@ -643,7 +643,7 @@ export class MessageService {
       .toArray();
 
     // Fetch user info
-    const userIds = [...new Set(messages.map((m) => m.userId))];
+    const userIds = [...new Set(messages.map((m) => m.userId))] as string[];
     const users = await this.databaseService.user.findMany({
       where: { id: { in: userIds } },
       select: { id: true, name: true, image: true },

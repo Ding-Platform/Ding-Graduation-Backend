@@ -65,7 +65,6 @@ try {
 } catch {
   // Keep default localhost:6379 if parsing fails
 }
-import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
