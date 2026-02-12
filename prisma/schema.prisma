@@ -34,6 +34,7 @@ model User {
   Post              Post[]
   Likes             Like[]
   Comments          Comment[]
+  savedPosts        SavedPost[]
 
   // Social Graph Relations
   sentFriendRequests     Friendship[] @relation("SentFriendRequests")
@@ -582,4 +583,17 @@ model PinnedMessage {
   @@unique([roomId, messageId])
   @@index([roomId])
   @@index([messageId])
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([postId])
 }
