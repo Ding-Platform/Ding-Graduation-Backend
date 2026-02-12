@@ -1,5 +1,11 @@
 -- CreateEnum
-CREATE TYPE "RoomType" AS ENUM ('DIRECT', 'GROUP', 'CHANNEL');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'RoomType') THEN
+        CREATE TYPE "RoomType" AS ENUM ('DIRECT', 'GROUP', 'CHANNEL');
+    END IF;
+END
+$$;
 
 -- CreateEnum
 CREATE TYPE "MemberRole" AS ENUM ('ADMIN', 'MODERATOR', 'MEMBER');
