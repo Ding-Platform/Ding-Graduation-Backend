@@ -17,11 +17,11 @@ import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.guard';
 import { currentUser } from '../../common/decorators/currentUser.decorator';
 
+@UseGuards(JwtAuthenticationGuard)
 @Controller('comments')
 export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
-  @UseGuards(JwtAuthenticationGuard)
   @Post('posts/:postId')
   createComment(
     @Param('postId') postId: string,
@@ -37,12 +37,15 @@ export class CommentController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit = 20,
     @Query('sort') sort: 'top' | 'recent' = 'top',
+    @currentUser('id') userId: string,
   ) {
+    console.log(userId)
     return this.commentService.getPostComments(
       postId,
+      userId,
       page,
       limit,
-      sort === 'recent' ? 'recent' : 'top',
+      sort,
     );
   }
 
@@ -51,15 +54,16 @@ export class CommentController {
     @Param('commentId') commentId: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit = 10,
+    @currentUser('id') userId: string,
   ) {
     return this.commentService.getCommentReplies(
       commentId,
+      userId,
       page,
       limit,
     );
   }
 
-  @UseGuards(JwtAuthenticationGuard)
   @Patch(':commentId')
   updateComment(
     @Param('commentId') commentId: string,
@@ -69,7 +73,6 @@ export class CommentController {
     return this.commentService.updateComment(commentId, userId, dto);
   }
 
-  @UseGuards(JwtAuthenticationGuard)
   @Delete(':commentId')
   deleteComment(
     @Param('commentId') commentId: string,

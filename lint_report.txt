@@ -1,0 +1,27 @@
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm.
+npm warn Unknown project config "public-hoist-pattern". This will stop working in the next major version of npm.
+
+> Ding-Platform-Backend@0.0.1 lint
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+
+(node:54025) ESLintEmptyConfigWarning: Running ESLint with an empty config (from /home/zack-river/Documents/Projects/Ding-Platform-Backend/eslint.config.mjs). Please double-check that this is what you want. If you want to run ESLint with an empty config, export [{}] to remove this warning.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Oops! Something went wrong! :(
+
+ESLint: 9.38.0
+
+You are linting "{src,apps,libs,test}/**/*.ts", but all of the files matching the glob pattern "{src,apps,libs,test}/**/*.ts" are ignored.
+
+If you don't want to lint these files, remove the pattern "{src,apps,libs,test}/**/*.ts" from the list of arguments passed to ESLint.
+
+If you do want to lint these files, explicitly list one or more of the files from this glob that you'd like to lint to see more details about why they are ignored.
+
+  * If the file is ignored because of a matching ignore pattern, check global ignores in your config file.
+    https://eslint.org/docs/latest/use/configure/ignore
+
+  * If the file is ignored because no matching configuration was supplied, check file patterns in your config file.
+    https://eslint.org/docs/latest/use/configure/configuration-files#specifying-files-with-arbitrary-extensions
+
+  * If the file is ignored because it is located outside of the base path, change the location of your config file to be in a parent directory.
+

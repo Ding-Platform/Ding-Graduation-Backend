@@ -27,6 +27,12 @@ import { HealthController } from './health.controller';
 import { LikeModule } from './modules/like/like.module';
 import { GraphSyncModule } from './modules/graph/graph-sync.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { NoroModule } from './modules/noro/noro.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
+import { CallModule } from './modules/call/call.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
