@@ -824,14 +824,24 @@ async function clearNeo4j() {
 async function clearPostgreSQL() {
   try {
     console.log('🗑️  Clearing PostgreSQL database...');
-    
-    // Delete in correct order to respect foreign key constraints
-    await prisma.profilePrivacy.deleteMany({});
-    await prisma.profile.deleteMany({});
-    await prisma.otp.deleteMany({});
-    await prisma.session.deleteMany({});
-    await prisma.user.deleteMany({});
-    
+
+    // Robust reset: truncate all public tables (except Prisma migrations)
+    // This avoids having to manually maintain delete order as the schema evolves.
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      DECLARE r RECORD;
+      BEGIN
+        FOR r IN (
+          SELECT tablename
+          FROM pg_tables
+          WHERE schemaname = 'public'
+            AND tablename <> '_prisma_migrations'
+        ) LOOP
+          EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE';
+        END LOOP;
+      END $$;
+    `);
+
     console.log('✅ PostgreSQL database cleared\n');
   } catch (error) {
     console.error('❌ Error clearing PostgreSQL:', error);

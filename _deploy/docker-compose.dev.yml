@@ -1,0 +1,154 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: ding-postgres-dev
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-ding_db}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - ding-dev-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ding-redis-dev
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - ding-dev-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # MongoDB Database (for Chat Module)
+  mongodb:
+    image: mongo:7.0
+    container_name: ding-mongodb-dev
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data_dev:/data/db
+    networks:
+      - ding-dev-network
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Neo4j Graph Database
+  neo4j:
+    image: neo4j:latest
+    container_name: ding-neo4j-dev
+    restart: always
+    ports:
+      - '7474:7474'
+      - '7687:7687'
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    volumes:
+      - neo4j_data_dev:/data
+    networks:
+      - ding-dev-network
+    healthcheck:
+      test: ['CMD-SHELL', 'bash -lc "echo > /dev/tcp/127.0.0.1/7687"']
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 20s
+  # NestJS Backend Application
+  backend:
+    build:
+      context: .
+      dockerfile: _deploy/Dockerfile.dev
+    container_name: ding-backend-dev
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/ding_db}
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/password}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017}
+      - MONGODB_DB_NAME=${MONGODB_DB_NAME:-ding_chat}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_started
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ding-dev-network
+    stdin_open: true
+    tty: true
+    # Generate Prisma client and start in development mode
+    command: sh -c "pnpm prisma generate && pnpm run start:dev"
+
+  frontend:
+    container_name: ding-frontend-dev
+    build:
+      context: ../Ding-Platform-Frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - '5173:5173'
+    volumes:
+      - ../Ding-Platform-Frontend:/app
+      - /app/node_modules
+    networks:
+      - ding-dev-network
+
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: _deploy/Dockerfile.dev
+    container_name: ding-prisma-studio-dev
+    restart: always
+    ports:
+      - '5555:5555'
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    networks:
+      - ding-dev-network
+    command: sh -c "pnpm prisma generate && npx prisma studio --hostname 0.0.0.0 --port 5555"
+
+volumes:
+  pgdata_dev:
+  redis_data_dev:
+  mongodb_data_dev:
+  neo4j_data_dev:
+
+networks:
+  ding-dev-network:
+    driver: bridge

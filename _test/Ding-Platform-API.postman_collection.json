@@ -40,6 +40,16 @@
       "key": "commentId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "roomId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1073,6 +1083,447 @@
               "path": ["privacy"]
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Rooms",
+          "item": [
+            {
+              "name": "Get Rooms",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms?page=1&limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "limit", "value": "20" }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Create Direct Room",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('roomId', response.data.id || response.data._id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": \"{{userId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/direct",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "direct"]
+                }
+              }
+            },
+            {
+              "name": "Create Group Room",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('roomId', response.data.id || response.data._id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Dev Team\",\n  \"description\": \"Official dev chat\",\n  \"memberIds\": [\"{{userId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/group",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "group"]
+                }
+              }
+            },
+            {
+              "name": "Get Room Stats",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/{{roomId}}/stats",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "{{roomId}}", "stats"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Messages",
+          "item": [
+            {
+              "name": "Get Messages",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/{{roomId}}/messages?limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "{{roomId}}", "messages"],
+                  "query": [{ "key": "limit", "value": "20" }]
+                }
+              }
+            },
+            {
+              "name": "Send Message",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('messageId', response.data.id || response.data._id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Hello via API!\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/{{roomId}}/messages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "{{roomId}}", "messages"]
+                }
+              }
+            },
+            {
+              "name": "Reply to Message",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"This is a reply\",\n  \"replyToId\": \"{{messageId}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/{{roomId}}/messages",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "{{roomId}}", "messages"]
+                }
+              }
+            },
+            {
+              "name": "Edit Message",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"Edited content\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/messages/{{messageId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "messages", "{{messageId}}"]
+                }
+              }
+            },
+            {
+              "name": "Delete Message",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"deleteForEveryone\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/messages/{{messageId}}",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "messages", "{{messageId}}"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactions",
+          "item": [
+            {
+              "name": "Add Reaction",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"emoji\": \"👍\"\n}" },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "messages", "{{messageId}}", "reactions"]
+                }
+              }
+            },
+            {
+              "name": "Toggle Reaction",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"emoji\": \"❤️\"\n}" },
+                "url": {
+                  "raw": "{{baseUrl}}/chat/messages/{{messageId}}/reactions/toggle",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "chat",
+                    "messages",
+                    "{{messageId}}",
+                    "reactions",
+                    "toggle"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Reactions",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "messages", "{{messageId}}", "reactions"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search & Status",
+          "item": [
+            {
+              "name": "Search Messages",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/search?query=hello",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "search"],
+                  "query": [{ "key": "query", "value": "hello" }]
+                }
+              }
+            },
+            {
+              "name": "Get Unread Counts",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/unread-counts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "unread-counts"]
+                }
+              }
+            },
+            {
+              "name": "Mark All Read",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{accessToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/chat/rooms/{{roomId}}/read-all",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chat", "rooms", "{{roomId}}", "read-all"]
+                }
+              }
+            }
+          ]
         }
       ]
     }

@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       # Production settings
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8'
     deploy:
       resources:
         limits:
@@ -17,10 +17,10 @@ services:
           cpus: '1'
           memory: 512M
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: '10m'
+        max-file: '3'
 
   neo4j:
     restart: always
@@ -40,10 +40,10 @@ services:
           cpus: '1'
           memory: 1G
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: '10m'
+        max-file: '3'
 
   redis:
     restart: always
@@ -66,15 +66,15 @@ services:
           cpus: '0.5'
           memory: 256M
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "5m"
-        max-file: "3"
+        max-size: '5m'
+        max-file: '3'
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: _deploy/Dockerfile
       args:
         - NODE_ENV=production
     restart: always
@@ -83,8 +83,8 @@ services:
       - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379
     volumes:
       # Only mount uploads in production, not source code
-      - ./uploads:/app/uploads:rw
-      - ./logs:/app/logs:rw
+      - ../uploads:/app/uploads:rw
+      - ../logs:/app/logs:rw
     # Remove stdin_open and tty in production
     deploy:
       resources:
@@ -101,12 +101,20 @@ services:
         max_attempts: 3
         window: 120s
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "5"
+        max-size: '10m'
+        max-file: '5'
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--quiet',
+          '--tries=1',
+          '--spider',
+          'http://localhost:3000/health',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -130,10 +138,10 @@ services:
     networks:
       - ding-network
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: '10m'
+        max-file: '3'
 
 volumes:
   nginx_logs:

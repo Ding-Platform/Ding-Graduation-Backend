@@ -5,7 +5,7 @@ A social networking platform backend built with NestJS, featuring a hybrid datab
 ## 🏗️ Architecture
 
 - **Framework**: NestJS (Node.js)
-- **Databases**: 
+- **Databases**:
   - PostgreSQL (User data, posts, profiles)
   - Neo4j (Social graph, relationships)
   - Redis (Caching)
@@ -16,6 +16,7 @@ A social networking platform backend built with NestJS, featuring a hybrid datab
 ## 📋 Features
 
 ### Sprint 1: Authentication & Security
+
 - ✅ JWT-based authentication
 - ✅ Google OAuth2 integration
 - ✅ Password reset flow
@@ -23,18 +24,21 @@ A social networking platform backend built with NestJS, featuring a hybrid datab
 - ✅ Session management
 
 ### Sprint 2: Post Management
+
 - ✅ Create, read, update, delete posts
 - ✅ Image uploads via Cloudinary
 - ✅ Post reactions
 - ✅ Comments system
 
 ### Sprint 3: Social Graph
+
 - ✅ Follow/unfollow users
 - ✅ Friend requests
 - ✅ Connection management
 - ✅ Neo4j-powered social graph
 
 ### Sprint 4: Feed & Privacy
+
 - ✅ Personalized feed
 - ✅ Privacy settings
 - ✅ Content visibility control
@@ -63,13 +67,13 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Start all services
-./docker-dev.sh start
+./_run_Scripts/docker-dev.sh start
 
 # Or use docker-compose directly
 docker-compose up -d
 
 # View logs
-./docker-dev.sh logs
+./_run_Scripts/docker-dev.sh logs
 
 # Access services:
 # Backend: http://localhost:3000
@@ -102,11 +106,13 @@ pnpm run start:dev
 ## 📚 Documentation
 
 ### Deployment Guides
-- **Render**: See [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md) for detailed Render deployment guide
-- **Quick Start**: See [RENDER_QUICK_START.md](./RENDER_QUICK_START.md) for fast deployment
-- **Docker**: See [DOCKER_SETUP.md](./DOCKER_SETUP.md) for Docker configuration
+
+- **Render**: See [\_run_Scripts/RENDER_DEPLOYMENT.md](./_run_Scripts/RENDER_DEPLOYMENT.md) for detailed Render deployment guide
+- **Quick Start**: See [\_run_Scripts/RENDER_QUICK_START.md](./_run_Scripts/RENDER_QUICK_START.md) for fast deployment
+- **Docker**: See [\_run_Scripts/DOCKER_SETUP.md](./_run_Scripts/DOCKER_SETUP.md) for Docker configuration
 
 ### API Documentation
+
 - **Development**: http://localhost:3000/api/docs
 - **Production**: https://your-app.onrender.com/api/docs
 
@@ -118,10 +124,20 @@ pnpm run start:dev
 - `DELETE /comments/:commentId` — soft-delete own comment and update graph sync (auth required)
 
 ### Project Documentation
-- [ENV_GUIDE.md](./ENV_GUIDE.md) - Environment variables
-- [FEED_DOCUMENTATION.md](./FEED_DOCUMENTATION.md) - Feed system
-- [PROGRESS.md](./PROGRESS.md) - Project progress
-- Sprint summaries in root directory
+
+- [\_run_Scripts/ENV_GUIDE.md](./_run_Scripts/ENV_GUIDE.md) - Environment variables
+- [\_documentations/FEED_DOCUMENTATION.md](./_documentations/FEED_DOCUMENTATION.md) - Feed system
+- [\_documentations/PROGRESS.md](./_documentations/PROGRESS.md) - Project progress
+- [\_documentations/CHAT_API_DOCUMENTATION.md](./_documentations/CHAT_API_DOCUMENTATION.md) - Chat Frontend Guide
+- Sprint summaries in `_documentations/` directory
+
+## 📂 Folder Structure
+
+- `src/` - Application source code
+- `_deploy/` - Infrastructure definitions (Docker, Nginx)
+- `_documentations/` - Project documentation and guides
+- `_run_Scripts/` - Helper scripts for development and deployment
+- `_test/` - E2E tests and manual testing artifacts
 
 ## 🛠️ Available Scripts
 
@@ -151,15 +167,15 @@ pnpm run lint               # Lint code
 pnpm run format             # Format code
 
 # Docker
-./docker-dev.sh start       # Start dev environment
-./docker-dev.sh stop        # Stop dev environment
-./docker-dev.sh logs        # View logs
-./docker-dev.sh migrate     # Run migrations
-./docker-dev.sh shell       # Access backend shell
+./_run_Scripts/docker-dev.sh start       # Start dev environment
+./_run_Scripts/docker-dev.sh stop        # Stop dev environment
+./_run_Scripts/docker-dev.sh logs        # View logs
+./_run_Scripts/docker-dev.sh migrate     # Run migrations
+./_run_Scripts/docker-dev.sh shell       # Access backend shell
 
-./docker-prod.sh deploy     # Deploy production
-./docker-prod.sh health     # Check health
-./docker-prod.sh backup     # Backup databases
+./_run_Scripts/docker-prod.sh deploy     # Deploy production
+./_run_Scripts/docker-prod.sh health     # Check health
+./_run_Scripts/docker-prod.sh backup     # Backup databases
 ```
 
 ## 🌍 Deployment
@@ -172,10 +188,11 @@ The easiest way to deploy is using Render with the included blueprint:
    - Create instance at [console.neo4j.io](https://console.neo4j.io)
 
 2. **Deploy via Blueprint**
+
    ```bash
    # Push to GitHub
    git push origin main
-   
+
    # In Render dashboard:
    # - New + → Blueprint
    # - Connect repository
@@ -183,13 +200,13 @@ The easiest way to deploy is using Render with the included blueprint:
    # - Deploy
    ```
 
-3. **Complete guide**: See [RENDER_DEPLOYMENT.md](./RENDER_DEPLOYMENT.md)
+3. **Complete guide**: See [\_run_Scripts/RENDER_DEPLOYMENT.md](./_run_Scripts/RENDER_DEPLOYMENT.md)
 
 ### Docker Production
 
 ```bash
 # Build and deploy
-./docker-prod.sh deploy
+./_run_Scripts/docker-prod.sh deploy
 
 # Or manually
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
@@ -252,8 +269,7 @@ prisma/
 └── seed.ts             # Database seeding
 
 scripts/
-├── render-build.sh     # Render build script
-└── render-start.sh     # Render start script
+└── (Moved to _run_Scripts/scripts/)
 ```
 
 ## 🧪 Testing
@@ -283,10 +299,12 @@ pnpm run test:cov
 ## 📊 Monitoring
 
 ### Health Check
+
 - Endpoint: `/health`
 - Returns: Service status, uptime, environment
 
 ### Logging
+
 - Development: Pretty-printed console logs
 - Production: JSON logs with Pino
 - Optional: Sentry integration
@@ -309,7 +327,7 @@ Built with ❤️ by the Ding Platform team
 
 ## 📞 Support
 
-- Documentation: Check files in project root
+- Documentation: Check files in `documentations/` and `_run_Scripts/`
 - Issues: Open a GitHub issue
 - Email: [Your support email]
 
@@ -325,4 +343,4 @@ Built with ❤️ by the Ding Platform team
 
 ---
 
-**Ready to deploy?** Check out [RENDER_QUICK_START.md](./RENDER_QUICK_START.md) for a 5-minute deployment guide!
+**Ready to deploy?** Check out [\_run_Scripts/RENDER_QUICK_START.md](./_run_Scripts/RENDER_QUICK_START.md) for a 5-minute deployment guide!

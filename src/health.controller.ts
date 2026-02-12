@@ -14,15 +14,4 @@ export class HealthController {
       environment: process.env.NODE_ENV || 'development',
     };
   }
-
-  @Get()
-  @ApiOperation({ summary: 'Root endpoint' })
-  root() {
-    return {
-      message: 'Ding Platform Backend API',
-      version: '1.0.0',
-      documentation: '/api/docs',
-      health: '/health',
-    };
-  }
 }

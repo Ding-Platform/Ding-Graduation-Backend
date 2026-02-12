@@ -6,7 +6,7 @@
 set -e
 
 PROJECT_NAME="ding-platform"
-COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
+COMPOSE_FILES="-f _deploy/docker-compose.yml -f _deploy/docker-compose.prod.yml"
 
 # Colors for output
 RED='\033[0;31m'
