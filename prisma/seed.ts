@@ -36,7 +36,6 @@ function initNeo4j() {
   return neo4jDriver;
 }
 
-// Data generators
 const firstNames = [
   'James', 'Mary', 'John', 'Patricia', 'Robert', 'Jennifer', 'Michael', 'Linda',
   'William', 'Elizabeth', 'David', 'Barbara', 'Richard', 'Susan', 'Joseph', 'Jessica',
@@ -217,7 +216,11 @@ function getRandomElements<T>(array: T[], count: number): T[] {
   return shuffled.slice(0, count);
 }
 
-function generateEmail(firstName: string, lastName: string, index: number): string {
+function generateEmail(
+  firstName: string,
+  lastName: string,
+  index: number,
+): string {
   const variations = [
     `${firstName.toLowerCase()}.${lastName.toLowerCase()}${index}@example.com`,
     `${firstName.toLowerCase()}${lastName.toLowerCase()}${index}@example.com`,
@@ -280,21 +283,25 @@ async function createUserNode(
 }
 
 async function createUsersAndProfiles(batchSize: number = 100) {
-  const totalUsers = 1000;
+  const totalUsers = 100;
   const neo4jSession = neo4jDriver.session();
-  
+
   try {
-    console.log(`\n🌱 Starting seed: Creating ${totalUsers} users with profiles and Neo4j nodes...\n`);
+    console.log(
+      `\n🌱 Starting seed: Creating ${totalUsers} users with profiles and Neo4j nodes...\n`,
+    );
 
     for (let i = 0; i < totalUsers; i += batchSize) {
       const currentBatch = Math.min(batchSize, totalUsers - i);
       const batchNumber = Math.floor(i / batchSize) + 1;
       const totalBatches = Math.ceil(totalUsers / batchSize);
-      
-      console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (${currentBatch} users)...`);
+
+      console.log(
+        `📦 Processing batch ${batchNumber}/${totalBatches} (${currentBatch} users)...`,
+      );
 
       const usersData: any[] = [];
-      
+
       for (let j = 0; j < currentBatch; j++) {
         const firstName = getRandomElement(firstNames);
         const lastName = getRandomElement(lastNames);
@@ -305,7 +312,10 @@ async function createUsersAndProfiles(batchSize: number = 100) {
         const website = generateWebsite(name);
         const phoneNumber = Math.random() > 0.5 ? generatePhoneNumber() : null;
         const dateOfBirth = generateDateOfBirth();
-        const coverPhoto = Math.random() > 0.7 ? `https://picsum.photos/1200/400?random=${i + j}` : null;
+        const coverPhoto =
+          Math.random() > 0.7
+            ? `https://picsum.photos/1200/400?random=${i + j}`
+            : null;
         const password = await hashPassword('password123');
 
         usersData.push({
@@ -345,15 +355,22 @@ async function createUsersAndProfiles(batchSize: number = 100) {
       // Process in smaller chunks to avoid overwhelming the connection pool
       const concurrencyLimit = 10; // Process 10 users at a time
       const createdUsers: any[] = [];
-      
-      for (let chunkStart = 0; chunkStart < usersData.length; chunkStart += concurrencyLimit) {
-        const chunk = usersData.slice(chunkStart, chunkStart + concurrencyLimit);
-        
+
+      for (
+        let chunkStart = 0;
+        chunkStart < usersData.length;
+        chunkStart += concurrencyLimit
+      ) {
+        const chunk = usersData.slice(
+          chunkStart,
+          chunkStart + concurrencyLimit,
+        );
+
         const chunkResults = await Promise.all(
           chunk.map(async (userData) => {
             const maxRetries = 3;
             const baseDelay = 1000;
-            
+
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
               try {
                 return await prisma.user.create({
@@ -366,7 +383,9 @@ async function createUsersAndProfiles(batchSize: number = 100) {
                 // If it's a connection error and we have retries left, retry
                 if (error.code === 'P1001' && attempt < maxRetries) {
                   const delay = baseDelay * Math.pow(2, attempt - 1);
-                  console.log(`  ⚠️  Retrying user creation (attempt ${attempt}/${maxRetries}) after ${delay}ms...`);
+                  console.log(
+                    `  ⚠️  Retrying user creation (attempt ${attempt}/${maxRetries}) after ${delay}ms...`,
+                  );
                   await new Promise((resolve) => setTimeout(resolve, delay));
                   continue;
                 }
@@ -378,9 +397,9 @@ async function createUsersAndProfiles(batchSize: number = 100) {
             throw new Error('Failed to create user after all retries');
           }),
         );
-        
+
         createdUsers.push(...chunkResults);
-        
+
         // Small delay between chunks to avoid overwhelming the database
         if (chunkStart + concurrencyLimit < usersData.length) {
           await new Promise((resolve) => setTimeout(resolve, 100));
@@ -401,11 +420,15 @@ async function createUsersAndProfiles(batchSize: number = 100) {
         }
       }
 
-      console.log(`✅ Batch ${batchNumber}/${totalBatches} completed: ${i + currentBatch}/${totalUsers} users created\n`);
+      console.log(
+        `✅ Batch ${batchNumber}/${totalBatches} completed: ${i + currentBatch}/${totalUsers} users created\n`,
+      );
     }
 
-    console.log(`\n🎉 Successfully created ${totalUsers} users with profiles and Neo4j nodes!\n`);
-    
+    console.log(
+      `\n🎉 Successfully created ${totalUsers} users with profiles and Neo4j nodes!\n`,
+    );
+
     console.log('✨ Regular users seed completed successfully!\n');
   } catch (error) {
     console.error('❌ Error during seeding:', error);
@@ -417,9 +440,11 @@ async function createUsersAndProfiles(batchSize: number = 100) {
 
 async function createDeveloperAccounts(neo4jSession: any): Promise<string[]> {
   const developerIds: string[] = [];
-  
+
   try {
-    console.log(`\n👨‍💻 Creating ${developerAccounts.length} developer account(s)...\n`);
+    console.log(
+      `\n👨‍💻 Creating ${developerAccounts.length} developer account(s)...\n`,
+    );
 
     for (const dev of developerAccounts) {
       console.log(`Creating developer: ${dev.name} (${dev.email})...`);
@@ -430,7 +455,10 @@ async function createDeveloperAccounts(neo4jSession: any): Promise<string[]> {
       const website = generateWebsite(dev.name);
       const phoneNumber = Math.random() > 0.5 ? generatePhoneNumber() : null;
       const dateOfBirth = generateDateOfBirth();
-      const coverPhoto = Math.random() > 0.7 ? `https://picsum.photos/1200/400?random=dev-${dev.email}` : null;
+      const coverPhoto =
+        Math.random() > 0.7
+          ? `https://picsum.photos/1200/400?random=dev-${dev.email}`
+          : null;
       const password = await hashPassword(dev.password);
 
       // Create developer user with profile
@@ -487,7 +515,9 @@ async function createDeveloperAccounts(neo4jSession: any): Promise<string[]> {
       console.log(`✅ Created developer: ${dev.name}\n`);
     }
 
-    console.log(`🎉 Successfully created ${developerAccounts.length} developer account(s)!\n`);
+    console.log(
+      `🎉 Successfully created ${developerAccounts.length} developer account(s)!\n`,
+    );
     return developerIds;
   } catch (error) {
     console.error('❌ Error creating developer accounts:', error);
@@ -513,17 +543,31 @@ async function createDeveloperRelationships(
     return;
   }
 
-  console.log(`🔗 Creating extensive relationships for ${developerIds.length} developer(s)...\n`);
+  console.log(
+    `🔗 Creating extensive relationships for ${developerIds.length} developer(s)...\n`,
+  );
 
   for (const developerId of developerIds) {
     console.log(`Creating relationships for developer: ${developerId}...`);
 
     // Calculate relationship counts (using high percentages for developers)
-    const followingCount = Math.min(Math.floor(regularUserIds.length * 0.6), 400); // Follow 60% of users, max 400
-    const followersCount = Math.min(Math.floor(regularUserIds.length * 0.5), 350); // 50% follow back, max 350
+    const followingCount = Math.min(
+      Math.floor(regularUserIds.length * 0.6),
+      400,
+    ); // Follow 60% of users, max 400
+    const followersCount = Math.min(
+      Math.floor(regularUserIds.length * 0.5),
+      350,
+    ); // 50% follow back, max 350
     const friendsCount = Math.min(Math.floor(regularUserIds.length * 0.3), 150); // 30% are friends, max 150
-    const sentFriendRequestsCount = Math.min(Math.floor(regularUserIds.length * 0.2), 100); // 20% sent requests, max 100
-    const receivedFriendRequestsCount = Math.min(Math.floor(regularUserIds.length * 0.25), 120); // 25% received requests, max 120
+    const sentFriendRequestsCount = Math.min(
+      Math.floor(regularUserIds.length * 0.2),
+      100,
+    ); // 20% sent requests, max 100
+    const receivedFriendRequestsCount = Math.min(
+      Math.floor(regularUserIds.length * 0.25),
+      120,
+    ); // 25% received requests, max 120
 
     // Get random users for each relationship type
     const shuffledUsers = [...regularUserIds].sort(() => 0.5 - Math.random());
@@ -545,10 +589,15 @@ async function createDeveloperRelationships(
         // Ignore errors
       }
     }
-    console.log(`  ✅ Created ${followingCreated} FOLLOW relationships (developer following others)`);
+    console.log(
+      `  ✅ Created ${followingCreated} FOLLOW relationships (developer following others)`,
+    );
 
     // 2. Create FOLLOW relationships (others following developer)
-    const usersFollowingDev = shuffledUsers.slice(followingCount, followingCount + followersCount);
+    const usersFollowingDev = shuffledUsers.slice(
+      followingCount,
+      followingCount + followersCount,
+    );
     let followersCreated = 0;
     for (const userId of usersFollowingDev) {
       try {
@@ -564,7 +613,9 @@ async function createDeveloperRelationships(
         // Ignore errors
       }
     }
-    console.log(`  ✅ Created ${followersCreated} FOLLOW relationships (others following developer)`);
+    console.log(
+      `  ✅ Created ${followersCreated} FOLLOW relationships (others following developer)`,
+    );
 
     // 3. Create FRIEND relationships (bidirectional)
     const usersToFriend = shuffledUsers.slice(
@@ -586,11 +637,15 @@ async function createDeveloperRelationships(
         // Ignore errors
       }
     }
-    console.log(`  ✅ Created ${friendsCreated} FRIEND relationships (bidirectional)`);
+    console.log(
+      `  ✅ Created ${friendsCreated} FRIEND relationships (bidirectional)`,
+    );
 
     // 4. Create FRIEND_REQUEST relationships (developer sending requests)
     // Get users that are not already friends
-    const usersNotFriends = shuffledUsers.filter((id) => !usersToFriend.includes(id));
+    const usersNotFriends = shuffledUsers.filter(
+      (id) => !usersToFriend.includes(id),
+    );
     const usersToRequest = usersNotFriends.slice(0, sentFriendRequestsCount);
     let sentRequestsCreated = 0;
     for (const userId of usersToRequest) {
@@ -608,12 +663,19 @@ async function createDeveloperRelationships(
         // Ignore errors
       }
     }
-    console.log(`  ✅ Created ${sentRequestsCreated} FRIEND_REQUEST relationships (developer sent)`);
+    console.log(
+      `  ✅ Created ${sentRequestsCreated} FRIEND_REQUEST relationships (developer sent)`,
+    );
 
     // 5. Create FRIEND_REQUEST relationships (others sending requests to developer)
     // Get users that are not already friends and not in the sent requests list
-    const usersNotFriendsOrRequested = usersNotFriends.filter((id) => !usersToRequest.includes(id));
-    const usersRequestingDev = usersNotFriendsOrRequested.slice(0, receivedFriendRequestsCount);
+    const usersNotFriendsOrRequested = usersNotFriends.filter(
+      (id) => !usersToRequest.includes(id),
+    );
+    const usersRequestingDev = usersNotFriendsOrRequested.slice(
+      0,
+      receivedFriendRequestsCount,
+    );
     let receivedRequestsCreated = 0;
     for (const userId of usersRequestingDev) {
       try {
@@ -630,12 +692,16 @@ async function createDeveloperRelationships(
         // Ignore errors
       }
     }
-    console.log(`  ✅ Created ${receivedRequestsCreated} FRIEND_REQUEST relationships (developer received)`);
+    console.log(
+      `  ✅ Created ${receivedRequestsCreated} FRIEND_REQUEST relationships (developer received)`,
+    );
 
     console.log(`✅ Completed relationships for developer: ${developerId}\n`);
   }
 
-  console.log(`🎉 Successfully created extensive relationships for all developers!\n`);
+  console.log(
+    `🎉 Successfully created extensive relationships for all developers!\n`,
+  );
 }
 
 async function createRelationships(session: any, totalUsers: number) {
@@ -644,38 +710,49 @@ async function createRelationships(session: any, totalUsers: number) {
     select: { id: true },
     orderBy: { createdAt: 'asc' },
   });
-  
+
   if (allUsers.length === 0) {
     console.log('⚠️  No users found to create relationships\n');
     return;
   }
-  
+
   // Create friend relationships (bidirectional)
-  const friendPairs = Math.min(Math.floor(totalUsers * 0.1), Math.floor(allUsers.length * 0.1)); // 10% of users will have friends
+  const friendPairs = Math.min(
+    Math.floor(totalUsers * 0.1),
+    Math.floor(allUsers.length * 0.1),
+  ); // 10% of users will have friends
   console.log(`Creating ${friendPairs} friend relationships...`);
-  
+
   const friendRelationships = new Set<string>();
-  
+
   for (let i = 0; i < friendPairs; i++) {
     let user1, user2;
     let attempts = 0;
-    
+
     // Ensure we get two different users and avoid duplicates
     do {
       user1 = getRandomElement(allUsers);
       user2 = getRandomElement(allUsers);
       attempts++;
-    } while ((user1.id === user2.id || friendRelationships.has(`${user1.id}-${user2.id}`) || friendRelationships.has(`${user2.id}-${user1.id}`)) && attempts < 100);
-    
+    } while (
+      (user1.id === user2.id ||
+        friendRelationships.has(`${user1.id}-${user2.id}`) ||
+        friendRelationships.has(`${user2.id}-${user1.id}`)) &&
+      attempts < 100
+    );
+
     if (user1.id === user2.id) continue;
-    
+
     const relationshipKey = `${user1.id}-${user2.id}`;
-    if (friendRelationships.has(relationshipKey) || friendRelationships.has(`${user2.id}-${user1.id}`)) {
+    if (
+      friendRelationships.has(relationshipKey) ||
+      friendRelationships.has(`${user2.id}-${user1.id}`)
+    ) {
       continue;
     }
-    
+
     friendRelationships.add(relationshipKey);
-    
+
     try {
       await session.run(
         `MATCH (u1:User {userId: $userId1})
@@ -687,39 +764,46 @@ async function createRelationships(session: any, totalUsers: number) {
     } catch (error) {
       // Ignore errors for missing nodes
     }
-    
+
     if ((i + 1) % 100 === 0) {
       console.log(`  Created ${i + 1}/${friendPairs} friend relationships...`);
     }
   }
-  
+
   console.log(`✅ Created friend relationships\n`);
-  
+
   // Create follow relationships (unidirectional)
-  const followCount = Math.min(Math.floor(totalUsers * 0.3), Math.floor(allUsers.length * 0.3)); // 30% of users will follow others
+  const followCount = Math.min(
+    Math.floor(totalUsers * 0.3),
+    Math.floor(allUsers.length * 0.3),
+  ); // 30% of users will follow others
   console.log(`Creating ${followCount} follow relationships...`);
-  
+
   const followRelationships = new Set<string>();
-  
+
   for (let i = 0; i < followCount; i++) {
     let follower, followee;
     let attempts = 0;
-    
+
     do {
       follower = getRandomElement(allUsers);
       followee = getRandomElement(allUsers);
       attempts++;
-    } while ((follower.id === followee.id || followRelationships.has(`${follower.id}-${followee.id}`)) && attempts < 100);
-    
+    } while (
+      (follower.id === followee.id ||
+        followRelationships.has(`${follower.id}-${followee.id}`)) &&
+      attempts < 100
+    );
+
     if (follower.id === followee.id) continue;
-    
+
     const relationshipKey = `${follower.id}-${followee.id}`;
     if (followRelationships.has(relationshipKey)) {
       continue;
     }
-    
+
     followRelationships.add(relationshipKey);
-    
+
     try {
       await session.run(
         `MATCH (follower:User {userId: $followerId})
@@ -731,12 +815,12 @@ async function createRelationships(session: any, totalUsers: number) {
     } catch (error) {
       // Ignore errors for missing nodes
     }
-    
+
     if ((i + 1) % 100 === 0) {
       console.log(`  Created ${i + 1}/${followCount} follow relationships...`);
     }
   }
-  
+
   console.log(`✅ Created follow relationships\n`);
 }
 
@@ -851,10 +935,10 @@ async function clearPostgreSQL() {
 
 async function main() {
   let neo4jConnected = false;
-  
+
   try {
     console.log('🚀 Starting database seed...\n');
-    
+
     // Initialize Neo4j with retry logic
     console.log('📡 Connecting to Neo4j...');
     try {
@@ -865,15 +949,17 @@ async function main() {
     } catch (error) {
       console.error('⚠️  Failed to connect to Neo4j:', error.message);
       console.log('💡 Tip: Make sure Neo4j is running and accessible.');
-      console.log('   If running in Docker, ensure the container is up: docker-compose up neo4j\n');
+      console.log(
+        '   If running in Docker, ensure the container is up: docker-compose up neo4j\n',
+      );
       throw error;
     }
-    
+
     // Connect to Prisma with retry logic
     console.log('📡 Connecting to PostgreSQL...');
     const maxRetries = 5;
     const baseDelay = 2000; // 2 seconds
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await prisma.$connect();
@@ -883,31 +969,47 @@ async function main() {
         break;
       } catch (error: any) {
         if (attempt === maxRetries) {
-          console.error(`❌ Failed to connect to PostgreSQL after ${maxRetries} attempts`);
+          console.error(
+            `❌ Failed to connect to PostgreSQL after ${maxRetries} attempts`,
+          );
           console.error(`   Error: ${error.message}`);
           if (error.code === 'P1001') {
-            console.log('💡 Connection Error (P1001): Cannot reach database server');
-            console.log('   - If using Neon: The database might be sleeping. Try accessing it first to wake it up.');
-            console.log('   - If using Docker: Ensure the postgres container is running: docker-compose ps');
-            console.log('   - Check your DATABASE_URL environment variable is correct');
+            console.log(
+              '💡 Connection Error (P1001): Cannot reach database server',
+            );
+            console.log(
+              '   - If using Neon: The database might be sleeping. Try accessing it first to wake it up.',
+            );
+            console.log(
+              '   - If using Docker: Ensure the postgres container is running: docker-compose ps',
+            );
+            console.log(
+              '   - Check your DATABASE_URL environment variable is correct',
+            );
           } else {
-            console.log('💡 Tip: Make sure your database server is running and accessible.');
-            console.log('   Check your DATABASE_URL environment variable and network connectivity.');
+            console.log(
+              '💡 Tip: Make sure your database server is running and accessible.',
+            );
+            console.log(
+              '   Check your DATABASE_URL environment variable and network connectivity.',
+            );
           }
           throw error;
         }
         const delay = baseDelay * Math.pow(2, attempt - 1);
-        console.log(`⚠️  Connection attempt ${attempt}/${maxRetries} failed, retrying in ${delay}ms...`);
+        console.log(
+          `⚠️  Connection attempt ${attempt}/${maxRetries} failed, retrying in ${delay}ms...`,
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
-    
+
     // Clear existing data
     if (neo4jConnected) {
       await clearNeo4j();
     }
     await clearPostgreSQL();
-    
+
     // Create developer accounts first
     const neo4jSession = neo4jDriver.session();
     let developerIds: string[] = [];
@@ -916,10 +1018,10 @@ async function main() {
     } finally {
       await neo4jSession.close();
     }
-    
+
     // Create regular users and profiles
     await createUsersAndProfiles(100);
-    
+
     // Get all user IDs (including developers)
     const allUsers = await prisma.user.findMany({
       select: { id: true },
@@ -938,24 +1040,29 @@ async function main() {
     // Create relationships for regular users
     const regularSession = neo4jDriver.session();
     try {
-      console.log('🔗 Creating relationships for regular users (friends and follows)...\n');
+      console.log(
+        '🔗 Creating relationships for regular users (friends and follows)...\n',
+      );
       await createRelationships(regularSession, allUserIds.length);
     } finally {
       await regularSession.close();
     }
-    
+
     // Create extensive relationships for developers
     if (developerIds.length > 0 && allUserIds.length > developerIds.length) {
       const devSession = neo4jDriver.session();
       try {
-        await createDeveloperRelationships(devSession, developerIds, allUserIds);
+        await createDeveloperRelationships(
+          devSession,
+          developerIds,
+          allUserIds,
+        );
       } finally {
         await devSession.close();
       }
     }
-    
+
     console.log('✨ Seed completed successfully!\n');
-    
   } catch (error) {
     console.error('❌ Seed failed:', error);
     process.exit(1);
@@ -968,9 +1075,7 @@ async function main() {
   }
 }
 
-main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
-
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

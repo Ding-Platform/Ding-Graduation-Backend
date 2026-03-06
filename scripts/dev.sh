@@ -47,7 +47,7 @@ sleep 10
 
 # Ask if user wants to seed the database
 echo ""
-read -p "🌱 Do you want to seed the database? This will DROP all existing data and create 1000 users with profiles and Neo4j nodes. (y/N): " -n 1 -r
+read -p "🌱 Do you want to seed the database? This will DROP all existing data and create 100 users with profiles and Neo4j nodes. (y/N): " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
