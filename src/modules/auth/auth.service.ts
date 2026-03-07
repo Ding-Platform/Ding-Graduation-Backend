@@ -146,22 +146,12 @@ export class AuthService {
         });
 
         if (oldestSession) {
-          // Check if the deleted session matches the client's refresh token cookie
-          if (request && response && oldestSession.refreshToken) {
-            const refreshTokenFromCookie =
-              request.cookies?.[TOKEN_CONSTANTS.COOKIE.REFRESH_TOKEN_NAME];
-
-            if (refreshTokenFromCookie) {
-              // Compare the cookie's refresh token with the deleted session's hashed refresh token
-              const isMatch = await this.helperService.comparePassword(
-                refreshTokenFromCookie,
-                oldestSession.refreshToken,
-              );
-
-              // If they match, clear the cookie since this session is being deleted
-              if (isMatch) {
-                this.clearRefreshTokenCookie(response);
-              }
+          // If the deleted session matches the client's sessionId cookie, clear it
+          if (request && response) {
+            const sessionIdFromCookie =
+              request.cookies?.[TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME];
+            if (sessionIdFromCookie && sessionIdFromCookie === oldestSession.id) {
+              this.clearSessionIdCookie(response);
             }
           }
 
@@ -173,22 +163,16 @@ export class AuthService {
     }
     // If IP or userAgent are not provided, allow unlimited sessions (no limit check)
 
-    // Generate refresh token first
+    const session = await this.sessionService.create(user, ipAddress, userAgent);
+
     const refreshToken = this.generateRefreshToken({
       userId: user.id,
-      sessionId: 'temp', // Will be replaced after session creation
+      sessionId: session.id,
     });
+    const encryptedRefreshToken = this.helperService.encryptAuthToken(refreshToken);
+    await this.sessionService.updateRefreshToken(session.id, encryptedRefreshToken);
 
-    // Create session with refresh token (hashed in DB)
-    const session = await this.sessionService.create(
-      user,
-      refreshToken,
-      ipAddress,
-      userAgent,
-    );
-
-    // Return tokens and user (refreshToken for cookie, accessToken for response)
-    return this.appendAuthTokenToResponse(user, session, refreshToken);
+    return this.appendAuthTokenToResponse(user, session);
   }
 
   async googleLogin(
@@ -261,8 +245,8 @@ export class AuthService {
       response,
     );
 
-    // Set HttpOnly cookie for refresh token
-    this.setRefreshTokenCookie(response, result.refreshToken);
+    // Set HttpOnly cookie for session id
+    this.setSessionIdCookie(response, result.sessionId);
 
     return result;
   }
@@ -270,19 +254,16 @@ export class AuthService {
   async appendAuthTokenToResponse(
     user: User,
     session: Session,
-    refreshToken: string,
   ) {
     const accessToken = this.generateAccessToken({
       userId: user.id,
       sessionId: session.id,
     });
 
-    // Return both tokens internally - controller will use refreshToken for cookie
-    // Serializer will only expose accessToken and user in response body
     return {
       user,
       accessToken,
-      refreshToken, // For HttpOnly cookie only (not serialized in response)
+      sessionId: session.id, // For HttpOnly cookie only (not serialized in response)
     };
   }
 
@@ -298,29 +279,57 @@ export class AuthService {
     });
   }
 
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(sessionId: string) {
     try {
-      // Verify the refresh token (already verified by guard, but verify again for security)
-      const payload = this.jwtService.verify<TokenPayload>(refreshToken);
-
-      // Find the session with this refresh token
-      const session =
-        await this.sessionService.findByRefreshToken(refreshToken);
-
-      if (!session || session.userId !== payload.userId) {
-        // If session not found or user ID doesn't match, delete the session
-        if (session) {
-          await this.sessionService.remove(session);
-        }
+      const session = await this.sessionService.findById(sessionId);
+      if (!session || session.status !== 'ACTIVE') {
+        if (session) await this.sessionService.remove(session);
         throw new GenericHttpException(
-          ERROR_MESSAGES.INVALID_REFRESH_TOKEN,
+          ERROR_MESSAGES.INVALID_SESSION,
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      if (!session.refreshToken) {
+        await this.sessionService.remove(session);
+        throw new GenericHttpException(
+          ERROR_MESSAGES.SESSION_EXPIRED,
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      let refreshToken: string;
+      try {
+        refreshToken = this.helperService.decryptAuthToken(session.refreshToken);
+      } catch {
+        await this.sessionService.remove(session);
+        throw new GenericHttpException(
+          ERROR_MESSAGES.INVALID_SESSION,
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      let payload: TokenPayload;
+      try {
+        payload = this.jwtService.verify<TokenPayload>(refreshToken);
+      } catch {
+        await this.sessionService.remove(session);
+        throw new GenericHttpException(
+          ERROR_MESSAGES.SESSION_EXPIRED,
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+
+      if (payload.userId !== session.userId || payload.sessionId !== session.id) {
+        await this.sessionService.remove(session);
+        throw new GenericHttpException(
+          ERROR_MESSAGES.INVALID_SESSION,
           HttpStatus.UNAUTHORIZED,
         );
       }
 
       // Check if user is still active
       if (!session.user.active) {
-        // If user is blocked, delete the session
         await this.sessionService.remove(session);
         throw new GenericHttpException(
           ERROR_MESSAGES.USER_BLOCKED,
@@ -328,14 +337,11 @@ export class AuthService {
         );
       }
 
-      // Generate ONLY new access token (refresh token remains the same)
       const newAccessToken = this.generateAccessToken({
         userId: session.userId,
         sessionId: session.id,
       });
 
-      // Return only the new access token
-      // Refresh token stays the same and doesn't need to be updated in DB
       return {
         accessToken: newAccessToken,
       };
@@ -350,17 +356,12 @@ export class AuthService {
     }
   }
 
-  async refreshTokensWithCookie(refreshToken: string, response: Response) {
+  async refreshTokensWithCookie(sessionId: string, response: Response) {
     try {
-      const result = await this.refreshTokens(refreshToken);
-
-      // No need to update the refresh token cookie since it remains the same
-      // The refresh token stays valid until it expires or user logs out
-
+      const result = await this.refreshTokens(sessionId);
       return result;
     } catch (error) {
-      // If refresh fails (e.g., expired token), clear the refresh token cookie
-      this.clearRefreshTokenCookie(response);
+      this.clearSessionIdCookie(response);
       throw error;
     }
   }
@@ -398,8 +399,8 @@ export class AuthService {
   ) {
     const result = await this.logout(user, sessionId);
 
-    // Clear refresh token cookie
-    this.clearRefreshTokenCookie(response);
+    // Clear session id cookie
+    this.clearSessionIdCookie(response);
 
     return result;
   }
@@ -407,15 +408,15 @@ export class AuthService {
   async logoutAllWithCookie(user: User, response: Response) {
     const result = await this.logout(user);
 
-    // Clear refresh token cookie
-    this.clearRefreshTokenCookie(response);
+    // Clear session id cookie
+    this.clearSessionIdCookie(response);
 
     return result;
   }
 
   // Public helper methods for cookie management
-  setRefreshTokenCookie(response: Response, refreshToken: string): void {
-    response.cookie(TOKEN_CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, refreshToken, {
+  setSessionIdCookie(response: Response, sessionId: string): void {
+    response.cookie(TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME, sessionId, {
       httpOnly: TOKEN_CONSTANTS.COOKIE.HTTP_ONLY,
       secure: TOKEN_CONSTANTS.COOKIE.SECURE,
       sameSite: TOKEN_CONSTANTS.COOKIE.SAME_SITE,
@@ -424,8 +425,8 @@ export class AuthService {
     });
   }
 
-  private clearRefreshTokenCookie(response: Response): void {
-    response.clearCookie(TOKEN_CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, {
+  private clearSessionIdCookie(response: Response): void {
+    response.clearCookie(TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME, {
       httpOnly: TOKEN_CONSTANTS.COOKIE.HTTP_ONLY,
       secure: TOKEN_CONSTANTS.COOKIE.SECURE,
       sameSite: TOKEN_CONSTANTS.COOKIE.SAME_SITE,

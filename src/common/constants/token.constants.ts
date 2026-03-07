@@ -5,21 +5,21 @@
 export const TOKEN_CONSTANTS = {
   // Access Token Configuration
   ACCESS_TOKEN: {
-    EXPIRES_IN: '15m', // 15 minutes
+    EXPIRES_IN: '10s', // 15 minutes
     ALGORITHM: 'HS256' as const,
     TYPE: 'access' as const,
   },
 
   // Refresh Token Configuration
   REFRESH_TOKEN: {
-    EXPIRES_IN: '7d', // 7 days
+    EXPIRES_IN: '1m', // 7 days
     ALGORITHM: 'HS256' as const,
     TYPE: 'refresh' as const,
   },
 
   // Cookie Configuration
   COOKIE: {
-    REFRESH_TOKEN_NAME: 'refreshToken',
+    SESSION_ID_NAME: 'sessionId',
     // No MAX_AGE - persistent cookie (no expiration)
     PATH: '/',
     HTTP_ONLY: true,
@@ -37,6 +37,8 @@ export const TOKEN_CONSTANTS = {
   // Session Configuration
   SESSION: {
     MAX_ACTIVE_SESSIONS: 5, // Maximum active sessions per user
+    // Session refresh TTL (matches old refresh token lifetime)
+    REFRESH_TTL_MS: 7 * 24 * 60 * 60 * 1000,
     CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   },
 
