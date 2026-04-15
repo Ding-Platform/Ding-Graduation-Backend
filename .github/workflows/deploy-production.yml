@@ -1,0 +1,48 @@
+# Deploy backend (Docker Compose + migrations) on push to production.
+#
+# Secrets (repository): SSH_PRIVATE_KEY, SSH_HOST, SSH_USER
+# Secrets (repository): BACKEND_DEPLOY_PATH — absolute path to this repo clone on the VPS
+# Optional secret:       PRODUCTION_BRANCH — branch to checkout on server (defaults to production)
+# Optional: add under `with:` for non-default SSH port, e.g. port: "2222"
+# Optional: pin host key via action that supports known_hosts, or SSH config on the runner
+
+name: Deploy production (backend)
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 60s
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            set -euo pipefail
+            BACKEND_PATH="${{ secrets.BACKEND_DEPLOY_PATH }}"
+            if [ -z "$BACKEND_PATH" ]; then
+              echo "Set GitHub secret BACKEND_DEPLOY_PATH to the absolute path of this repo on the server."
+              exit 1
+            fi
+            BRANCH="${{ secrets.PRODUCTION_BRANCH }}"
+            BRANCH="${BRANCH:-production}"
+            cd "$BACKEND_PATH"
+            git fetch origin
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+            # Frontend is deployed by the frontend repo workflow
+            DEPLOY_FRONTEND=0 ./scripts/deploy.sh

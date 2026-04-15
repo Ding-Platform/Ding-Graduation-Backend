@@ -3,29 +3,4 @@
 # This file extends docker-compose.yml with production-specific configurations
 
 services:
-  # Nginx Reverse Proxy (Production Only)
-  nginx:
-    image: nginx:alpine
-    container_name: ding-nginx
-    restart: always
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - nginx_logs:/var/log/nginx
-    depends_on:
-      - backend
-    networks:
-      - ding-network
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '10m'
-        max-file: '3'
-
-volumes:
-  nginx_logs:
-    driver: local
+  {}

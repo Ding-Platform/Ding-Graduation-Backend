@@ -55,7 +55,7 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
           },
         };
 
-        if (!isProduction && process.env.VERCEL !== '1') {
+        if (!isProduction) {
           return {
             pinoHttp: {
               ...baseConfig,

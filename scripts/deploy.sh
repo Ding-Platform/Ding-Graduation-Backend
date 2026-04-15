@@ -27,6 +27,9 @@ print_info() {
 
 COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
 SAFE_DB_MODE=true
+SERVER_IP="localhost"
+# Nest uses global prefix api/v1; GET / returns 404, so do not probe bare :3000/
+BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://localhost:3000/api/v1/health}"
 
 check_docker() {
     if ! command -v docker &> /dev/null; then
@@ -49,14 +52,6 @@ get_server_ip() {
     print_info "Detected server IP: $SERVER_IP"
 }
 
-create_directories() {
-    print_info "Creating necessary directories..."
-    mkdir -p nginx/logs
-    mkdir -p nginx/ssl
-    mkdir -p nginx/conf.d
-    print_success "Directories created"
-}
-
 stop_existing() {
     print_info "Stopping existing containers..."
     docker compose $COMPOSE_FILES down 2>/dev/null || true
@@ -73,12 +68,12 @@ deploy_services() {
 }
 
 wait_for_services() {
-    print_info "Waiting for services to be healthy..."
+    print_info "Waiting for backend at $BACKEND_HEALTH_URL ..."
     
     max_attempts=30
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if curl -f http://localhost:3000 &> /dev/null; then
+        if curl -fsS "$BACKEND_HEALTH_URL" &> /dev/null; then
             print_success "Backend is healthy"
             break
         fi
@@ -88,7 +83,8 @@ wait_for_services() {
     done
     
     if [ $attempt -eq $max_attempts ]; then
-        print_error "Backend failed to become healthy"
+        print_error "Backend failed to become healthy (no OK response from $BACKEND_HEALTH_URL)"
+        print_info "Check logs: docker compose $COMPOSE_FILES logs --tail=80 backend"
         return 1
     fi
     
@@ -103,19 +99,6 @@ run_migrations() {
     print_success "Database migrations completed"
 }
 
-configure_nginx() {
-    print_info "Configuring Nginx..."
-    
-    if [ ! -f nginx/nginx.conf ]; then
-        print_error "nginx/nginx.conf not found!"
-        return 1
-    fi
-    
-    docker compose $COMPOSE_FILES up -d nginx
-    
-    print_success "Nginx configured and started"
-}
-
 display_summary() {
     echo ""
     echo "====================================="
@@ -124,16 +107,27 @@ display_summary() {
     echo ""
     print_success "Ding Platform has been deployed successfully!"
     echo ""
+    print_info "Nginx should run on the host server (not Docker)."
+    print_info "If your public IP is unknown, run: curl -s ipv4.icanhazip.com"
+    echo ""
     echo "Access your application at:"
-    echo "  Backend:   http://localhost:3000"
-    echo "  Frontend:  http://localhost"
-    echo "  Prisma:    http://localhost:5555"
+    echo "  Backend API (direct):   http://localhost:3000"
+    echo "  Frontend (via Nginx):   http://$SERVER_IP"
+    echo "  API via Nginx:          http://$SERVER_IP/api"
     echo ""
     echo "Useful commands:"
     echo "  View logs:       ./scripts/logs.sh"
+    echo "  Deploy frontend: ./scripts/deploy-frontend.sh"
+    echo "  Backend + static: DEPLOY_FRONTEND=1 ./scripts/deploy.sh"
     echo "  Stop services:   docker compose $COMPOSE_FILES down"
     echo "  Restart:         docker compose $COMPOSE_FILES restart"
     echo "  View status:     docker compose $COMPOSE_FILES ps"
+    echo ""
+    echo "Host Nginx setup:"
+    echo "  Frontend root:   /var/www/ding-frontend"
+    echo "  Nginx config:    /etc/nginx/conf.d/ding.conf"
+    echo "  Config template: ./nginx/ding.conf"
+    echo "  Reload Nginx:    sudo nginx -t && sudo systemctl reload nginx"
     echo ""
 }
 
@@ -141,9 +135,6 @@ main() {
     echo ""
     check_docker
     check_docker_compose
-    echo ""
-    
-    create_directories
     echo ""
     
     stop_existing
@@ -157,8 +148,14 @@ main() {
     
     run_migrations
     echo ""
-    
-    configure_nginx
+
+    if [ "${DEPLOY_FRONTEND:-0}" = "1" ]; then
+        print_info "DEPLOY_FRONTEND=1 — publishing static frontend..."
+        "$(dirname "$0")/deploy-frontend.sh"
+        echo ""
+    fi
+
+    get_server_ip
     echo ""
     
     display_summary
