@@ -2,6 +2,7 @@ import pino from 'pino';
 import * as fs from 'fs';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import { Writable } from 'stream';
 import { ConfigService } from '@nestjs/config';
 import { Module, Global } from '@nestjs/common';
 import { createWriteStream } from 'pino-sentry';
@@ -14,6 +15,50 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
       providers: [ConfigService],
       inject: [ConfigService],
       useFactory: (config: ConfigService): any => {
+        const createSafeStream = (
+          stream: NodeJS.WritableStream,
+          streamName: string,
+        ): Writable =>
+          new Writable({
+            write(chunk, encoding, callback) {
+              if (chunk === undefined || chunk === null) {
+                // Defensive guard: never let invalid log chunks crash the process.
+                console.warn(
+                  `[logger] Dropped invalid chunk from ${streamName}: ${String(chunk)}`,
+                );
+                callback();
+                return;
+              }
+
+              let safeChunk: string | Buffer | Uint8Array;
+
+              if (
+                typeof chunk === 'string' ||
+                Buffer.isBuffer(chunk) ||
+                chunk instanceof Uint8Array
+              ) {
+                safeChunk = chunk;
+              } else {
+                try {
+                  safeChunk = `${JSON.stringify(chunk)}\n`;
+                } catch {
+                  safeChunk = `${String(chunk)}\n`;
+                }
+              }
+
+              try {
+                (stream as any).write(safeChunk, encoding);
+                callback();
+              } catch (error) {
+                console.error(
+                  `[logger] Failed writing to ${streamName} stream:`,
+                  error,
+                );
+                callback();
+              }
+            },
+          });
+
         // Check both ConfigService and process.env for environment detection
         const nodeEnv = config.get('NODE_ENV') || process.env.NODE_ENV || 'development';
         const isProduction = nodeEnv === 'production';
@@ -72,13 +117,20 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
         }
 
         // Production configuration with multistream
-        const streams: any[] = [{ stream: process.stdout }];
+        const streams: any[] = [
+          {
+            stream: createSafeStream(process.stdout, 'stdout'),
+          },
+        ];
 
         // Add file logging if logs directory exists
         const logDir = path.join(process.cwd(), 'logs');
         if (fs.existsSync(logDir)) {
           streams.push({
-            stream: fs.createWriteStream(path.join(logDir, 'logs.out')),
+            stream: createSafeStream(
+              fs.createWriteStream(path.join(logDir, 'logs.out')),
+              'file',
+            ),
           });
         }
 
@@ -87,12 +139,15 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
         if (sentryDsn) {
           try {
             streams.push({
-              stream: createWriteStream({
-                sentry: {
-                  dsn: sentryDsn,
-                },
-                serverName: config.get('SERVER_NAME'),
-              } as any),
+              stream: createSafeStream(
+                createWriteStream({
+                  sentry: {
+                    dsn: sentryDsn,
+                  },
+                  serverName: config.get('SERVER_NAME'),
+                } as any),
+                'sentry',
+              ),
             });
           } catch (error) {
             // Silently fail if Sentry stream creation fails
