@@ -19,7 +19,7 @@ export const TOKEN_CONSTANTS = {
 
   // Cookie Configuration
   COOKIE: {
-    REFRESH_TOKEN_NAME: 'refreshToken',
+    SESSION_ID_NAME: 'sessionId',
     // No MAX_AGE - persistent cookie (no expiration)
     PATH: '/',
     HTTP_ONLY: true,
@@ -37,6 +37,8 @@ export const TOKEN_CONSTANTS = {
   // Session Configuration
   SESSION: {
     MAX_ACTIVE_SESSIONS: 5, // Maximum active sessions per user
+    // Session refresh TTL (matches old refresh token lifetime)
+    REFRESH_TTL_MS: 7 * 24 * 60 * 60 * 1000,
     CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   },
 

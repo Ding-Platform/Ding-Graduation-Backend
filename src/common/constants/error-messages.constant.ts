@@ -8,6 +8,8 @@ export const ERROR_MESSAGES = {
   LOGOUT_FAILED: 'Failed to logout. Please try again',
   INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
   REFRESH_TOKEN_REQUIRED: 'Refresh token is required',
+  SESSION_ID_REQUIRED: 'Session id is required',
+  INVALID_SESSION: 'Invalid or expired session',
   SESSION_EXPIRED: 'Your session has expired. Please login again',
   TOKEN_REFRESH_FAILED: 'Failed to refresh token. Please try again',
 

@@ -190,7 +190,7 @@ async function seedDirectRooms(userIds: string[]): Promise<void> {
   }
 
   const roomsToCreate = Math.min(
-    50,
+    10,
     Math.floor((userIds.length * (userIds.length - 1)) / 4),
   );
   const createdPairs = new Set<string>();
@@ -255,7 +255,7 @@ async function seedDirectRooms(userIds: string[]): Promise<void> {
       roomId,
       [user1, user2],
       roomCreatedAt,
-      Math.floor(Math.random() * 20) + 5,
+      Math.floor(Math.random() * 8) + 3,
     );
 
     if ((i + 1) % 10 === 0) {
@@ -274,7 +274,7 @@ async function seedGroupRooms(userIds: string[]): Promise<void> {
     return;
   }
 
-  const groupsToCreate = Math.min(20, Math.floor(userIds.length / 5));
+  const groupsToCreate = Math.min(5, Math.floor(userIds.length / 5));
 
   for (let i = 0; i < groupsToCreate; i++) {
     const memberCount = Math.floor(Math.random() * 15) + 3; // 3-17 members
@@ -321,7 +321,7 @@ async function seedGroupRooms(userIds: string[]): Promise<void> {
       roomId,
       members,
       roomCreatedAt,
-      Math.floor(Math.random() * 50) + 20,
+      Math.floor(Math.random() * 11) + 5,
     );
 
     if ((i + 1) % 5 === 0) {
@@ -595,7 +595,7 @@ async function main() {
     console.log('📡 Fetching users from PostgreSQL...');
     const users = await prisma.user.findMany({
       select: { id: true, email: true },
-      take: 200, // Limit to 200 users for chat seeding
+      take: 50, // Limit to 50 users for chat seeding
     });
 
     if (users.length === 0) {

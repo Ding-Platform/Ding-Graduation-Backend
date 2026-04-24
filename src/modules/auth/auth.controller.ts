@@ -25,8 +25,8 @@ import { VerifyEmailRequest } from './dtos/request/verify-email.request';
 import { ResendVerificationRequest } from './dtos/request/resend-verification.request';
 import { ResendForgotPasswordRequest } from './dtos/request/resend-forgot-password.request';
 import { LocalAuthGuard } from '../../common/guards/strategy.guards/local.guard';
-import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
-import { RefreshToken } from '../../common/decorators/refresh-token.decorator';
+import { SessionIdGuard } from '../../common/guards/refresh-token.guard';
+import { SessionId } from '../../common/decorators/refresh-token.decorator';
 import { Serialize } from '../../common/interceptors/serialize.interceptor';
 import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.guard';
 import { currentUser } from '../../common/decorators/currentUser.decorator';
@@ -94,15 +94,15 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @UseGuards(RefreshTokenGuard)
+  @UseGuards(SessionIdGuard)
   @Serialize(RefreshTokenResponse)
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @RefreshToken() refreshToken: string,
+    @SessionId() sessionId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
     return await this.authService.refreshTokensWithCookie(
-      refreshToken,
+      sessionId,
       response,
     );
   }

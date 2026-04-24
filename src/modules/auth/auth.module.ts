@@ -11,7 +11,7 @@ import { AuthService } from './auth.service';
 import { SessionModule } from '../session/session.module';
 import { LocalStrategy } from '../../common/strategies/local.strategy';
 import { JwtStrategy } from '../../common/strategies/jwt.strategy';
-import { RefreshTokenGuard } from '../../common/guards/refresh-token.guard';
+import { SessionIdGuard } from '../../common/guards/refresh-token.guard';
 import { TOKEN_CONSTANTS } from '../../common/constants';
 
 @Module({
@@ -42,7 +42,7 @@ import { TOKEN_CONSTANTS } from '../../common/constants';
     SessionModule,
     EmailModule,
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, RefreshTokenGuard],
+  providers: [AuthService, LocalStrategy, JwtStrategy, SessionIdGuard],
   controllers: [AuthController],
 })
 export class AuthModule {}

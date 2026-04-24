@@ -12,13 +12,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { APP_CONSTANTS } from './common/constants';
 // Global filters and pipes are set up in AppModule
 import * as path from 'path';
+import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 
 function initializeLogging() {
-  // Skip file logging in serverless environments (Vercel, AWS Lambda, etc.)
-  if (process.env.VERCEL === '1') {
-    return;
-  }
-
   const logDir = 'logs';
   try {
     if (!existsSync(logDir)) {
@@ -28,16 +24,33 @@ function initializeLogging() {
       });
     }
   } catch (error) {
-    // Silently fail in environments where filesystem is read-only
-    console.warn('Could not initialize file logging:', error.message);
+    console.warn('Could not initialize file logging:', (error as Error).message);
   }
 }
 
+/**
+ * CORS origins from CORS_ORIGINS or FRONTEND_URLS (comma-separated).
+ * Use "*" to allow any origin (reflect request origin), same as cors `origin: true`.
+ */
+function getCorsOrigin(): CorsOptions['origin'] {
+  const raw = process.env.CORS_ORIGINS ?? process.env.FRONTEND_URLS;
+  if (!raw || raw.trim() === '*') {
+    return true;
+  }
+  const list = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (list.length === 0) {
+    return true;
+  }
+  return list.length === 1 ? list[0] : list;
+}
+
 function setupMiddlewares(app: NestExpressApplication) {
-  // Setup JSON parsing for all routes
   app.use(json());
   app.use(compression());
-  app.use(cookieParser()); // Enable cookie parsing for HttpOnly cookies
+  app.use(cookieParser());
   app.use(
     helmet({
       contentSecurityPolicy: false,
@@ -53,35 +66,23 @@ function setupRateLimiter(app: NestExpressApplication) {
 }
 
 function setupStaticFileServing(app: NestExpressApplication) {
-  // Skip static file serving setup in serverless environments (Vercel)
-  // In serverless, files should be served via cloud storage (S3, Cloudinary, etc.)
-  if (process.env.VERCEL === '1') {
-    console.log('Static file serving skipped in serverless environment');
-    return;
-  }
-
-  // Get upload directory from environment or use default
   const uploadDir = get('UPLOAD_DIR').default('./uploads').asString();
   const uploadPath = path.resolve(uploadDir);
 
-  // Ensure upload directory exists
   try {
     if (!existsSync(uploadPath)) {
       mkdirSync(uploadPath, { recursive: true });
     }
 
-    // Serve static files from uploads directory
     app.use('/uploads', staticMiddleware(uploadPath));
     console.log(`Static file serving enabled for: ${uploadPath}`);
   } catch (error) {
-    // Silently fail in environments where filesystem is read-only
-    console.warn('Could not setup static file serving:', error.message);
+    console.warn('Could not setup static file serving:', (error as Error).message);
   }
 }
 
-function setupGlobalFilters(app: NestExpressApplication) {
+function setupGlobalFilters(_app: NestExpressApplication) {
   // Global filters are set up in AppModule with proper dependency injection
-  // Global validation pipe is also set up in AppModule
 }
 
 function setupSwagger(app: NestExpressApplication) {
@@ -110,19 +111,14 @@ function setupSwagger(app: NestExpressApplication) {
   });
 }
 
-let cachedApp: NestExpressApplication;
-
-async function bootstrap(): Promise<NestExpressApplication> {
-  if (cachedApp) {
-    return cachedApp;
-  }
-
+async function bootstrap(): Promise<void> {
   if (get('NODE_ENV').asString() === 'production') initializeLogging();
 
+  const corsOrigin = getCorsOrigin();
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: {
-      origin: true, // Allow all origins - useful for testing with dynamic IPs
-      credentials: true, // Enable cookies/credentials
+      origin: corsOrigin,
+      credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
       exposedHeaders: ['Set-Cookie'],
@@ -137,36 +133,23 @@ async function bootstrap(): Promise<NestExpressApplication> {
 
   setupRateLimiter(app);
 
-  // Initialize the app (without calling listen) for serverless
   await app.init();
 
-  // Only listen in non-serverless environments
-  if (process.env.VERCEL !== '1') {
-    const port = get('PORT').default('3000').asString();
-    const host = get('HOST').default('0.0.0.0').asString(); // Allow network access
-    await app.listen(port, host);
-    console.log(`Application is running on: http://localhost:${port}`);
-    console.log(`Network access enabled on host: ${host}`);
-    console.log(`CORS: Open to all origins (testing mode)`);
-    console.log(
-      `Swagger documentation available at: http://localhost:${port}/${APP_CONSTANTS.API.DOCS_PATH}`,
-    );
-  }
-
-  cachedApp = app;
-  return app;
+  const port = get('PORT').default('3000').asString();
+  const host = get('HOST').default('0.0.0.0').asString();
+  await app.listen(port, host);
+  console.log(`Application is running on: http://localhost:${port}`);
+  console.log(`Network access enabled on host: ${host}`);
+  const corsLabel =
+    corsOrigin === true
+      ? 'all origins (reflect)'
+      : Array.isArray(corsOrigin)
+        ? corsOrigin.join(', ')
+        : String(corsOrigin);
+  console.log(`CORS allowed origins: ${corsLabel}`);
+  console.log(
+    `Swagger documentation available at: http://localhost:${port}/${APP_CONSTANTS.API.DOCS_PATH}`,
+  );
 }
 
-// For Vercel serverless functions
-if (process.env.VERCEL === '1') {
-  // Export the handler for Vercel
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  module.exports = async (req: any, res: any) => {
-    const app = await bootstrap();
-    const expressApp = app.getHttpAdapter().getInstance() as any;
-    expressApp(req, res);
-  };
-} else {
-  // For local development and other environments
-  bootstrap();
-}
+bootstrap();

@@ -212,10 +212,6 @@ The easiest way to deploy is using Render with the included blueprint:
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
-### Vercel (Serverless)
-
-The application also supports Vercel deployment (see `vercel.json`).
-
 ## 🔧 Environment Variables
 
 Key environment variables (see `.env.example` for complete list):

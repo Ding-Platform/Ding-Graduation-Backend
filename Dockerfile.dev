@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Copy Prisma schema (needed for postinstall script)
+COPY prisma ./prisma
+
+# Install dependencies (postinstall will run prisma generate)
+RUN pnpm install
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Start in development mode with hot reloading
+CMD ["pnpm", "run", "start:dev"]
