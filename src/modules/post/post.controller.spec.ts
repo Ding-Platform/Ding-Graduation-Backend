@@ -46,8 +46,8 @@ describe('PostController', () => {
       const result = [{ id: '1', content: 'Test post' }];
       mockPostService.getAllPosts.mockResolvedValue(result);
 
-      expect(await controller.getAllPosts('user1')).toBe(result);
-      expect(service.getAllPosts).toHaveBeenCalledWith('user1');
+      expect(await controller.getAllPosts(1, 20, 'user1')).toBe(result);
+      expect(service.getAllPosts).toHaveBeenCalledWith('user1', 1, 20);
     });
   });
 
