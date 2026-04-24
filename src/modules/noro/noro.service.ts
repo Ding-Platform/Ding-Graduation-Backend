@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
+import {
+  CrisisIntervention,
+  CrisisSeverity,
+  NoroMessageRole,
+  NoroTrigger,
+} from '@prisma/client';
 
 @Injectable()
 export class NoroService {
@@ -84,6 +90,181 @@ export class NoroService {
     });
   }
 
+  async createConversation(userId: string, trigger: NoroTrigger = 'USER_INITIATED') {
+    return this.prisma.noroConversation.create({
+      data: {
+        userId,
+        trigger,
+      },
+    });
+  }
+
+  async addMessage(payload: {
+    conversationId: string;
+    userId: string;
+    role: NoroMessageRole;
+    content: string;
+  }) {
+    const message = await this.prisma.noroMessage.create({
+      data: {
+        conversationId: payload.conversationId,
+        userId: payload.userId,
+        role: payload.role,
+        content: payload.content,
+      },
+    });
+
+    if (payload.role === 'USER') {
+      const sentiment = this.estimateSentiment(payload.content);
+      await this.prisma.noroMessage.update({
+        where: { id: message.id },
+        data: {
+          sentiment,
+          keywords: sentiment.keywords,
+        },
+      });
+      await this.updateMoodProfile(
+        payload.userId,
+        sentiment.score,
+        payload.conversationId,
+      );
+      await this.maybeCreateCrisisEvent(payload.userId, message.id, payload.content);
+    }
+
+    return this.prisma.noroMessage.findUnique({
+      where: { id: message.id },
+    });
+  }
+
+  async listConversations(userId: string, cursor?: string, limit = 20) {
+    const cursorDate = this.decodeCursor(cursor);
+    const safeLimit = Math.min(Math.max(limit, 1), 50);
+
+    const rows = await this.prisma.noroConversation.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        ...(cursorDate ? { startedAt: { lt: cursorDate } } : {}),
+      },
+      orderBy: { startedAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = rows.length > safeLimit;
+    const data = hasMore ? rows.slice(0, safeLimit) : rows;
+    const nextCursor = hasMore
+      ? this.encodeCursor(data[data.length - 1].startedAt)
+      : null;
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  async getConversationMessages(
+    userId: string,
+    conversationId: string,
+    cursor?: string,
+    limit = 20,
+  ) {
+    const conversation = await this.prisma.noroConversation.findFirst({
+      where: {
+        id: conversationId,
+        userId,
+        deletedAt: null,
+      },
+    });
+
+    if (!conversation) {
+      return { data: [], nextCursor: null, hasMore: false };
+    }
+
+    const cursorDate = this.decodeCursor(cursor);
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+
+    const rows = await this.prisma.noroMessage.findMany({
+      where: {
+        conversationId,
+        deletedAt: null,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = rows.length > safeLimit;
+    const data = hasMore ? rows.slice(0, safeLimit) : rows;
+    const nextCursor = hasMore
+      ? this.encodeCursor(data[data.length - 1].createdAt)
+      : null;
+
+    return {
+      data,
+      nextCursor,
+      hasMore,
+    };
+  }
+
+  async softDeleteConversation(userId: string, conversationId: string) {
+    await this.prisma.noroConversation.updateMany({
+      where: {
+        id: conversationId,
+        userId,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
+
+  async reportCrisis(payload: {
+    userId: string;
+    messageId?: string;
+    crisisScore: number;
+    keywords: string[];
+  }) {
+    return this.prisma.crisisEvent.create({
+      data: {
+        userId: payload.userId,
+        messageId: payload.messageId,
+        crisisScore: payload.crisisScore,
+        keywordsHit: payload.keywords,
+        severity: this.mapSeverity(payload.crisisScore),
+        intervention: this.mapIntervention(payload.crisisScore),
+      },
+    });
+  }
+
+  async getHotlines(countryCode: string, language = 'en') {
+    const normalizedCountry = (countryCode || '').trim().toUpperCase();
+    if (!normalizedCountry || normalizedCountry.length !== 2) {
+      return [];
+    }
+    return this.prisma.crisisHotline.findMany({
+      where: {
+        isActive: true,
+        countryCode: normalizedCountry,
+        OR: [{ language }, { language: 'en' }],
+      },
+      orderBy: [{ language: 'desc' }, { name: 'asc' }],
+    });
+  }
+
+  async logIntervention(userId: string, crisisEventId: string, type: string) {
+    await this.prisma.crisisEvent.updateMany({
+      where: {
+        id: crisisEventId,
+        userId,
+      },
+      data: {
+        intervention: type === 'hotline_response' ? 'HOTLINE' : 'SOFT',
+      },
+    });
+  }
+
   async transcribe(file: Express.Multer.File) {
     // Mock STT
     return { text: 'This is a simulated transcription of the uploaded audio.' };
@@ -92,5 +273,119 @@ export class NoroService {
   async speak(text: string) {
     // Mock TTS
     return { audioUrl: 'https://example.com/noro-speech.mp3' };
+  }
+
+  private encodeCursor(date: Date) {
+    return Buffer.from(date.toISOString()).toString('base64');
+  }
+
+  private decodeCursor(cursor?: string): Date | null {
+    if (!cursor) {
+      return null;
+    }
+
+    try {
+      const raw = Buffer.from(cursor, 'base64').toString('utf8');
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) {
+        return null;
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private estimateSentiment(content: string) {
+    const lower = content.toLowerCase();
+    const positiveWords = ['good', 'great', 'happy', 'better', 'love', 'thanks'];
+    const negativeWords = ['sad', 'depressed', 'anxious', 'hurt', 'alone', 'bad'];
+    const crisisWords = ['suicide', 'kill myself', 'end my life', 'self harm', 'hopeless'];
+    const words = lower.split(/\s+/).filter(Boolean);
+
+    const positiveHits = positiveWords.filter((word) => lower.includes(word)).length;
+    const negativeHits = negativeWords.filter((word) => lower.includes(word)).length;
+    const crisisHits = crisisWords.filter((word) => lower.includes(word)).length;
+
+    const rawScore = positiveHits - negativeHits - crisisHits * 2;
+    const normalized = Math.max(-1, Math.min(1, rawScore / 4));
+    const label = normalized > 0.2 ? 'positive' : normalized < -0.2 ? 'negative' : 'neutral';
+
+    return {
+      score: normalized,
+      label,
+      keywords: words
+        .filter((word) => word.length > 3)
+        .slice(0, 10),
+    };
+  }
+
+  private async updateMoodProfile(userId: string, sentimentScore: number, conversationId: string) {
+    const existing = await this.prisma.userMoodProfile.findUnique({
+      where: { userId },
+    });
+
+    const latestMoodScore = this.normalizeMoodScore(sentimentScore);
+    const moodScore = existing?.moodScore
+      ? Number((0.3 * latestMoodScore + 0.7 * Number(existing.moodScore)).toFixed(2))
+      : latestMoodScore;
+    const energyLevel = Number(Math.max(1, Math.min(10, moodScore + 0.5)).toFixed(2));
+    const dominantMood =
+      moodScore >= 6.8 ? 'happy' : moodScore <= 4 ? 'sad' : moodScore <= 5.5 ? 'anxious' : 'neutral';
+
+    await this.prisma.userMoodProfile.upsert({
+      where: { userId },
+      update: {
+        moodScore,
+        energyLevel,
+        dominantMood,
+        sourceConvId: conversationId,
+        lastUpdated: new Date(),
+      },
+      create: {
+        userId,
+        moodScore,
+        energyLevel,
+        dominantMood,
+        sourceConvId: conversationId,
+      },
+    });
+  }
+
+  private normalizeMoodScore(sentimentScore: number) {
+    return Number((5.5 + sentimentScore * 3.5).toFixed(2));
+  }
+
+  private async maybeCreateCrisisEvent(userId: string, messageId: string, content: string) {
+    const lower = content.toLowerCase();
+    const keywords = ['suicide', 'kill myself', 'end my life', 'self harm', 'i want to die'];
+    const hits = keywords.filter((keyword) => lower.includes(keyword));
+    if (!hits.length) {
+      return null;
+    }
+
+    const crisisScore = Number(Math.min(0.95, 0.45 + hits.length * 0.18).toFixed(4));
+    return this.prisma.crisisEvent.create({
+      data: {
+        userId,
+        messageId,
+        crisisScore,
+        severity: this.mapSeverity(crisisScore),
+        intervention: this.mapIntervention(crisisScore),
+        keywordsHit: hits,
+      },
+    });
+  }
+
+  private mapSeverity(score: number): CrisisSeverity {
+    if (score > 0.7) return 'HIGH';
+    if (score >= 0.4) return 'MEDIUM';
+    return 'LOW';
+  }
+
+  private mapIntervention(score: number): CrisisIntervention {
+    if (score > 0.7) return 'HOTLINE';
+    if (score >= 0.4) return 'SOFT';
+    return 'NONE';
   }
 }

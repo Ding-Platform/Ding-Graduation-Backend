@@ -891,6 +891,206 @@ async function syncAllPostsToNeo4jFromPrisma() {
   }
 }
 
+async function seedSprint1617ReferenceData(userIds: string[]) {
+  console.log('🌱 Seeding Sprint 16-17 reference data...');
+
+  await prisma.crisisHotline.createMany({
+    data: [
+      {
+        countryCode: 'US',
+        name: '988 Suicide & Crisis Lifeline',
+        phone: '988',
+        chatUrl: 'https://988lifeline.org/chat/',
+        language: 'en',
+      },
+      {
+        countryCode: 'GB',
+        name: 'Samaritans',
+        phone: '116123',
+        chatUrl: 'https://www.samaritans.org/talk-to-us/webchat/',
+        language: 'en',
+      },
+      {
+        countryCode: 'EG',
+        name: 'Behman Hospital Crisis Line',
+        phone: '+20224512833',
+        language: 'ar',
+      },
+    ],
+  });
+
+  await prisma.audioTrack.createMany({
+    data: [
+      {
+        title: 'Sunrise Motion',
+        artist: 'Ding Originals',
+        durationSec: 32,
+        audioUrl: 'https://cdn.ding.local/audio/sunrise-motion.mp3',
+        genre: 'pop',
+        isLicensed: true,
+        usageCount: 42,
+      },
+      {
+        title: 'Night Drive',
+        artist: 'Ding Originals',
+        durationSec: 48,
+        audioUrl: 'https://cdn.ding.local/audio/night-drive.mp3',
+        genre: 'electronic',
+        isLicensed: true,
+        usageCount: 31,
+      },
+      {
+        title: 'Calm Focus',
+        artist: 'Ding Wellness',
+        durationSec: 55,
+        audioUrl: 'https://cdn.ding.local/audio/calm-focus.mp3',
+        genre: 'ambient',
+        isLicensed: true,
+        usageCount: 27,
+      },
+    ],
+  });
+
+  if (!userIds.length) {
+    console.log('⚠️  No users available for Sprint 16-17 sample data\n');
+    return;
+  }
+
+  const primaryUserId = userIds[0];
+  const secondaryUserId = userIds[1] || userIds[0];
+  const firstTrack = await prisma.audioTrack.findFirst({
+    orderBy: { usageCount: 'desc' },
+  });
+
+  const conversation = await prisma.noroConversation.create({
+    data: {
+      userId: primaryUserId,
+      trigger: 'USER_INITIATED',
+      moodScore: 5,
+    },
+  });
+
+  const userMessage = await prisma.noroMessage.create({
+    data: {
+      conversationId: conversation.id,
+      userId: primaryUserId,
+      role: 'USER',
+      content: 'I feel a bit anxious and alone today.',
+      sentiment: { score: -0.45, label: 'negative' },
+      keywords: ['anxious', 'alone', 'today'],
+    },
+  });
+
+  await prisma.noroMessage.create({
+    data: {
+      conversationId: conversation.id,
+      userId: primaryUserId,
+      role: 'ASSISTANT',
+      content: 'I hear you. Let us do a short breathing check-in together.',
+      sentiment: { score: 0.2, label: 'supportive' },
+      keywords: ['breathing', 'check-in'],
+    },
+  });
+
+  await prisma.userMoodProfile.create({
+    data: {
+      userId: primaryUserId,
+      moodScore: 4.8,
+      energyLevel: 4.2,
+      dominantMood: 'anxious',
+      sourceConvId: conversation.id,
+    },
+  });
+
+  await prisma.crisisEvent.create({
+    data: {
+      userId: primaryUserId,
+      messageId: userMessage.id,
+      crisisScore: 0.52,
+      severity: 'MEDIUM',
+      intervention: 'SOFT',
+      keywordsHit: ['anxious', 'alone'],
+    },
+  });
+
+  const reel = await prisma.reel.create({
+    data: {
+      userId: primaryUserId,
+      status: 'READY',
+      caption: 'Morning reset routine and calm vibes',
+      hashtags: ['wellbeing', 'routine', 'focus'],
+      audioTrackId: firstTrack?.id,
+      audioOffsetMs: 500,
+      durationSec: 28,
+      width: 1080,
+      height: 1920,
+      videoUrl: 'https://cdn.ding.local/reels/sample/video.mp4',
+      thumbnailUrl: 'https://cdn.ding.local/reels/sample/thumb.jpg',
+      viewsCount: 1,
+      likesCount: 1,
+      commentsCount: 1,
+      sharesCount: 1,
+      isPublic: true,
+    },
+  });
+
+  await prisma.reelView.create({
+    data: {
+      reelId: reel.id,
+      viewerId: secondaryUserId,
+      sessionId: 'seed-session-1',
+      watchPct: 92,
+    },
+  });
+
+  await prisma.reelLike.create({
+    data: {
+      reelId: reel.id,
+      userId: secondaryUserId,
+    },
+  });
+
+  await prisma.reelComment.create({
+    data: {
+      reelId: reel.id,
+      userId: secondaryUserId,
+      content: 'This is exactly what I needed today.',
+      likesCount: 2,
+    },
+  });
+
+  await prisma.reelShare.create({
+    data: {
+      reelId: reel.id,
+      sharerId: secondaryUserId,
+      shareType: 'DM',
+      targetId: primaryUserId,
+    },
+  });
+
+  await prisma.callRoom.create({
+    data: {
+      id: 'seed-room-16',
+      createdById: primaryUserId,
+      maxParticipants: 16,
+      participants: {
+        create: [
+          {
+            userId: primaryUserId,
+            peerId: 'seed-peer-1',
+          },
+          {
+            userId: secondaryUserId,
+            peerId: 'seed-peer-2',
+          },
+        ],
+      },
+    },
+  });
+
+  console.log('✅ Sprint 16-17 reference data seeded\n');
+}
+
 async function clearNeo4j() {
   const session = neo4jDriver.session();
   try {
@@ -1061,6 +1261,8 @@ async function main() {
         await devSession.close();
       }
     }
+
+    await seedSprint1617ReferenceData(allUserIds);
 
     console.log('✨ Seed completed successfully!\n');
   } catch (error) {
