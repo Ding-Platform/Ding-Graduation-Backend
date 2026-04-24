@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
 
@@ -13,7 +13,7 @@ type ParticipantState = {
 };
 
 @Injectable()
-export class CallService {
+export class CallService implements OnModuleDestroy {
   private logger = new Logger('CallService');
   private readonly ROOM_TTL_SECONDS = 3600;
   private readonly SILENCE_THRESHOLD = 10;
@@ -24,6 +24,15 @@ export class CallService {
     private readonly prisma: DatabaseService,
     private readonly redisService: RedisService,
   ) {}
+
+  /** Called by NestJS on shutdown — clears all pending debounce timers. */
+  onModuleDestroy() {
+    for (const timer of this.speakerTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.speakerTimers.clear();
+    this.activeSpeaker.clear();
+  }
 
   private participantsKey(roomId: string) {
     return `room:${roomId}:participants`;
@@ -190,6 +199,16 @@ export class CallService {
       }, 500);
       this.speakerTimers.set(roomId, timer);
     });
+  }
+
+  /** Called by the gateway when a peer leaves so stale entries are pruned. */
+  clearActiveSpeaker(roomId: string) {
+    this.activeSpeaker.delete(roomId);
+    const timer = this.speakerTimers.get(roomId);
+    if (timer) {
+      clearTimeout(timer);
+      this.speakerTimers.delete(roomId);
+    }
   }
 
   async reportBandwidth(
