@@ -32,6 +32,10 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Call Client disconnected: ${client.id}`);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Group call / participant management
+  // ─────────────────────────────────────────────────────────────────────────
+
   @SubscribeMessage('join_room')
   async handleJoinRoom(
     @MessageBody()
@@ -44,29 +48,34 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.callService.joinRoomParticipant(data);
+    try {
+      const result = await this.callService.joinRoomParticipant(data);
 
-    if (result.roomFull) {
-      client.emit('call_error', { code: 'ROOM_FULL' });
-      return;
+      if (result.roomFull) {
+        client.emit('call_error', { code: 'ROOM_FULL' });
+        return;
+      }
+
+      client.join(data.roomId);
+      client.emit('participant_joined', {
+        peerId: data.peerId,
+        userId: data.userId,
+        displayName: data.displayName,
+        avatarUrl: data.avatarUrl,
+        existingParticipants: result.participants,
+      });
+
+      client.to(data.roomId).emit('participant_joined', {
+        peerId: data.peerId,
+        userId: data.userId,
+        displayName: data.displayName,
+        avatarUrl: data.avatarUrl,
+        existingParticipants: [],
+      });
+    } catch (err) {
+      this.logger.error('join_room failed', err);
+      client.emit('call_error', { code: 'INTERNAL_ERROR' });
     }
-
-    client.join(data.roomId);
-    client.emit('participant_joined', {
-      peerId: data.peerId,
-      userId: data.userId,
-      displayName: data.displayName,
-      avatarUrl: data.avatarUrl,
-      existingParticipants: result.participants,
-    });
-
-    client.to(data.roomId).emit('participant_joined', {
-      peerId: data.peerId,
-      userId: data.userId,
-      displayName: data.displayName,
-      avatarUrl: data.avatarUrl,
-      existingParticipants: [],
-    });
   }
 
   @SubscribeMessage('leave_room')
@@ -74,12 +83,18 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: string; peerId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    await this.callService.leaveRoomParticipant(data.roomId, data.peerId);
-    await this.callService.stopScreenShare(data.roomId, data.peerId);
+    try {
+      await this.callService.leaveRoomParticipant(data.roomId, data.peerId);
+      await this.callService.stopScreenShare(data.roomId, data.peerId);
+      // Clean up active speaker tracking for this peer when they leave
+      this.callService.clearActiveSpeaker(data.roomId);
 
-    client.leave(data.roomId);
-    client.to(data.roomId).emit('participant_left', { peerId: data.peerId });
-    client.to(data.roomId).emit('peer_screen_share_stopped', { peerId: data.peerId });
+      client.leave(data.roomId);
+      client.to(data.roomId).emit('participant_left', { peerId: data.peerId });
+      client.to(data.roomId).emit('peer_screen_share_stopped', { peerId: data.peerId });
+    } catch (err) {
+      this.logger.error('leave_room failed', err);
+    }
   }
 
   @SubscribeMessage('media_state_changed')
@@ -93,29 +108,42 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
     @ConnectedSocket() client: Socket,
   ) {
-    await this.callService.setMediaState(data.roomId, data.peerId, data.audio, data.video);
-    client.to(data.roomId).emit('peer_media_state', {
-      peerId: data.peerId,
-      audio: data.audio,
-      video: data.video,
-    });
+    try {
+      await this.callService.setMediaState(data.roomId, data.peerId, data.audio, data.video);
+      client.to(data.roomId).emit('peer_media_state', {
+        peerId: data.peerId,
+        audio: data.audio,
+        video: data.video,
+      });
+    } catch (err) {
+      this.logger.error('media_state_changed failed', err);
+    }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Screen sharing
+  // ─────────────────────────────────────────────────────────────────────────
 
   @SubscribeMessage('screen_share_start')
   async handleScreenShareStart(
     @MessageBody() data: { roomId: string; peerId: string; sdp: any },
     @ConnectedSocket() client: Socket,
   ) {
-    const started = await this.callService.tryStartScreenShare(data.roomId, data.peerId);
-    if (!started) {
-      client.emit('call_error', { code: 'SCREEN_SHARE_IN_PROGRESS' });
-      return;
-    }
+    try {
+      const started = await this.callService.tryStartScreenShare(data.roomId, data.peerId);
+      if (!started) {
+        client.emit('call_error', { code: 'SCREEN_SHARE_IN_PROGRESS' });
+        return;
+      }
 
-    client.to(data.roomId).emit('peer_screen_share_started', {
-      peerId: data.peerId,
-      sdp: data.sdp,
-    });
+      client.to(data.roomId).emit('peer_screen_share_started', {
+        peerId: data.peerId,
+        sdp: data.sdp,
+      });
+    } catch (err) {
+      this.logger.error('screen_share_start failed', err);
+      client.emit('call_error', { code: 'INTERNAL_ERROR' });
+    }
   }
 
   @SubscribeMessage('screen_share_stop')
@@ -123,30 +151,42 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { roomId: string; peerId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const stopped = await this.callService.stopScreenShare(data.roomId, data.peerId);
-    if (!stopped) {
-      return;
-    }
+    try {
+      const stopped = await this.callService.stopScreenShare(data.roomId, data.peerId);
+      if (!stopped) {
+        return;
+      }
 
-    client.to(data.roomId).emit('peer_screen_share_stopped', {
-      peerId: data.peerId,
-    });
+      client.to(data.roomId).emit('peer_screen_share_stopped', {
+        peerId: data.peerId,
+      });
+    } catch (err) {
+      this.logger.error('screen_share_stop failed', err);
+    }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Active speaker + bandwidth
+  // ─────────────────────────────────────────────────────────────────────────
 
   @SubscribeMessage('audio_level_report')
   async handleAudioLevelReport(
     @MessageBody() data: { roomId: string; peerId: string; level: number },
   ) {
-    const activeSpeaker = await this.callService.reportAudioLevel(
-      data.roomId,
-      data.peerId,
-      data.level,
-    );
-    if (!activeSpeaker) {
-      return;
-    }
+    try {
+      const activeSpeaker = await this.callService.reportAudioLevel(
+        data.roomId,
+        data.peerId,
+        data.level,
+      );
+      if (!activeSpeaker) {
+        return;
+      }
 
-    this.server.to(data.roomId).emit('active_speaker', { peerId: activeSpeaker });
+      this.server.to(data.roomId).emit('active_speaker', { peerId: activeSpeaker });
+    } catch (err) {
+      this.logger.error('audio_level_report failed', err);
+    }
   }
 
   @SubscribeMessage('bandwidth_report')
@@ -163,18 +203,24 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
     },
   ) {
-    await this.callService.reportBandwidth(data.roomId, data.peerId, data.stats);
+    try {
+      await this.callService.reportBandwidth(data.roomId, data.peerId, data.stats);
+    } catch (err) {
+      this.logger.error('bandwidth_report failed', err);
+    }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Legacy 1:1 WebRTC signaling (SDP offer/answer/ICE)
+  // ─────────────────────────────────────────────────────────────────────────
+
   @SubscribeMessage('join-call')
-  async handleJoinCall(
+  handleJoinCall(
     @MessageBody() data: { roomId: string },
     @ConnectedSocket() client: Socket,
   ) {
     client.join(data.roomId);
     this.logger.log(`Client ${client.id} joined call room ${data.roomId}`);
-    // Notify others? Or just let them offer?
-    // client.to(data.roomId).emit('user-joined', { userId: client.id });
     return { event: 'joined-call', data: data.roomId };
   }
 
@@ -191,10 +237,9 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    // Broadcast to room (excluding sender)
     client.to(data.roomId).emit('offer', {
       offer: data.offer,
-      senderId: client.id, // Or user ID if authenticated
+      senderId: client.id,
     });
   }
 

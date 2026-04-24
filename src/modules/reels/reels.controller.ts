@@ -12,7 +12,16 @@ import {
 import { ShareType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../../common/decorators/user.decorator';
+import { currentUserType } from '../../common/types/current-user.type';
 import { ReelsService } from './reels.service';
+
+/** Parse a query-string number safely. Returns `fallback` if the value is
+ *  missing, NaN, or negative. */
+function safeInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
 @Controller('reels')
 export class ReelsController {
@@ -20,14 +29,14 @@ export class ReelsController {
 
   @Post('upload-url')
   @UseGuards(JwtAuthGuard)
-  async createUploadUrl(@User() user: any) {
+  async createUploadUrl(@User() user: currentUserType) {
     return this.reelsService.createUploadUrl(user.id);
   }
 
   @Post(':id/finalize')
   @UseGuards(JwtAuthGuard)
   async finalizeReel(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') id: string,
     @Body()
     body: {
@@ -54,11 +63,11 @@ export class ReelsController {
   @Get('feed')
   @UseGuards(JwtAuthGuard)
   async getFeed(
-    @User() user: any,
+    @User() user: currentUserType,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.reelsService.getFeed(user.id, cursor, limit ? Number(limit) : 10);
+    return this.reelsService.getFeed(user.id, cursor, safeInt(limit, 10));
   }
 
   @Get(':id')
@@ -69,7 +78,7 @@ export class ReelsController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   async updateReel(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') id: string,
     @Body()
     body: {
@@ -85,7 +94,7 @@ export class ReelsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async deleteReel(@User() user: any, @Param('id') id: string) {
+  async deleteReel(@User() user: currentUserType, @Param('id') id: string) {
     return this.reelsService.deleteReel(user.id, id);
   }
 
@@ -99,7 +108,7 @@ export class ReelsController {
 
   @Post(':id/like')
   @UseGuards(JwtAuthGuard)
-  async toggleLike(@User() user: any, @Param('id') id: string) {
+  async toggleLike(@User() user: currentUserType, @Param('id') id: string) {
     return this.reelsService.toggleLike(user.id, id);
   }
 
@@ -109,7 +118,7 @@ export class ReelsController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.reelsService.listComments(id, cursor, limit ? Number(limit) : 20);
+    return this.reelsService.listComments(id, cursor, safeInt(limit, 20));
   }
 
   @Get(':id/comments/:cid/replies')
@@ -122,7 +131,7 @@ export class ReelsController {
     return this.reelsService.listComments(
       id,
       cursor,
-      limit ? Number(limit) : 20,
+      safeInt(limit, 20),
       commentId,
     );
   }
@@ -130,7 +139,7 @@ export class ReelsController {
   @Post(':id/comments')
   @UseGuards(JwtAuthGuard)
   async addComment(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') id: string,
     @Body() body: { content: string; parentId?: string },
   ) {
@@ -140,7 +149,7 @@ export class ReelsController {
   @Delete(':id/comments/:cid')
   @UseGuards(JwtAuthGuard)
   async deleteComment(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') id: string,
     @Param('cid') cid: string,
   ) {
@@ -150,7 +159,7 @@ export class ReelsController {
   @Post(':id/share')
   @UseGuards(JwtAuthGuard)
   async shareReel(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') id: string,
     @Body() body: { shareType: ShareType; targetUserId?: string },
   ) {

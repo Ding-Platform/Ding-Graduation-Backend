@@ -15,6 +15,14 @@ import { NoroMessageRole, NoroTrigger } from '@prisma/client';
 import { NoroService } from './noro.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../../common/decorators/user.decorator';
+import { currentUserType } from '../../common/types/current-user.type';
+
+/** Parse a query-string number safely. Returns `fallback` if missing or NaN. */
+function safeInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
 
 @Controller('noro')
 @UseGuards(JwtAuthGuard)
@@ -22,18 +30,18 @@ export class NoroController {
   constructor(private readonly noroService: NoroService) {}
 
   @Post('chat')
-  async chat(@User() user: any, @Body('message') message: string) {
+  async chat(@User() user: currentUserType, @Body('message') message: string) {
     return this.noroService.chat(user.id, message);
   }
 
   @Get('history')
-  async getHistory(@User() user: any) {
+  async getHistory(@User() user: currentUserType) {
     return this.noroService.getHistory(user.id);
   }
 
   @Post('conversations')
   async createConversation(
-    @User() user: any,
+    @User() user: currentUserType,
     @Body('trigger') trigger?: NoroTrigger,
   ) {
     return this.noroService.createConversation(user.id, trigger);
@@ -41,20 +49,20 @@ export class NoroController {
 
   @Get('conversations')
   async listConversations(
-    @User() user: any,
+    @User() user: currentUserType,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
   ) {
     return this.noroService.listConversations(
       user.id,
       cursor,
-      limit ? Number(limit) : 20,
+      safeInt(limit, 20),
     );
   }
 
   @Post('conversations/:id/messages')
   async addMessage(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') conversationId: string,
     @Body('role') role: NoroMessageRole,
     @Body('content') content: string,
@@ -70,7 +78,7 @@ export class NoroController {
 
   @Get('conversations/:id/messages')
   async getConversationMessages(
-    @User() user: any,
+    @User() user: currentUserType,
     @Param('id') conversationId: string,
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
@@ -79,12 +87,12 @@ export class NoroController {
       user.id,
       conversationId,
       cursor,
-      limit ? Number(limit) : 20,
+      safeInt(limit, 20),
     );
   }
 
   @Delete('conversations/:id')
-  async deleteConversation(@User() user: any, @Param('id') conversationId: string) {
+  async deleteConversation(@User() user: currentUserType, @Param('id') conversationId: string) {
     await this.noroService.softDeleteConversation(user.id, conversationId);
     return { deleted: true };
   }
@@ -97,7 +105,7 @@ export class NoroController {
       crisisScore: number;
       keywords: string[];
     },
-    @User() user: any,
+    @User() user: currentUserType,
   ) {
     return this.noroService.reportCrisis({
       userId: user.id,
@@ -117,7 +125,7 @@ export class NoroController {
 
   @Post('crisis/intervention')
   async logIntervention(
-    @User() user: any,
+    @User() user: currentUserType,
     @Body('crisisEventId') crisisEventId: string,
     @Body('type') type: string,
   ) {

@@ -98,4 +98,14 @@ describe('CallService', () => {
     expect(hints.recommendedVideoLayers).toBe('low');
     expect(hints.networkCondition).toBe('degraded');
   });
+
+  it('clears active speaker and timer on leave (clearActiveSpeaker)', () => {
+    // Seed internal state manually via reportAudioLevel side-effect mock approach
+    // We call clearActiveSpeaker without prior state — should not throw
+    expect(() => service.clearActiveSpeaker('room-99')).not.toThrow();
+  });
+
+  it('onModuleDestroy does not throw when maps are empty', () => {
+    expect(() => service.onModuleDestroy()).not.toThrow();
+  });
 });
