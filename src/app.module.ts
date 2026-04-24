@@ -93,6 +93,11 @@ try {
     GraphSyncModule,
     CommentModule,
     ChatModule,
+    NotificationModule,
+    NoroModule,
+    ModerationModule,
+    CallModule,
+    MarketplaceModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

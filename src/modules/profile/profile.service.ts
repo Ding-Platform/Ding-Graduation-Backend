@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/modules/profile/profile.service.ts
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpStatus, HttpException } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
@@ -189,7 +189,7 @@ export class ProfileService {
 
       return { imageUrl };
     } catch (error) {
-      if (error instanceof GenericHttpException) {
+      if (error instanceof GenericHttpException || error instanceof HttpException) {
         throw error;
       }
       console.error('Profile picture upload error:', error);
@@ -223,7 +223,7 @@ export class ProfileService {
 
       return { coverPhotoUrl };
     } catch (error) {
-      if (error instanceof GenericHttpException) {
+      if (error instanceof GenericHttpException || error instanceof HttpException) {
         throw error;
       }
       console.error('Cover photo upload error:', error);
