@@ -1,0 +1,6 @@
+# Production Environment Configuration
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# This file extends docker-compose.yml with production-specific configurations
+
+services:
+  {}

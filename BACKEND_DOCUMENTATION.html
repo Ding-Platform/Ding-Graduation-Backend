@@ -1,0 +1,1435 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ding Platform Backend - Technical Documentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --bg: #ffffff;
+        --bg-secondary: #f8fafc;
+        --text: #1e293b;
+        --text-secondary: #64748b;
+        --border: #e2e8f0;
+        --code-bg: #1e293b;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        color: var(--text);
+        line-height: 1.7;
+        background: var(--bg);
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      @media print {
+        body {
+          padding: 0;
+        }
+        .page-break {
+          page-break-before: always;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+      h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
+        padding-bottom: 0.5rem;
+      }
+      h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-top: 3rem;
+        margin-bottom: 1rem;
+        color: var(--text);
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 0.5rem;
+      }
+      h3 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin-top: 2rem;
+        margin-bottom: 0.75rem;
+      }
+      h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+      }
+      p {
+        margin-bottom: 1rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        font-size: 0.9rem;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.75rem 1rem;
+        text-align: left;
+      }
+      th {
+        background: var(--bg-secondary);
+        font-weight: 600;
+      }
+      tr:nth-child(even) {
+        background: var(--bg-secondary);
+      }
+      code {
+        font-family: 'JetBrains Mono', monospace;
+        background: var(--bg-secondary);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.85em;
+      }
+      pre {
+        background: var(--code-bg);
+        color: #e2e8f0;
+        padding: 1.5rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1.5rem 0;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+      .mermaid {
+        background: var(--bg-secondary);
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+        text-align: center;
+      }
+      .header-meta {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 2rem;
+      }
+      .toc {
+        background: var(--bg-secondary);
+        padding: 1.5rem 2rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+      }
+      .toc h2 {
+        margin-top: 0;
+        border: none;
+      }
+      .toc ol {
+        padding-left: 1.5rem;
+      }
+      .toc li {
+        margin: 0.5rem 0;
+      }
+      .toc a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+      .stat-card {
+        background: linear-gradient(
+          135deg,
+          var(--primary),
+          var(--primary-dark)
+        );
+        color: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+      }
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+      }
+      .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+      ul,
+      ol {
+        padding-left: 1.5rem;
+        margin: 1rem 0;
+      }
+      li {
+        margin: 0.5rem 0;
+      }
+      hr {
+        border: none;
+        border-top: 2px solid var(--border);
+        margin: 3rem 0;
+      }
+      .print-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        z-index: 1000;
+      }
+      .print-btn:hover {
+        background: var(--primary-dark);
+      }
+      .priority-matrix {
+        background: var(--bg-secondary);
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+      }
+      .priority-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      .priority-quadrant {
+        padding: 1rem;
+        border-radius: 8px;
+        min-height: 120px;
+      }
+      .priority-quadrant h5 {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .priority-quadrant ul {
+        margin: 0;
+        padding-left: 1.2rem;
+        font-size: 0.85rem;
+      }
+      .q1 {
+        background: #dcfce7;
+      }
+      .q2 {
+        background: #fef3c7;
+      }
+      .q3 {
+        background: #fee2e2;
+      }
+      .q4 {
+        background: #e0e7ff;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="print-btn no-print" onclick="window.print()">
+      Save as PDF
+    </button>
+
+    <h1>Ding Platform Backend</h1>
+    <p class="header-meta">
+      <strong>Comprehensive Technical Documentation</strong><br />
+      Version: 0.0.1 | Last Updated: February 2026 | Status: Production Ready
+    </p>
+
+    <div class="toc">
+      <h2>Table of Contents</h2>
+      <ol>
+        <li><a href="#executive-summary">Executive Summary</a></li>
+        <li><a href="#architecture">Architecture Overview</a></li>
+        <li><a href="#tech-stack">Technology Stack</a></li>
+        <li><a href="#modules">Core Modules</a></li>
+        <li><a href="#database">Database Design</a></li>
+        <li><a href="#api">API Reference</a></li>
+        <li><a href="#security">Security Implementation</a></li>
+        <li><a href="#performance">Performance Optimizations</a></li>
+        <li><a href="#enhancements">Enhancement Recommendations</a></li>
+        <li><a href="#impact">Impact Analysis</a></li>
+      </ol>
+    </div>
+
+    <hr />
+
+    <h2 id="executive-summary">1. Executive Summary</h2>
+
+    <p>
+      The <strong>Ding Platform Backend</strong> is a feature-rich social
+      networking API built on a modern, scalable architecture.
+    </p>
+
+    <h3>Key Statistics</h3>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value">17</div>
+        <div class="stat-label">Total Modules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">25+</div>
+        <div class="stat-label">Database Models</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">100+</div>
+        <div class="stat-label">API Endpoints</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">3</div>
+        <div class="stat-label">WebSocket Gateways</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">13</div>
+        <div class="stat-label">Sprints Completed</div>
+      </div>
+    </div>
+
+    <h3>Core Capabilities Overview</h3>
+
+    <pre class="mermaid">
+flowchart TB
+    A[Ding Backend Platform]
+    A --> B[Authentication]
+    A --> C[Social Features]
+    A --> D[Content Management]
+    A --> E[Messaging]
+    A --> F[Feed System]
+    A --> G[AI and Moderation]
+    A --> H[Marketplace]
+    A --> I[Voice and Video]
+    </pre>
+
+    <hr class="page-break" />
+
+    <h2 id="architecture">2. Architecture Overview</h2>
+
+    <h3>2.1 High-Level Architecture</h3>
+
+    <pre class="mermaid">
+flowchart TB
+    subgraph Clients
+        WEB[Web Client]
+        MOBILE[Mobile Apps]
+    end
+    
+    subgraph Gateway
+        AUTH_GW[Authentication]
+        RATE[Rate Limiter]
+    end
+    
+    subgraph Application
+        NEST[NestJS App]
+        WS[WebSocket]
+    end
+    
+    subgraph Services
+        AUTH_SVC[Auth]
+        POST_SVC[Post]
+        SOCIAL_SVC[Social]
+        FEED_SVC[Feed]
+        CHAT_SVC[Chat]
+    end
+    
+    subgraph Databases
+        PG[(PostgreSQL)]
+        NEO4J[(Neo4j)]
+        REDIS[(Redis)]
+    end
+    
+    subgraph External
+        CLOUD[Cloudinary]
+        SMTP[Email]
+    end
+    
+    WEB --> AUTH_GW
+    MOBILE --> AUTH_GW
+    AUTH_GW --> RATE
+    RATE --> NEST
+    NEST --> WS
+    
+    NEST --> AUTH_SVC
+    NEST --> POST_SVC
+    NEST --> SOCIAL_SVC
+    NEST --> FEED_SVC
+    NEST --> CHAT_SVC
+    
+    AUTH_SVC --> PG
+    POST_SVC --> PG
+    SOCIAL_SVC --> NEO4J
+    FEED_SVC --> REDIS
+    
+    POST_SVC --> CLOUD
+    AUTH_SVC --> SMTP
+    </pre>
+
+    <h3>2.2 Design Principles</h3>
+
+    <ol>
+      <li>
+        <strong>Modular Monolith</strong>: Each feature in its own NestJS module
+      </li>
+      <li>
+        <strong>Hybrid Database Strategy</strong>: PostgreSQL + Neo4j + Redis
+      </li>
+      <li><strong>Event-Driven Updates</strong>: WebSocket for real-time</li>
+      <li>
+        <strong>Repository Pattern</strong>: Services abstract database access
+      </li>
+    </ol>
+
+    <h3>2.3 Module Dependency Map</h3>
+
+    <pre class="mermaid">
+flowchart LR
+    App[AppModule]
+    App --> Auth[AuthModule]
+    App --> User[UserModule]
+    App --> Profile[ProfileModule]
+    App --> Post[PostModule]
+    App --> Social[SocialModule]
+    App --> Feed[FeedModule]
+    App --> Chat[ChatModule]
+    App --> Notif[NotificationModule]
+    App --> Noro[NoroModule]
+    App --> Mod[ModerationModule]
+    App --> Market[MarketplaceModule]
+    App --> Call[CallModule]
+    
+    Auth --> User
+    Post --> Notif
+    Social --> Notif
+    Feed --> Social
+    </pre>
+
+    <hr class="page-break" />
+
+    <h2 id="tech-stack">3. Technology Stack</h2>
+
+    <h3>3.1 Core Framework</h3>
+
+    <table>
+      <tr>
+        <th>Component</th>
+        <th>Technology</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>Framework</td>
+        <td>NestJS 11.x</td>
+        <td>Enterprise Node.js framework</td>
+      </tr>
+      <tr>
+        <td>Runtime</td>
+        <td>Node.js 20+</td>
+        <td>JavaScript runtime</td>
+      </tr>
+      <tr>
+        <td>Language</td>
+        <td>TypeScript 5.7</td>
+        <td>Type-safe development</td>
+      </tr>
+      <tr>
+        <td>Package Manager</td>
+        <td>pnpm</td>
+        <td>Fast package management</td>
+      </tr>
+    </table>
+
+    <h3>3.2 Databases</h3>
+
+    <table>
+      <tr>
+        <th>Database</th>
+        <th>Version</th>
+        <th>Usage</th>
+      </tr>
+      <tr>
+        <td>PostgreSQL</td>
+        <td>15+</td>
+        <td>Primary relational database</td>
+      </tr>
+      <tr>
+        <td>Neo4j</td>
+        <td>5.x</td>
+        <td>Graph database for social relationships</td>
+      </tr>
+      <tr>
+        <td>Redis</td>
+        <td>7+</td>
+        <td>Caching and session storage</td>
+      </tr>
+    </table>
+
+    <h3>3.3 Authentication and Security</h3>
+
+    <table>
+      <tr>
+        <th>Library</th>
+        <th>Purpose</th>
+      </tr>
+      <tr>
+        <td>nestjs/jwt</td>
+        <td>JWT token handling</td>
+      </tr>
+      <tr>
+        <td>nestjs/passport</td>
+        <td>Authentication middleware</td>
+      </tr>
+      <tr>
+        <td>passport-google-oauth20</td>
+        <td>Google OAuth</td>
+      </tr>
+      <tr>
+        <td>bcryptjs</td>
+        <td>Password hashing</td>
+      </tr>
+      <tr>
+        <td>helmet</td>
+        <td>Security headers</td>
+      </tr>
+      <tr>
+        <td>express-rate-limit</td>
+        <td>Rate limiting</td>
+      </tr>
+    </table>
+
+    <hr class="page-break" />
+
+    <h2 id="modules">4. Core Modules</h2>
+
+    <h3>4.1 Authentication Module</h3>
+
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Implementation</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Email/Password Signup</td>
+        <td>Bcrypt hashing</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Login and Sessions</td>
+        <td>JWT access + refresh tokens</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Email Verification</td>
+        <td>6-digit OTP</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Password Reset</td>
+        <td>OTP-based flow</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Google OAuth2</td>
+        <td>Passport strategy</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Multi-device Sessions</td>
+        <td>IP/User-Agent tracking</td>
+        <td>Done</td>
+      </tr>
+    </table>
+
+    <h4>Authentication Flow</h4>
+
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant A as AuthController
+    participant S as AuthService
+    participant D as Database
+    
+    C->>A: POST signup
+    A->>S: Create user
+    S->>D: INSERT User
+    S-->>C: Verification email sent
+    
+    C->>A: POST login
+    A->>S: Validate credentials
+    S->>D: SELECT User
+    S->>S: Generate tokens
+    S-->>C: Return tokens
+    </pre>
+
+    <h3>4.2 Post Management Module</h3>
+
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Implementation</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Create Post</td>
+        <td>Text plus media</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Update Post</td>
+        <td>Content and privacy changes</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Delete Post</td>
+        <td>Soft delete</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Post History</td>
+        <td>Audit trail</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Privacy Levels</td>
+        <td>PUBLIC FRIENDS ONLY_ME</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Like Unlike</td>
+        <td>Toggle with count</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Comments</td>
+        <td>Nested threading</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Bookmarks</td>
+        <td>Save posts</td>
+        <td>Done</td>
+      </tr>
+    </table>
+
+    <h4>Media Upload Pipeline</h4>
+
+    <pre class="mermaid">
+flowchart LR
+    A[Client Upload] --> B[Multer]
+    B --> C{Valid?}
+    C -->|Yes| D[Cloudinary]
+    C -->|No| E[Error]
+    D --> F[CDN]
+    F --> G[Return URL]
+    G --> H[Save to DB]
+    </pre>
+
+    <h3>4.3 Social Graph Module</h3>
+
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Neo4j Relationship</th>
+        <th>Prisma Model</th>
+      </tr>
+      <tr>
+        <td>Friend Requests</td>
+        <td>REQUESTED_FRIEND</td>
+        <td>Friendship</td>
+      </tr>
+      <tr>
+        <td>Friendships</td>
+        <td>FRIEND_OF</td>
+        <td>Friendship</td>
+      </tr>
+      <tr>
+        <td>Follow</td>
+        <td>FOLLOWS</td>
+        <td>Follow</td>
+      </tr>
+      <tr>
+        <td>Block</td>
+        <td>BLOCKED</td>
+        <td>Block</td>
+      </tr>
+    </table>
+
+    <h4>Hybrid Database Architecture</h4>
+
+    <pre class="mermaid">
+flowchart TB
+    subgraph PostgreSQL
+        U[Users]
+        F[Friendships]
+        FL[Follows]
+        B[Blocks]
+    end
+    
+    subgraph Neo4j
+        REC[Recommendations]
+        MUT[Mutual Friends]
+        FD[Feed Gen]
+    end
+    
+    PostgreSQL -->|Sync| Neo4j
+    </pre>
+
+    <h3>4.4 Feed System Module</h3>
+
+    <table>
+      <tr>
+        <th>Type</th>
+        <th>Algorithm</th>
+        <th>Use Case</th>
+      </tr>
+      <tr>
+        <td>HOME</td>
+        <td>Engagement ranking plus time decay</td>
+        <td>Default feed</td>
+      </tr>
+      <tr>
+        <td>FOLLOWING</td>
+        <td>Chronological from followed users</td>
+        <td>Pure timeline</td>
+      </tr>
+      <tr>
+        <td>EXPLORE</td>
+        <td>Popular posts from non-connections</td>
+        <td>Discovery</td>
+      </tr>
+    </table>
+
+    <h4>Caching Strategy</h4>
+
+    <pre class="mermaid">
+sequenceDiagram
+    participant C as Client
+    participant F as FeedService
+    participant R as Redis
+    participant N as Neo4j
+    participant P as PostgreSQL
+    
+    C->>F: GET feed
+    F->>R: Check cache
+    alt Cache Hit
+        R-->>F: Cached data
+        F-->>C: Feed Response
+    else Cache Miss
+        F->>N: Get post IDs
+        F->>P: Hydrate posts
+        F->>R: Store in cache
+        F-->>C: Feed Response
+    end
+    </pre>
+
+    <h3>4.5 Chat Module</h3>
+
+    <table>
+      <tr>
+        <th>Feature</th>
+        <th>Implementation</th>
+        <th>Status</th>
+      </tr>
+      <tr>
+        <td>Direct Messages</td>
+        <td>1 to 1 rooms</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Group Chats</td>
+        <td>Multi-user rooms</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Media Messages</td>
+        <td>Cloudinary upload</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Reactions</td>
+        <td>Emoji reactions</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Read Receipts</td>
+        <td>Per-message tracking</td>
+        <td>Done</td>
+      </tr>
+      <tr>
+        <td>Typing Indicators</td>
+        <td>Real-time status</td>
+        <td>Done</td>
+      </tr>
+    </table>
+
+    <h4>WebSocket Architecture</h4>
+
+    <pre class="mermaid">
+flowchart TB
+    subgraph ClientEvents
+        JOIN[joinRoom]
+        MSG[message]
+        TYPING[typing]
+        READ[messageRead]
+    end
+    
+    subgraph ServerEvents
+        MSG_OUT[message]
+        TYPING_OUT[typing]
+        READ_OUT[messageRead]
+    end
+    
+    JOIN --> MSG_OUT
+    MSG --> MSG_OUT
+    TYPING --> TYPING_OUT
+    READ --> READ_OUT
+    </pre>
+
+    <h3>4.6 Other Modules</h3>
+
+    <table>
+      <tr>
+        <th>Module</th>
+        <th>Purpose</th>
+        <th>Key Features</th>
+      </tr>
+      <tr>
+        <td>Notification</td>
+        <td>Alert management</td>
+        <td>Real-time WebSocket delivery</td>
+      </tr>
+      <tr>
+        <td>Noro AI</td>
+        <td>AI assistant</td>
+        <td>Ollama integration</td>
+      </tr>
+      <tr>
+        <td>Moderation</td>
+        <td>Content moderation</td>
+        <td>Reporting and banning</td>
+      </tr>
+      <tr>
+        <td>Marketplace</td>
+        <td>E-commerce</td>
+        <td>Product listings</td>
+      </tr>
+      <tr>
+        <td>Call</td>
+        <td>WebRTC signaling</td>
+        <td>Voice and video calls</td>
+      </tr>
+    </table>
+
+    <hr class="page-break" />
+
+    <h2 id="database">5. Database Design</h2>
+
+    <h3>5.1 Entity Relationship Diagram</h3>
+
+    <pre class="mermaid">
+erDiagram
+    User ||--o{ Session : has
+    User ||--o{ Post : creates
+    User ||--o{ Like : gives
+    User ||--o{ Comment : writes
+    User ||--o{ Notification : receives
+    User ||--o{ Friendship : participates
+    User ||--o{ Follow : participates
+    User ||--o{ Message : sends
+    User ||--o{ Product : sells
+    
+    Post ||--o{ Like : receives
+    Post ||--o{ Comment : has
+    Post ||--o{ PostMedia : has
+    
+    Comment ||--o{ Like : receives
+    
+    Room ||--o{ Message : contains
+    Room ||--o{ RoomMember : has
+    
+    Message ||--o{ MessageReaction : has
+    
+    Product ||--o{ Transaction : involved
+    </pre>
+
+    <h3>5.2 Key Models</h3>
+
+    <h4>User Model</h4>
+    <pre><code>model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String?
+  password      String?
+  emailVerified Boolean  @default(false)
+  active        Boolean  @default(true)
+  isBanned      Boolean  @default(false)
+}</code></pre>
+
+    <h4>Post Model</h4>
+    <pre><code>model Post {
+  id           String      @id @default(uuid())
+  content      String      @db.Text
+  authorId     String
+  privacy      PostPrivacy @default(PUBLIC)
+  isDeleted    Boolean     @default(false)
+  likeCount    Int         @default(0)
+  commentCount Int         @default(0)
+}</code></pre>
+
+    <hr class="page-break" />
+
+    <h2 id="api">6. API Reference</h2>
+
+    <h3>6.1 Authentication Endpoints</h3>
+
+    <table>
+      <tr>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>Auth</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/signup</td>
+        <td>No</td>
+        <td>Register new user</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/login</td>
+        <td>No</td>
+        <td>Login</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/logout</td>
+        <td>Yes</td>
+        <td>Logout session</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/refresh</td>
+        <td>Cookie</td>
+        <td>Refresh token</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/auth/google</td>
+        <td>No</td>
+        <td>Google OAuth</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/verify-email</td>
+        <td>No</td>
+        <td>Verify email</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/auth/forgot-password</td>
+        <td>No</td>
+        <td>Password reset</td>
+      </tr>
+    </table>
+
+    <h3>6.2 Post Endpoints</h3>
+
+    <table>
+      <tr>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>Auth</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/posts</td>
+        <td>Yes</td>
+        <td>Create post</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/posts</td>
+        <td>Yes</td>
+        <td>Get all posts</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/posts/:id</td>
+        <td>Yes</td>
+        <td>Get single post</td>
+      </tr>
+      <tr>
+        <td>PUT</td>
+        <td>/api/posts/:id</td>
+        <td>Yes</td>
+        <td>Update post</td>
+      </tr>
+      <tr>
+        <td>DELETE</td>
+        <td>/api/posts/:id</td>
+        <td>Yes</td>
+        <td>Delete post</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/posts/:id/like</td>
+        <td>Yes</td>
+        <td>Toggle like</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/posts/:id/save</td>
+        <td>Yes</td>
+        <td>Toggle bookmark</td>
+      </tr>
+    </table>
+
+    <h3>6.3 Social Endpoints</h3>
+
+    <table>
+      <tr>
+        <th>Method</th>
+        <th>Endpoint</th>
+        <th>Auth</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/social/friends/request/:id</td>
+        <td>Yes</td>
+        <td>Send friend request</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/social/friends/accept/:id</td>
+        <td>Yes</td>
+        <td>Accept request</td>
+      </tr>
+      <tr>
+        <td>DELETE</td>
+        <td>/api/social/friends/:id</td>
+        <td>Yes</td>
+        <td>Remove friend</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/social/follow/:id</td>
+        <td>Yes</td>
+        <td>Toggle follow</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/api/social/block/:id</td>
+        <td>Yes</td>
+        <td>Toggle block</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/social/friends</td>
+        <td>Yes</td>
+        <td>Get friends</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/api/social/recommendations</td>
+        <td>Yes</td>
+        <td>Get suggestions</td>
+      </tr>
+    </table>
+
+    <h3>6.4 Other Endpoints</h3>
+
+    <table>
+      <tr>
+        <th>Module</th>
+        <th>Key Endpoints</th>
+      </tr>
+      <tr>
+        <td>Feed</td>
+        <td>GET /api/feed?type=HOME or FOLLOWING or EXPLORE</td>
+      </tr>
+      <tr>
+        <td>Chat</td>
+        <td>POST GET /api/chat/rooms and /api/chat/rooms/:id/messages</td>
+      </tr>
+      <tr>
+        <td>Noro</td>
+        <td>POST /api/noro/chat and GET /api/noro/history</td>
+      </tr>
+      <tr>
+        <td>Marketplace</td>
+        <td>POST GET /api/marketplace/products</td>
+      </tr>
+    </table>
+
+    <hr class="page-break" />
+
+    <h2 id="security">7. Security Implementation</h2>
+
+    <h3>7.1 Authentication Security</h3>
+
+    <table>
+      <tr>
+        <th>Measure</th>
+        <th>Implementation</th>
+      </tr>
+      <tr>
+        <td>Password Hashing</td>
+        <td>bcrypt with salt rounds</td>
+      </tr>
+      <tr>
+        <td>Token Signing</td>
+        <td>HMAC-SHA256 JWT</td>
+      </tr>
+      <tr>
+        <td>Refresh Token Storage</td>
+        <td>HttpOnly Secure SameSite cookies</td>
+      </tr>
+      <tr>
+        <td>Session Tracking</td>
+        <td>IP and User-Agent fingerprinting</td>
+      </tr>
+      <tr>
+        <td>Session Limits</td>
+        <td>Max 5 per device type</td>
+      </tr>
+    </table>
+
+    <h3>7.2 API Security</h3>
+
+    <table>
+      <tr>
+        <th>Measure</th>
+        <th>Implementation</th>
+      </tr>
+      <tr>
+        <td>Rate Limiting</td>
+        <td>100 requests per minute</td>
+      </tr>
+      <tr>
+        <td>CORS</td>
+        <td>Whitelist-based origins</td>
+      </tr>
+      <tr>
+        <td>Security Headers</td>
+        <td>Helmet.js</td>
+      </tr>
+      <tr>
+        <td>Input Validation</td>
+        <td>class-validator decorators</td>
+      </tr>
+      <tr>
+        <td>SQL Injection</td>
+        <td>Prisma parameterized queries</td>
+      </tr>
+    </table>
+
+    <hr class="page-break" />
+
+    <h2 id="performance">8. Performance Optimizations</h2>
+
+    <h3>8.1 Current Optimizations</h3>
+
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Optimization</th>
+        <th>Impact</th>
+      </tr>
+      <tr>
+        <td>Feed</td>
+        <td>Redis caching 60s TTL</td>
+        <td>90 percent reduction in DB queries</td>
+      </tr>
+      <tr>
+        <td>Database</td>
+        <td>Strategic indexes</td>
+        <td>10x faster lookups</td>
+      </tr>
+      <tr>
+        <td>Media</td>
+        <td>Cloudinary CDN delivery</td>
+        <td>Global edge caching</td>
+      </tr>
+      <tr>
+        <td>Graph Queries</td>
+        <td>Neo4j for relationships</td>
+        <td>O(1) vs O(n) for multi-hop</td>
+      </tr>
+      <tr>
+        <td>Background Jobs</td>
+        <td>Bull queue for graph sync</td>
+        <td>Non-blocking operations</td>
+      </tr>
+    </table>
+
+    <hr class="page-break" />
+
+    <h2 id="enhancements">9. Enhancement Recommendations</h2>
+
+    <h3>9.1 High Priority Enhancements</h3>
+
+    <h4>Two-Factor Authentication</h4>
+    <ul>
+      <li><strong>Current State:</strong> Single-factor password only</li>
+      <li><strong>Recommended:</strong> TOTP-based authentication</li>
+      <li>
+        <strong>Impact:</strong> 40 percent reduction in account takeovers
+      </li>
+      <li><strong>Effort:</strong> Medium 2-3 days</li>
+    </ul>
+
+    <h4>Push Notifications</h4>
+    <ul>
+      <li><strong>Current State:</strong> WebSocket only requires app open</li>
+      <li>
+        <strong>Recommended:</strong> FCM for Android Web and APNS for iOS
+      </li>
+      <li><strong>Impact:</strong> 30 percent user return rate</li>
+      <li><strong>Effort:</strong> Medium 3-4 days</li>
+    </ul>
+
+    <h4>GraphQL API Layer</h4>
+    <ul>
+      <li><strong>Current State:</strong> REST-only API</li>
+      <li>
+        <strong>Recommended:</strong> NestJS GraphQL with schema-first approach
+      </li>
+      <li><strong>Impact:</strong> 60 percent reduction in over-fetching</li>
+      <li><strong>Effort:</strong> High 1-2 weeks</li>
+    </ul>
+
+    <h3>9.2 Medium Priority Enhancements</h3>
+
+    <table>
+      <tr>
+        <th>Enhancement</th>
+        <th>Description</th>
+        <th>Impact</th>
+        <th>Effort</th>
+      </tr>
+      <tr>
+        <td>Elasticsearch</td>
+        <td>Full-text search with fuzzy matching</td>
+        <td>5x faster search</td>
+        <td>1 week</td>
+      </tr>
+      <tr>
+        <td>Recommendation Engine</td>
+        <td>ML-based content recommendations</td>
+        <td>25 percent engagement</td>
+        <td>2-4 weeks</td>
+      </tr>
+      <tr>
+        <td>Payment Integration</td>
+        <td>Stripe Connect for marketplace</td>
+        <td>Enable commerce</td>
+        <td>2-3 weeks</td>
+      </tr>
+    </table>
+
+    <h3>9.3 Enhancement Priority Matrix</h3>
+
+    <div class="priority-matrix">
+      <h4>Priority Quadrants - Effort vs Impact</h4>
+      <div class="priority-grid">
+        <div class="priority-quadrant q1">
+          <h5>Quick Wins - Low Effort High Impact</h5>
+          <ul>
+            <li>2FA Authentication</li>
+            <li>Push Notifications</li>
+            <li>Account Lockout</li>
+          </ul>
+        </div>
+        <div class="priority-quadrant q2">
+          <h5>Major Projects - High Effort High Impact</h5>
+          <ul>
+            <li>Payment Integration</li>
+            <li>GraphQL API</li>
+            <li>Recommendation Engine</li>
+          </ul>
+        </div>
+        <div class="priority-quadrant q3">
+          <h5>Low Priority - Low Effort Low Impact</h5>
+          <ul>
+            <li>Comment Editing</li>
+            <li>Password Strength Meter</li>
+          </ul>
+        </div>
+        <div class="priority-quadrant q4">
+          <h5>Consider - High Effort Medium Impact</h5>
+          <ul>
+            <li>Elasticsearch</li>
+            <li>Stories Feature</li>
+            <li>Live Streaming</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <hr class="page-break" />
+
+    <h2 id="impact">10. Impact Analysis</h2>
+
+    <h3>10.1 Scalability Considerations</h3>
+
+    <table>
+      <tr>
+        <th>Current Capacity</th>
+        <th>Bottleneck</th>
+        <th>Solution</th>
+      </tr>
+      <tr>
+        <td>10K concurrent users</td>
+        <td>Single PostgreSQL</td>
+        <td>Read replicas and connection pooling</td>
+      </tr>
+      <tr>
+        <td>100K posts per day</td>
+        <td>Feed generation latency</td>
+        <td>Pre-computed feeds and more caching</td>
+      </tr>
+      <tr>
+        <td>1M messages per day</td>
+        <td>WebSocket server memory</td>
+        <td>Horizontal scaling with Redis pub sub</td>
+      </tr>
+      <tr>
+        <td>10GB media per month</td>
+        <td>Cloudinary limits</td>
+        <td>Upgrade plan or chunked uploads</td>
+      </tr>
+    </table>
+
+    <h3>10.2 Technical Debt Areas</h3>
+
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Debt</th>
+        <th>Risk</th>
+        <th>Remediation</th>
+      </tr>
+      <tr>
+        <td>Test Coverage</td>
+        <td>Low unit test coverage</td>
+        <td>High</td>
+        <td>Implement Jest test suite</td>
+      </tr>
+      <tr>
+        <td>Error Handling</td>
+        <td>Inconsistent error formats</td>
+        <td>Medium</td>
+        <td>Standardize error responses</td>
+      </tr>
+      <tr>
+        <td>Logging</td>
+        <td>Missing structured logging</td>
+        <td>Medium</td>
+        <td>Implement Pino with context</td>
+      </tr>
+      <tr>
+        <td>Documentation</td>
+        <td>Swagger incomplete</td>
+        <td>Low</td>
+        <td>Add missing endpoint docs</td>
+      </tr>
+    </table>
+
+    <hr />
+
+    <h2>Appendix A: Environment Variables</h2>
+
+    <pre><code># Server Configuration
+NODE_ENV=development or production
+PORT=3000
+
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# Neo4j
+NEO4J_URI=bolt://host:7687
+NEO4J_AUTH=neo4j/password
+
+# Redis
+REDIS_URL=redis://host:6379
+
+# Authentication
+JWT_SECRET=your-jwt-secret
+
+# Google OAuth
+GOOGLE_CLIENT_ID=xxx
+GOOGLE_CLIENT_SECRET=xxx
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=xxx
+CLOUDINARY_API_KEY=xxx
+CLOUDINARY_API_SECRET=xxx
+
+# Email
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=xxx
+SMTP_PASS=xxx</code></pre>
+
+    <hr />
+
+    <h2>Appendix B: Deployment Checklist</h2>
+
+    <ul>
+      <li>Set all environment variables in production</li>
+      <li>Run database migrations: pnpm prisma migrate deploy</li>
+      <li>Verify Neo4j connectivity</li>
+      <li>Verify Redis connectivity</li>
+      <li>Configure Cloudinary credentials</li>
+      <li>Set up SMTP for emails</li>
+      <li>Configure CORS allowed origins</li>
+      <li>Enable rate limiting</li>
+      <li>Set up health check monitoring</li>
+      <li>Configure log aggregation</li>
+    </ul>
+
+    <hr />
+
+    <p
+      style="text-align: center; color: var(--text-secondary); margin-top: 3rem"
+    >
+      <strong>Ding Platform Backend Technical Documentation</strong><br />
+      Generated: February 2026 | Version: 0.0.1
+    </p>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        securityLevel: 'loose',
+      });
+    </script>
+  </body>
+</html>

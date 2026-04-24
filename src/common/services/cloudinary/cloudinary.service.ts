@@ -104,6 +104,42 @@ export class CloudinaryService {
     }
   }
 
+  /**
+   * Upload a seller KYC document image (ID card front/back, face photo).
+   * Stored under marketplace/seller-docs/{userId}/{docType}
+   */
+  async uploadSellerDocument(
+    file: Express.Multer.File,
+    userId: string,
+    docType: 'id_front' | 'id_back' | 'face',
+  ): Promise<string> {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Invalid file type for ${docType}. Only JPEG, PNG, and WebP are allowed.`,
+      );
+    }
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(`${docType} image must be under 10MB.`);
+    }
+
+    try {
+      const result = await this.uploadStream(file, {
+        folder: `marketplace/seller-docs/${userId}`,
+        public_id: `${docType}_${userId}_${Date.now()}`,
+        transformation: [
+          { width: 1200, height: 1200, crop: 'limit' },
+          { quality: 'auto', fetch_format: 'auto' },
+        ],
+      });
+      return result.secure_url;
+    } catch (error) {
+      console.error(`Cloudinary seller document upload error (${docType}):`, error);
+      throw new BadRequestException(`Failed to upload ${docType} image.`);
+    }
+  }
+
   private uploadStream(
     file: Express.Multer.File,
     options: any,

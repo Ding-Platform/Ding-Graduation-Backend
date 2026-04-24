@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
 import { get } from 'env-var';
@@ -8,7 +9,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
 
   async onModuleInit() {
-    const redisUrl = get('REDIS_URL').asString();
+    let redisUrl = get('REDIS_URL').default('redis://localhost:6379').asString();
+
+    // When running on host (not in Docker), "redis" hostname doesn't resolve — use localhost
+    const inDocker = existsSync('/.dockerenv');
+    if (!inDocker) {
+      try {
+        const u = new URL(redisUrl);
+        if (u.hostname === 'redis') {
+          u.hostname = 'localhost';
+          redisUrl = u.toString();
+        }
+      } catch {
+        // ignore invalid URL
+      }
+    }
 
     // Skip Redis in development if not configured
     if (!redisUrl && process.env.NODE_ENV === 'development') {

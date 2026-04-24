@@ -50,22 +50,20 @@ try {
   const host = parsed.hostname || 'localhost';
   const port = parsed.port ? parseInt(parsed.port, 10) : 6379;
 
-  bullRedisOptions =
-    process.env.VERCEL === '1'
-      ? {
-          host,
-          port,
-          // Vercel Redis requires TLS but often presents a self-signed cert
-          tls: { rejectUnauthorized: false },
-        }
-      : {
-          host,
-          port,
-        };
+  const useTls = parsed.protocol === 'rediss:';
+  bullRedisOptions = useTls
+    ? {
+        host,
+        port,
+        tls: { rejectUnauthorized: false },
+      }
+    : {
+        host,
+        port,
+      };
 } catch {
   // Keep default localhost:6379 if parsing fails
 }
-import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -94,6 +92,11 @@ import { ChatModule } from './modules/chat/chat.module';
     GraphSyncModule,
     CommentModule,
     ChatModule,
+    NotificationModule,
+    NoroModule,
+    ModerationModule,
+    CallModule,
+    MarketplaceModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
