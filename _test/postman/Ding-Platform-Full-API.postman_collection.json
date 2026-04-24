@@ -2024,7 +2024,7 @@
             "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"emoji\": \"👍\"\n}",
+              "raw": "{\n  \"emoji\": \"\ud83d\udc4d\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2073,7 +2073,7 @@
             "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions/toggle",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"emoji\": \"🔥\"\n}",
+              "raw": "{\n  \"emoji\": \"\ud83d\udd25\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3227,7 +3227,7 @@
             "url": "{{baseUrl}}/noro/conversations/{{conversationId}}/messages",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"USER\",\n  \"content\": \"I am feeling a little anxious today.\"\n}",
+              "raw": "{\n  \"role\": \"USER\",\n  \"content\": \"I am feeling anxious today.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3266,7 +3266,7 @@
             "url": "{{baseUrl}}/noro/crisis/report",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"crisisScore\": 0.72,\n  \"keywords\": [\n    \"self harm\",\n    \"hopeless\"\n  ]\n}",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\",\n  \"crisisScore\": 0.85,\n  \"keywords\": [\"anxious\", \"help\"]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3316,7 +3316,7 @@
             "url": "{{baseUrl}}/noro/crisis/intervention",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"crisisEventId\": \"{{crisisEventId}}\",\n  \"type\": \"hotline_response\"\n}",
+              "raw": "{\n  \"crisisEventId\": \"{{crisisEventId}}\",\n  \"type\": \"SOFT\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3384,7 +3384,7 @@
             "url": "{{baseUrl}}/reels/{{reelId}}/finalize",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rawVideoKey\": \"reels/raw/demo.mp4\",\n  \"caption\": \"Morning routine\",\n  \"hashtags\": [\n    \"wellbeing\",\n    \"focus\"\n  ],\n  \"durationSec\": 28\n}",
+              "raw": "{\n  \"rawVideoKey\": \"raw/user1/12345.mp4\",\n  \"caption\": \"My new reel!\",\n  \"hashtags\": [\"fun\", \"coding\"],\n  \"durationSec\": 15,\n  \"width\": 1080,\n  \"height\": 1920\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3439,7 +3439,7 @@
             "url": "{{baseUrl}}/reels/{{reelId}}/view",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"watchPct\": 95\n}",
+              "raw": "{\n  \"sessionId\": \"session-demo-1\",\n  \"watchPct\": 95\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3478,7 +3478,7 @@
             "url": "{{baseUrl}}/reels/{{reelId}}/comments",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"Great reel!\"\n}",
+              "raw": "{\n  \"content\": \"This is a great reel!\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3511,7 +3511,7 @@
             "url": "{{baseUrl}}/reels/{{reelId}}/share",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shareType\": \"EXTERNAL\"\n}",
+              "raw": "{\n  \"shareType\": \"FEED\",\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

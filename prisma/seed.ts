@@ -904,6 +904,13 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
         language: 'en',
       },
       {
+        countryCode: 'US',
+        name: 'The Trevor Project (LGBTQ Youth)',
+        phone: '1-866-488-7386',
+        sms: 'START to 678-678',
+        language: 'en',
+      },
+      {
         countryCode: 'GB',
         name: 'Samaritans',
         phone: '116123',
@@ -948,6 +955,15 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
         isLicensed: true,
         usageCount: 27,
       },
+      {
+        title: 'Lo-Fi Study Beats',
+        artist: 'Ding Creators',
+        durationSec: 60,
+        audioUrl: 'https://cdn.ding.local/audio/lofi-study.mp3',
+        genre: 'lo-fi',
+        isLicensed: true,
+        usageCount: 15,
+      },
     ],
   });
 
@@ -958,10 +974,13 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
 
   const primaryUserId = userIds[0];
   const secondaryUserId = userIds[1] || userIds[0];
-  const firstTrack = await prisma.audioTrack.findFirst({
+  const thirdUserId = userIds[2] || userIds[0];
+
+  const audioTracks = await prisma.audioTrack.findMany({
     orderBy: { usageCount: 'desc' },
   });
 
+  // Noro Wellbeing Enrichment
   const conversation = await prisma.noroConversation.create({
     data: {
       userId: primaryUserId,
@@ -970,7 +989,7 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
     },
   });
 
-  const userMessage = await prisma.noroMessage.create({
+  const userMessage1 = await prisma.noroMessage.create({
     data: {
       conversationId: conversation.id,
       userId: primaryUserId,
@@ -992,11 +1011,22 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
     },
   });
 
+  const userMessage2 = await prisma.noroMessage.create({
+    data: {
+      conversationId: conversation.id,
+      userId: primaryUserId,
+      role: 'USER',
+      content: 'I think I need to talk to someone. It is getting really dark.',
+      sentiment: { score: -0.85, label: 'very_negative' },
+      keywords: ['dark', 'help', 'someone'],
+    },
+  });
+
   await prisma.userMoodProfile.create({
     data: {
       userId: primaryUserId,
-      moodScore: 4.8,
-      energyLevel: 4.2,
+      moodScore: 3.2,
+      energyLevel: 2.5,
       dominantMood: 'anxious',
       sourceConvId: conversation.id,
     },
@@ -1005,69 +1035,125 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
   await prisma.crisisEvent.create({
     data: {
       userId: primaryUserId,
-      messageId: userMessage.id,
-      crisisScore: 0.52,
-      severity: 'MEDIUM',
-      intervention: 'SOFT',
-      keywordsHit: ['anxious', 'alone'],
+      messageId: userMessage2.id,
+      crisisScore: 0.88,
+      severity: 'HIGH',
+      intervention: 'HOTLINE',
+      keywordsHit: ['dark', 'help'],
     },
   });
 
-  const reel = await prisma.reel.create({
+  await prisma.userEmergencyContact.create({
+    data: {
+      userId: primaryUserId,
+      contactName: 'Jane Doe',
+      contactPhone: '+1234567890',
+      contactEmail: 'jane.doe@example.com',
+      notifyOnCrisis: true,
+    },
+  });
+
+  // Reels Enrichment
+  const reel1 = await prisma.reel.create({
     data: {
       userId: primaryUserId,
       status: 'READY',
       caption: 'Morning reset routine and calm vibes',
       hashtags: ['wellbeing', 'routine', 'focus'],
-      audioTrackId: firstTrack?.id,
+      audioTrackId: audioTracks[0]?.id,
       audioOffsetMs: 500,
       durationSec: 28,
       width: 1080,
       height: 1920,
-      videoUrl: 'https://cdn.ding.local/reels/sample/video.mp4',
-      thumbnailUrl: 'https://cdn.ding.local/reels/sample/thumb.jpg',
-      viewsCount: 1,
+      videoUrl: 'https://cdn.ding.local/reels/sample/video1.mp4',
+      thumbnailUrl: 'https://cdn.ding.local/reels/sample/thumb1.jpg',
+      viewsCount: 2,
       likesCount: 1,
-      commentsCount: 1,
+      commentsCount: 2,
       sharesCount: 1,
       isPublic: true,
     },
   });
 
-  await prisma.reelView.create({
+  const reel2 = await prisma.reel.create({
     data: {
-      reelId: reel.id,
-      viewerId: secondaryUserId,
-      sessionId: 'seed-session-1',
-      watchPct: 92,
+      userId: secondaryUserId,
+      status: 'READY',
+      caption: 'Quick gym session! #fitness',
+      hashtags: ['fitness', 'gym', 'workout'],
+      audioTrackId: audioTracks[1]?.id,
+      audioOffsetMs: 0,
+      durationSec: 15,
+      width: 1080,
+      height: 1920,
+      videoUrl: 'https://cdn.ding.local/reels/sample/video2.mp4',
+      thumbnailUrl: 'https://cdn.ding.local/reels/sample/thumb2.jpg',
+      viewsCount: 1,
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
+      isPublic: true,
     },
+  });
+
+  const reel3 = await prisma.reel.create({
+    data: {
+      userId: primaryUserId,
+      status: 'PROCESSING',
+      caption: 'Just testing the new filters #fun',
+      hashtags: ['fun', 'test'],
+      durationSec: 10,
+      width: 1080,
+      height: 1920,
+      rawVideoKey: 'raw/sample/video3.mp4',
+      isPublic: true,
+    },
+  });
+
+  // Views & Likes
+  await prisma.reelView.createMany({
+    data: [
+      { reelId: reel1.id, viewerId: secondaryUserId, sessionId: 'seed-session-1', watchPct: 92 },
+      { reelId: reel1.id, viewerId: thirdUserId, sessionId: 'seed-session-2', watchPct: 45 },
+      { reelId: reel2.id, viewerId: primaryUserId, sessionId: 'seed-session-3', watchPct: 100 },
+    ],
   });
 
   await prisma.reelLike.create({
-    data: {
-      reelId: reel.id,
-      userId: secondaryUserId,
-    },
+    data: { reelId: reel1.id, userId: secondaryUserId },
   });
 
-  await prisma.reelComment.create({
+  // Comments (Threaded)
+  const comment1 = await prisma.reelComment.create({
     data: {
-      reelId: reel.id,
+      reelId: reel1.id,
       userId: secondaryUserId,
       content: 'This is exactly what I needed today.',
       likesCount: 2,
     },
   });
 
+  await prisma.reelComment.create({
+    data: {
+      reelId: reel1.id,
+      userId: thirdUserId,
+      parentId: comment1.id,
+      content: 'Agreed! Very calming.',
+      likesCount: 0,
+    },
+  });
+
+  // Share
   await prisma.reelShare.create({
     data: {
-      reelId: reel.id,
+      reelId: reel1.id,
       sharerId: secondaryUserId,
       shareType: 'DM',
       targetId: primaryUserId,
     },
   });
 
+  // Calls Enrichment
   await prisma.callRoom.create({
     data: {
       id: 'seed-room-16',
@@ -1075,14 +1161,9 @@ async function seedSprint1617ReferenceData(userIds: string[]) {
       maxParticipants: 16,
       participants: {
         create: [
-          {
-            userId: primaryUserId,
-            peerId: 'seed-peer-1',
-          },
-          {
-            userId: secondaryUserId,
-            peerId: 'seed-peer-2',
-          },
+          { userId: primaryUserId, peerId: 'seed-peer-1', isVideoOn: true, isAudioOn: true },
+          { userId: secondaryUserId, peerId: 'seed-peer-2', isVideoOn: false, isAudioOn: true },
+          { userId: thirdUserId, peerId: 'seed-peer-3', isVideoOn: true, isAudioOn: false },
         ],
       },
     },
