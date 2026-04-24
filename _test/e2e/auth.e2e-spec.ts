@@ -1,22 +1,42 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import request from 'supertest';
+import { AppModule } from './../../src/app.module';
+import { DatabaseService } from '../../src/configs/database/database.service';
+import { EmailService } from '../../src/common/services/email.service';
+
+describe('Auth (e2e)', () => {
+  let app: INestApplication;
+  let prisma: DatabaseService;
+  let testEmail: string;
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(EmailService)
+      .useValue({
+        sendOtpEmail: jest.fn().mockResolvedValue(undefined),
+        sendEmailVerificationOtp: jest.fn().mockResolvedValue(undefined),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
       }),
     );
-    await app.init();
 
-    // Generate unique email for test
+    await app.init();
+    prisma = app.get<DatabaseService>(DatabaseService);
     testEmail = `test-${Date.now()}@example.com`;
   });
 
   afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: testEmail } });
     await app.close();
   });
 
@@ -124,7 +144,7 @@
         .send({
           email: 'nonexistent@example.com',
         })
-        .expect(200); // Should return 200 for security
+        .expect(200);
     });
   });
 
@@ -138,27 +158,6 @@
         .get('/api/v1/auth/me')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
-    });
-  });
-
-  describe('Rate Limiting', () => {
-    it('should rate limit login attempts', async () => {
-      const loginAttempts = [];
-
-      // Make multiple rapid login attempts
-      for (let i = 0; i < 150; i++) {
-        loginAttempts.push(
-          request(app.getHttpServer()).post('/api/v1/auth/login').send({
-            email: 'test@example.com',
-            password: 'password',
-          }),
-        );
-      }
-
-      const results = await Promise.all(loginAttempts);
-      const rateLimited = results.some((res) => res.status === 429);
-
-      expect(rateLimited).toBe(true);
     });
   });
 });

@@ -1,0 +1,3106 @@
+{
+  "info": {
+    "name": "Ding Platform Backend - Full API",
+    "description": "Complete backend collection (Auth, User, Social, Profile, Posts, Feed, Privacy, Likes, Comments, Chat, Noro, Moderation, Marketplace).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "2.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "userToken",
+      "value": ""
+    },
+    {
+      "key": "sellerToken",
+      "value": ""
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": ""
+    },
+    {
+      "key": "postId",
+      "value": ""
+    },
+    {
+      "key": "commentId",
+      "value": ""
+    },
+    {
+      "key": "roomId",
+      "value": ""
+    },
+    {
+      "key": "messageId",
+      "value": ""
+    },
+    {
+      "key": "applicationId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "transactionId",
+      "value": ""
+    },
+    {
+      "key": "sellerUserId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "App Root",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}"
+          }
+        },
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Signup",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/signup",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"User One\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Login (Default User)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===200){const d=pm.response.json().data; pm.collectionVariables.set(\"accessToken\", d.accessToken); pm.collectionVariables.set(\"userToken\", d.accessToken); if (d.user?.id) pm.collectionVariables.set(\"userId\", d.user.id);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/verify-email",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Resend Verification",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/resend-verification",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Verify Forgot Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/verify-forgot-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/reset-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"newPassword\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Update Password",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/auth/update-password",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh"
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/auth/logout",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout All",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/auth/logout-all",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Toggle User Activity",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/users/{{targetUserId}}/toggle-activity",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/users/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Social",
+      "item": [
+        {
+          "name": "Get Friend Requests",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/friends/requests",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Friends",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/friends",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Friend Request",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/friends/request/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Friend Request",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/friends/accept/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Friend Request",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/friends/reject/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Friend",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/social/friends/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Follow User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/follow/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/social/follow/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Followers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/followers",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Following",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/following",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Friend Recommendations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/recommendations/friends",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Follow Recommendations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/recommendations/follow",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Social Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/stats",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mutual Friends",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/mutual-friends/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Block User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/block/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unblock User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/social/block/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Blocked Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/blocked",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mute User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/social/mute/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unmute User",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/social/mute/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Muted Users",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/social/muted",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unread Count",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications/unread-count",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark One Read",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/notifications/{{messageId}}/read",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/notifications/read-all",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "item": [
+        {
+          "name": "Get Sessions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/sessions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Search Profiles",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile/search?query=john&page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile/me",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Profile By UserId",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/profile/{{userId}}"
+          }
+        },
+        {
+          "name": "Create/Update Profile",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Software engineer\",\n  \"location\": \"Cairo\",\n  \"website\": \"https://example.com\",\n  \"phoneNumber\": \"+201001112233\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Profile Picture",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/profile/picture",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Cover Photo",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/profile/cover",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/profile/privacy",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"profileVisibility\": \"PUBLIC\",\n  \"postsVisibility\": \"FRIENDS\",\n  \"emailVisibility\": \"PRIVATE\",\n  \"allowCameraAccess\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Profile",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "List Posts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Posts Count",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/count"
+          }
+        },
+        {
+          "name": "Saved Posts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/saved",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "Create Post",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/posts/create",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello world from postman\",\n  \"mediaUrls\": [],\n  \"privacy\": \"PUBLIC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201 || pm.response.code===200){ const d=pm.response.json().data; if (d?.id) pm.collectionVariables.set(\"postId\", d.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/posts/{{postId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Like/Unlike Post Toggle",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/posts/{{postId}}/like",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save/Unsave Post Toggle",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/posts/{{postId}}/save",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Post History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/{{postId}}/history",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Post Comment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/posts/{{postId}}/comments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Nice post!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/{{postId}}/comments"
+          }
+        },
+        {
+          "name": "Get Post Likes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/{{postId}}/likes"
+          }
+        },
+        {
+          "name": "Delete Post Comment",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/posts/comments/{{commentId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/posts/{{postId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feed",
+      "item": [
+        {
+          "name": "Get Feed",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/feed?type=HOME&page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Privacy",
+      "item": [
+        {
+          "name": "Get Privacy Settings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/privacy",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Privacy Settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/privacy",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showEmail\": false,\n  \"showPhone\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Likes",
+      "item": [
+        {
+          "name": "Like Post",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/likes/posts/{{postId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unlike Post",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/likes/posts/{{postId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Like Comment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/likes/comments/{{commentId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unlike Comment",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/likes/comments/{{commentId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post Likes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/likes/posts/{{postId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/comments/posts/{{postId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Comment from comments module\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Post Comments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/comments/posts/{{postId}}"
+          }
+        },
+        {
+          "name": "Get Comment Replies",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/comments/{{commentId}}/replies"
+          }
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/comments/{{commentId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Edited comment\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/comments/{{commentId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat",
+      "item": [
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My room\",\n  \"type\": \"GROUP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Direct Room",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/direct",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Group Room",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/group",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Engineering\",\n  \"memberIds\": [\n    \"{{targetUserId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Rooms",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Room By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated room\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Leave Room",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/leave",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Members",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/members",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberIds\": [\n    \"{{targetUserId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Member",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/members/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Member Role",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/members/{{targetUserId}}/role",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Room Settings",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/settings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"muteNotifications\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Room Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/messages?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello room\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Media Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/messages/media",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "content",
+                  "value": "media message",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Message By Id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Message",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Edited message\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forward Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/messages/forward",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\",\n  \"roomIds\": [\n    \"{{roomId}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Message History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/history",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Reaction",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emoji\": \"👍\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remove Reaction",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions/%F0%9F%91%8D",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Toggle Reaction",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions/toggle",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emoji\": \"🔥\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Reactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Message Read",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/messages/{{messageId}}/read",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Room Read All",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/read-all",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Room Unread Count",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/unread-count",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "All Unread Counts",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/unread-counts",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Pin Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/pin/{{messageId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unpin Message",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/pin/{{messageId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Pinned Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/pinned",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/search?query=hello",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Room Media",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/media",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Room Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/rooms/{{roomId}}/stats",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Noro",
+      "item": [
+        {
+          "name": "Noro Chat",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/noro/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello Noro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Noro History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/noro/history",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Noro Transcribe",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/noro/transcribe",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Noro Speak",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/noro/speak",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Hello from Ding\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Moderation",
+      "item": [
+        {
+          "name": "Create Report",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/moderation/report",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetId\": \"{{postId}}\",\n  \"targetType\": \"POST\",\n  \"reason\": \"SPAM\",\n  \"description\": \"Spam content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Reports",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/moderation/reports",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Dismiss Report",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/moderation/dismiss/{{commentId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ban User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/moderation/ban/{{targetUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marketplace Public",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/products?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Buy Product",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}/buy",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201){const d=pm.response.json().data; if (d?.id) pm.collectionVariables.set(\"transactionId\", d.id);}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Marketplace Seller",
+      "item": [
+        {
+          "name": "Apply Seller (multipart)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/seller/apply",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "fullName",
+                  "value": "Seller Applicant",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "+201001112233",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "seller.applicant@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "12 Nile Street",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "Cairo",
+                  "type": "text"
+                },
+                {
+                  "key": "country",
+                  "value": "Egypt",
+                  "type": "text"
+                },
+                {
+                  "key": "idCardNumber",
+                  "value": "ID-123456",
+                  "type": "text"
+                },
+                {
+                  "key": "commercialRegNumber",
+                  "value": "1234567",
+                  "type": "text"
+                },
+                {
+                  "key": "bankAccountNumber",
+                  "value": "123456789012",
+                  "type": "text"
+                },
+                {
+                  "key": "bankCardNumber",
+                  "value": "4242424242424242",
+                  "type": "text"
+                },
+                {
+                  "key": "bankCardExpiry",
+                  "value": "12/30",
+                  "type": "text"
+                },
+                {
+                  "key": "bankCardHolderName",
+                  "value": "Seller Applicant",
+                  "type": "text"
+                },
+                {
+                  "key": "idCardFrontImage",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "idCardBackImage",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "sellerFaceImage",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201){ const d=pm.response.json().data; if (d?.id) pm.collectionVariables.set(\"applicationId\", d.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Application Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/application/status",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/profile",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Seller Profile",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/marketplace/seller/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Ding Store\",\n  \"phoneNumber\": \"+201009998887\",\n  \"city\": \"Alexandria\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Product (Seller)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Used iPhone 14\",\n  \"description\": \"Excellent condition\",\n  \"price\": 650,\n  \"currency\": \"USD\",\n  \"quantity\": 2,\n  \"images\": [\n    \"https://example.com/iphone.jpg\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201){const d=pm.response.json().data; if(d?.id) pm.collectionVariables.set(\"productId\", d.id);}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Product (Seller)",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 600,\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Product (Seller)",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Seller Products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/products?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Active Deals",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/deals?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "My Deal History",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/deals/history?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marketplace Admin",
+      "item": [
+        {
+          "name": "List Pending Applications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/applications?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Application Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Application",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}/approve",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Decline Application",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}/decline",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Documents mismatch\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Sellers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/sellers?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Seller Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Ban Seller",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/ban",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cause\": \"Repeated fraud reports\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unban Seller",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/unban",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Suspend Seller",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/suspend",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cause\": \"Compliance review\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unsuspend Seller",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/unsuspend",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Deal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/deals/{{transactionId}}/cancel",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cause\": \"Payment dispute\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/logs?page=1&limit=50",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

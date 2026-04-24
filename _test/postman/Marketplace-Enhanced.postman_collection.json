@@ -1,0 +1,320 @@
+{
+  "info": {
+    "name": "Marketplace Enhanced - Seller & Admin",
+    "description": "Postman collection for Marketplace Enhanced endpoints (Seller onboarding, Seller dashboard, Admin controls).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "userToken", "value": "" },
+    { "key": "sellerToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "applicationId", "value": "" },
+    { "key": "transactionId", "value": "" },
+    { "key": "sellerUserId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Seller Application",
+      "item": [
+        {
+          "name": "Apply Seller (multipart)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullName", "value": "John Applicant", "type": "text" },
+                { "key": "phoneNumber", "value": "+201001112233", "type": "text" },
+                { "key": "email", "value": "applicant@example.com", "type": "text" },
+                { "key": "address", "value": "12 Nile Street", "type": "text" },
+                { "key": "city", "value": "Cairo", "type": "text" },
+                { "key": "country", "value": "Egypt", "type": "text" },
+                { "key": "idCardNumber", "value": "ID-123456", "type": "text" },
+                { "key": "commercialRegNumber", "value": "1234567", "type": "text" },
+                { "key": "bankAccountNumber", "value": "123456789012", "type": "text" },
+                { "key": "bankCardNumber", "value": "4242424242424242", "type": "text" },
+                { "key": "bankCardExpiry", "value": "12/30", "type": "text" },
+                { "key": "bankCardHolderName", "value": "John Applicant", "type": "text" },
+                { "key": "idCardFrontImage", "type": "file", "src": "" },
+                { "key": "idCardBackImage", "type": "file", "src": "" },
+                { "key": "sellerFaceImage", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/marketplace/seller/apply"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('applicationId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "My Application Status",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/application/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seller Dashboard",
+      "item": [
+        {
+          "name": "Get Seller Profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/profile"
+          }
+        },
+        {
+          "name": "Update Seller Profile",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"businessName\": \"Ding Store\",\n  \"phoneNumber\": \"+201001110000\",\n  \"city\": \"Alexandria\"\n}"
+            },
+            "url": "{{baseUrl}}/marketplace/seller/profile"
+          }
+        },
+        {
+          "name": "Get My Seller Products",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/products?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get My Active Deals",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/deals?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get My Deal History",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/deals/history?page=1&limit=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product (Seller)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Used iPhone 14\",\n  \"description\": \"Excellent condition\",\n  \"price\": 650,\n  \"currency\": \"USD\",\n  \"quantity\": 2,\n  \"images\": [\"https://example.com/iphone.jpg\"]\n}"
+            },
+            "url": "{{baseUrl}}/marketplace/products"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('productId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Active Products (Public)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/products?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get Product By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Update Product (Seller)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 600,\n  \"quantity\": 1\n}"
+            },
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Buy Product (Authenticated User)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}/buy"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.collectionVariables.set('transactionId', data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Product (Seller)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/marketplace/products/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Dashboard",
+      "item": [
+        {
+          "name": "List Pending Applications",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/applications?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get Application Detail",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}"
+          }
+        },
+        {
+          "name": "Approve Application",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}/approve"
+          }
+        },
+        {
+          "name": "Decline Application",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Documents mismatch\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/applications/{{applicationId}}/decline"
+          }
+        },
+        {
+          "name": "List Sellers",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/sellers?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get Seller Detail",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}"
+          }
+        },
+        {
+          "name": "Ban Seller",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cause\": \"Repeated fraud reports\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/ban"
+          }
+        },
+        {
+          "name": "Unban Seller",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/unban"
+          }
+        },
+        {
+          "name": "Suspend Seller",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cause\": \"Compliance review\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/suspend"
+          }
+        },
+        {
+          "name": "Unsuspend Seller",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/sellers/{{sellerUserId}}/unsuspend"
+          }
+        },
+        {
+          "name": "Cancel Deal",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cause\": \"Payment dispute\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/deals/{{transactionId}}/cancel"
+          }
+        },
+        {
+          "name": "Get Admin Audit Logs",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/logs?page=1&limit=50"
+          }
+        }
+      ]
+    }
+  ]
+}
