@@ -1149,21 +1149,38 @@ export class SocialService {
         );
       }
 
-      // Get total count of recommendations (before pagination)
+      // Count total candidates across all stages (union of strategies)
       const countResult = await session.run(
         `MATCH (u:User {userId: $userId})
-         
-         // Find friends of friends (not already friends)
-        MATCH (u)-[:FRIENDS]->(friend)-[:FRIENDS]->(recommendation:User)
-        WHERE recommendation.userId <> $userId
-        AND NOT (u)-[:FRIENDS]-(recommendation)
-        AND NOT (u)-[:FRIEND_REQUEST]->(recommendation)
-        AND NOT (recommendation)-[:FRIEND_REQUEST]->(u)
-         
-         WITH DISTINCT recommendation
-         RETURN count(recommendation) as total`,
+
+         // Stage 1: mutual friends
+         OPTIONAL MATCH (u)-[:FRIENDS]->(:User)-[:FRIENDS]->(s1:User)
+         WHERE s1.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(s1)
+           AND NOT (u)-[:FRIEND_REQUEST]->(s1)
+           AND NOT (s1)-[:FRIEND_REQUEST]->(u)
+
+         // Stage 2: common following
+         OPTIONAL MATCH (u)-[:FOLLOWS]->(:User)-[:FOLLOWS]->(s2:User)
+         WHERE s2.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(s2)
+           AND NOT (u)-[:FRIEND_REQUEST]->(s2)
+           AND NOT (s2)-[:FRIEND_REQUEST]->(u)
+
+         // Stage 3: global users (fallback pool)
+         OPTIONAL MATCH (s3:User)
+         WHERE s3.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(s3)
+           AND NOT (u)-[:FRIEND_REQUEST]->(s3)
+           AND NOT (s3)-[:FRIEND_REQUEST]->(u)
+
+         WITH collect(DISTINCT s1) + collect(DISTINCT s2) + collect(DISTINCT s3) AS allCandidates
+         UNWIND allCandidates AS candidate
+         WITH DISTINCT candidate
+         RETURN count(candidate) as total`,
         { userId },
       );
+
       const total = this.toNumber(countResult.records[0]?.get('total') || 0);
 
       // Get current user's location from PostgreSQL for location boost calculation
@@ -1177,32 +1194,75 @@ export class SocialService {
 
       const result = await session.run(
         `MATCH (u:User {userId: $userId})
-         
-         // Find friends of friends (not already friends)
-        MATCH (u)-[:FRIENDS]->(friend)-[:FRIENDS]->(recommendation:User)
-        WHERE recommendation.userId <> $userId
-        AND NOT (u)-[:FRIENDS]-(recommendation)
-        AND NOT (u)-[:FRIEND_REQUEST]->(recommendation)
-        AND NOT (recommendation)-[:FRIEND_REQUEST]->(u)
-         
-         WITH recommendation, count(DISTINCT friend) as mutualFriends
-         
-         // Re-match user for optional follows check
-         MATCH (u:User {userId: $userId})
-         OPTIONAL MATCH (u)-[f1:FOLLOWS]->(recommendation)
-         OPTIONAL MATCH (recommendation)-[f2:FOLLOWS]->(u)
-         
-         WITH recommendation, mutualFriends,
+
+         // ===== Stage 1: Mutual Friends =====
+         OPTIONAL MATCH (u)-[:FRIENDS]->(f)-[:FRIENDS]->(c1:User)
+         WHERE c1.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(c1)
+           AND NOT (u)-[:FRIEND_REQUEST]->(c1)
+           AND NOT (c1)-[:FRIEND_REQUEST]->(u)
+         WITH u, c1, count(DISTINCT f) as mutualFriends
+
+         // ===== Stage 2: Common Following =====
+         OPTIONAL MATCH (u)-[:FOLLOWS]->(f2)-[:FOLLOWS]->(c2:User)
+         WHERE c2.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(c2)
+           AND NOT (u)-[:FRIEND_REQUEST]->(c2)
+           AND NOT (c2)-[:FRIEND_REQUEST]->(u)
+         WITH u,
+              c1, mutualFriends,
+              c2, count(DISTINCT f2) as commonFollowing
+
+         // Merge candidates
+         WITH u,
+              collect(DISTINCT c1) + collect(DISTINCT c2) AS candidates,
+              collect(mutualFriends) AS mutualFriendsList,
+              collect(commonFollowing) AS commonFollowingList
+
+         UNWIND candidates AS candidate
+         WITH u, candidate
+         WHERE candidate IS NOT NULL
+
+         // Recompute signals per candidate cleanly
+         OPTIONAL MATCH (u)-[:FRIENDS]->(f)-[:FRIENDS]->(candidate)
+         WITH u, candidate, count(DISTINCT f) as mutualFriends
+
+         OPTIONAL MATCH (u)-[:FOLLOWS]->(f2)-[:FOLLOWS]->(candidate)
+         WITH u, candidate, mutualFriends, count(DISTINCT f2) as commonFollowing
+
+         OPTIONAL MATCH (candidate)<-[:FOLLOWS]-(follower)
+         WITH u, candidate, mutualFriends, commonFollowing,
+              count(DISTINCT follower) as popularity
+
+         OPTIONAL MATCH (u)-[f1:FOLLOWS]->(candidate)
+         OPTIONAL MATCH (candidate)-[f2:FOLLOWS]->(u)
+
+         WITH candidate,
+              mutualFriends,
+              commonFollowing,
+              popularity,
               CASE WHEN f1 IS NOT NULL THEN 2 ELSE 0 END +
               CASE WHEN f2 IS NOT NULL THEN 1 ELSE 0 END as followBoost
-         
-         WITH recommendation, mutualFriends, followBoost,
-              (mutualFriends * 10 + followBoost) as score
-         
-         RETURN recommendation.userId as userId,
+
+         // ===== Weighted Blending =====
+         WITH candidate,
+              mutualFriends,
+              commonFollowing,
+              popularity,
+              followBoost,
+              (mutualFriends * 10.0 +
+               commonFollowing * 6.0 +
+               (popularity / 10.0) +
+               followBoost) as score
+
+         RETURN candidate.userId as userId,
                 mutualFriends,
                 score,
-                'mutual_friends' as reason
+                CASE
+                  WHEN mutualFriends > 0 THEN 'mutual_friends'
+                  WHEN commonFollowing > 0 THEN 'common_following'
+                  ELSE 'popular_users'
+                END as reason
          ORDER BY score DESC
          SKIP $offset
          LIMIT $limit`,
@@ -1392,6 +1452,19 @@ export class SocialService {
       );
       const total = this.toNumber(countResult.records[0]?.get('total') || 0);
 
+      // If no mutual-friend recommendations, estimate total using fallback strategy
+      let finalTotal = total;
+      if (total === 0) {
+        const fallbackCountResult = await session.run(
+          `MATCH (u:User)
+           WHERE u.userId <> $userId
+           AND NOT ( (u)-[:FRIENDS]-(:User {userId: $userId}) )
+           RETURN count(u) as total`,
+          { userId },
+        );
+        finalTotal = this.toNumber(fallbackCountResult.records[0]?.get('total') || 0);
+      }
+
       // Get current user's location from PostgreSQL for location boost calculation
       const currentProfile = await this.prisma.profile.findUnique({
         where: { userId },
@@ -1503,7 +1576,7 @@ export class SocialService {
         meta: {
           limit: limitInt,
           offset: offsetInt,
-          total,
+          total: finalTotal,
           hasMore,
           nextOffset,
         },
