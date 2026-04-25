@@ -39,6 +39,7 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 let bullRedisOptions: {
   host: string;
   port: number;
+  password?: string;
   tls?: { rejectUnauthorized: boolean };
 } = {
   host: 'localhost',
@@ -49,17 +50,20 @@ try {
   const parsed = new URL(redisUrl);
   const host = parsed.hostname || 'localhost';
   const port = parsed.port ? parseInt(parsed.port, 10) : 6379;
+  const password = parsed.password || undefined;
 
   const useTls = parsed.protocol === 'rediss:';
   bullRedisOptions = useTls
     ? {
         host,
         port,
+        ...(password ? { password } : {}),
         tls: { rejectUnauthorized: false },
       }
     : {
         host,
         port,
+        ...(password ? { password } : {}),
       };
 } catch {
   // Keep default localhost:6379 if parsing fails

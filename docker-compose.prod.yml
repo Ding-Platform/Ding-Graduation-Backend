@@ -1,6 +1,9 @@
 # Production Environment Configuration
-# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # This file extends docker-compose.yml with production-specific configurations
 
 services:
-  {}
+  backend:
+    # Expose backend only on loopback for host Nginx upstream.
+    ports:
+      - "127.0.0.1:3000:3000"
