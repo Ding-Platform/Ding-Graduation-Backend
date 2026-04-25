@@ -43,7 +43,7 @@ describe('FeedController', () => {
 
       const user = { id: 'user1' };
       expect(await controller.getFeed(user, '1', '20')).toBe(result);
-      expect(service.getFeed).toHaveBeenCalledWith('user1', 1, 20);
+      expect(service.getFeed).toHaveBeenCalledWith('user1', 'HOME', 1, 20);
     });
 
     it('should use default pagination values', async () => {
@@ -58,7 +58,7 @@ describe('FeedController', () => {
 
       const user = { id: 'user1' };
       expect(await controller.getFeed(user, undefined, undefined)).toBe(result);
-      expect(service.getFeed).toHaveBeenCalledWith('user1', 1, 20);
+      expect(service.getFeed).toHaveBeenCalledWith('user1', 'HOME', 1, 20);
     });
   });
 });

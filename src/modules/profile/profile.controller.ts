@@ -4,6 +4,7 @@ import {
   Put,
   Patch,
   Delete,
+  Req,
   Body,
   Param,
   Query,
@@ -14,7 +15,6 @@ import {
   HttpStatus,
   ParseFilePipe,
   MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
@@ -30,6 +30,7 @@ import { ProfileResponse } from './dtos/response/profile.response';
 import { UploadResponse } from './dtos/response/upload.response';
 import { SearchProfileResponse } from './dtos/response/search-profile.response';
 import { PROFILE_CONSTANTS } from '../../common/constants/profile.constants';
+import type { Request } from 'express';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -74,10 +75,9 @@ export class ProfileController {
   })
   async getProfile(
     @Param('userId') userId: string,
-    @currentUser() user?: currentUserType,
+    @Req() request: Request & { user?: currentUserType },
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const requesterId: string | undefined = user?.id;
+    const requesterId: string | undefined = request.user?.id;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.profileService.getProfile(userId, requesterId);
   }
@@ -130,9 +130,6 @@ export class ProfileController {
             maxSize: PROFILE_CONSTANTS.UPLOAD.MAX_PROFILE_PICTURE_SIZE,
             message: `File size must not exceed ${PROFILE_CONSTANTS.UPLOAD.MAX_PROFILE_PICTURE_SIZE / 1024 / 1024}MB`,
           }),
-          new FileTypeValidator({
-            fileType: /(jpg|jpeg|png|webp)$/,
-          }),
         ],
         fileIsRequired: true,
       }),
@@ -171,9 +168,6 @@ export class ProfileController {
           new MaxFileSizeValidator({
             maxSize: PROFILE_CONSTANTS.UPLOAD.MAX_COVER_PHOTO_SIZE,
             message: `File size must not exceed ${PROFILE_CONSTANTS.UPLOAD.MAX_COVER_PHOTO_SIZE / 1024 / 1024}MB`,
-          }),
-          new FileTypeValidator({
-            fileType: /(jpg|jpeg|png|webp)$/,
           }),
         ],
         fileIsRequired: true,

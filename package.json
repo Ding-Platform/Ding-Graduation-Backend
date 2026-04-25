@@ -25,6 +25,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --project tsconfig.json prisma/seed.ts",
+    "prisma:seed:marketplace": "ts-node --project tsconfig.json prisma/seed-marketplace.ts",
+    "prisma:promote-admin": "ts-node --project tsconfig.json prisma/promote-admin.ts",
     "seed:chat": "ts-node --project tsconfig.json prisma/seed-chat.ts"
   },
   "dependencies": {

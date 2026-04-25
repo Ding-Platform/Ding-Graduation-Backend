@@ -7,19 +7,27 @@ import { AppModule } from './../../src/app.module';
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
     await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   it('/ (GET)', () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/api/v1')
       .expect(200)
-      .expect('Hello World!');
+      .expect((res) => {
+        expect(res.body.success).toBe(true);
+        expect(res.body.data).toBe('Hello World!');
+      });
   });
 });

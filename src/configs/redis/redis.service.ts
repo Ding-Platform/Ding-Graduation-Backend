@@ -188,6 +188,102 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Set value only if key does not exist and expire it.
+   */
+  async setNxEx(key: string, value: string, seconds: number): Promise<boolean> {
+    if (!this.isConnected) return false;
+
+    try {
+      const result = await this.client.set(key, value, { NX: true, EX: seconds });
+      return result === 'OK';
+    } catch (error) {
+      console.error('Redis setNxEx error:', error);
+      return false;
+    }
+  }
+
+  async hSet(key: string, field: string, value: string): Promise<boolean> {
+    if (!this.isConnected) return false;
+
+    try {
+      await this.client.hSet(key, field, value);
+      return true;
+    } catch (error) {
+      console.error('Redis hSet error:', error);
+      return false;
+    }
+  }
+
+  async hGet(key: string, field: string): Promise<string | null> {
+    if (!this.isConnected) return null;
+
+    try {
+      const value = await this.client.hGet(key, field);
+      return value ?? null;
+    } catch (error) {
+      console.error('Redis hGet error:', error);
+      return null;
+    }
+  }
+
+  async hGetAll(key: string): Promise<Record<string, string>> {
+    if (!this.isConnected) return {};
+
+    try {
+      return await this.client.hGetAll(key);
+    } catch (error) {
+      console.error('Redis hGetAll error:', error);
+      return {};
+    }
+  }
+
+  async hDel(key: string, field: string): Promise<boolean> {
+    if (!this.isConnected) return false;
+
+    try {
+      await this.client.hDel(key, field);
+      return true;
+    } catch (error) {
+      console.error('Redis hDel error:', error);
+      return false;
+    }
+  }
+
+  async hLen(key: string): Promise<number> {
+    if (!this.isConnected) return 0;
+
+    try {
+      return await this.client.hLen(key);
+    } catch (error) {
+      console.error('Redis hLen error:', error);
+      return 0;
+    }
+  }
+
+  async incrBy(key: string, amount: number): Promise<number | null> {
+    if (!this.isConnected) return null;
+
+    try {
+      return await this.client.incrBy(key, amount);
+    } catch (error) {
+      console.error('Redis incrBy error:', error);
+      return null;
+    }
+  }
+
+  async zAdd(key: string, score: number, value: string): Promise<boolean> {
+    if (!this.isConnected) return false;
+
+    try {
+      await this.client.zAdd(key, [{ score, value }]);
+      return true;
+    } catch (error) {
+      console.error('Redis zAdd error:', error);
+      return false;
+    }
+  }
+
+  /**
    * Flush all keys (use with caution!)
    */
   async flushAll(): Promise<boolean> {
