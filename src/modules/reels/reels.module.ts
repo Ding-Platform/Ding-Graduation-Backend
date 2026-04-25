@@ -1,0 +1,14 @@
+import { Module } from '@nestjs/common';
+import { DatabaseModule } from '../../configs/database/database.module';
+import { RedisModule } from '../../configs/redis/redis.module';
+import { ReelsController } from './reels.controller';
+import { AudioTracksController } from './audio-tracks.controller';
+import { ReelsService } from './reels.service';
+
+@Module({
+  imports: [DatabaseModule, RedisModule],
+  controllers: [ReelsController, AudioTracksController],
+  providers: [ReelsService],
+  exports: [ReelsService],
+})
+export class ReelsModule {}

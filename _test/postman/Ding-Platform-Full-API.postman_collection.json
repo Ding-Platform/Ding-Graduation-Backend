@@ -65,6 +65,30 @@
     {
       "key": "sellerUserId",
       "value": ""
+    },
+    {
+      "key": "reelId",
+      "value": ""
+    },
+    {
+      "key": "audioTrackId",
+      "value": ""
+    },
+    {
+      "key": "conversationId",
+      "value": ""
+    },
+    {
+      "key": "crisisEventId",
+      "value": ""
+    },
+    {
+      "key": "peerId",
+      "value": ""
+    },
+    {
+      "key": "sessionId",
+      "value": "session-demo-1"
     }
   ],
   "item": [
@@ -2000,7 +2024,7 @@
             "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"emoji\": \"👍\"\n}",
+              "raw": "{\n  \"emoji\": \"\ud83d\udc4d\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2049,7 +2073,7 @@
             "url": "{{baseUrl}}/chat/messages/{{messageId}}/reactions/toggle",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"emoji\": \"🔥\"\n}",
+              "raw": "{\n  \"emoji\": \"\ud83d\udd25\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3098,6 +3122,465 @@
                 }
               ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Calls (Sprint 16)",
+      "item": [
+        {
+          "name": "Get Screen Share State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/calls/{{roomId}}/screen-share"
+          }
+        },
+        {
+          "name": "Get Call Quality Hints",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/calls/{{roomId}}/quality-hints"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Noro V2 (Sprint 16)",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/conversations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trigger\": \"USER_INITIATED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201 || pm.response.code===200){const d=pm.response.json().data; if(d?.id){pm.collectionVariables.set(\"conversationId\", d.id);}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/conversations?limit=20"
+          }
+        },
+        {
+          "name": "Add Conversation Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/conversations/{{conversationId}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"USER\",\n  \"content\": \"I am feeling anxious today.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Conversation Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/conversations/{{conversationId}}/messages?limit=20"
+          }
+        },
+        {
+          "name": "Report Crisis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/crisis/report",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageId\": \"{{messageId}}\",\n  \"crisisScore\": 0.85,\n  \"keywords\": [\"anxious\", \"help\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201 || pm.response.code===200){const d=pm.response.json().data; if(d?.id){pm.collectionVariables.set(\"crisisEventId\", d.id);}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Crisis Hotlines (US)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/crisis/hotlines?countryCode=US&language=en"
+          }
+        },
+        {
+          "name": "Log Crisis Intervention",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/crisis/intervention",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"crisisEventId\": \"{{crisisEventId}}\",\n  \"type\": \"SOFT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/noro/conversations/{{conversationId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reels (Sprint 17)",
+      "item": [
+        {
+          "name": "Create Reel Upload URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/upload-url"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===201 || pm.response.code===200){const d=pm.response.json().data; if(d?.reelId){pm.collectionVariables.set(\"reelId\", d.reelId);}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Finalize Reel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/finalize",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawVideoKey\": \"raw/user1/12345.mp4\",\n  \"caption\": \"My new reel!\",\n  \"hashtags\": [\"fun\", \"coding\"],\n  \"durationSec\": 15,\n  \"width\": 1080,\n  \"height\": 1920\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Reel Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/status"
+          }
+        },
+        {
+          "name": "Get Reels Feed",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/feed?limit=10"
+          }
+        },
+        {
+          "name": "Get Reel Details",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/{{reelId}}"
+          }
+        },
+        {
+          "name": "Record Reel View",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/view",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"session-demo-1\",\n  \"watchPct\": 95\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Toggle Reel Like",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/like"
+          }
+        },
+        {
+          "name": "Add Reel Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/comments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is a great reel!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "List Reel Comments",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/{{reelId}}/comments?limit=20"
+          }
+        },
+        {
+          "name": "Share Reel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/share",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shareType\": \"FEED\",\n  \"targetUserId\": \"{{targetUserId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete Reel",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audio Tracks (Sprint 17)",
+      "item": [
+        {
+          "name": "List Audio Tracks",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/audio-tracks"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code===200){const d=pm.response.json().data; if(Array.isArray(d) && d[0]?.id){pm.collectionVariables.set(\"audioTrackId\", d[0].id);}}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Trending Audio Tracks",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/audio-tracks/trending"
+          }
+        },
+        {
+          "name": "Get Audio Track By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/audio-tracks/{{audioTrackId}}"
+          }
+        },
+        {
+          "name": "Register Audio Track Use",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/audio-tracks/{{audioTrackId}}/use"
           }
         }
       ]

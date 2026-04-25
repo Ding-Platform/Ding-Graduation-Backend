@@ -65,6 +65,18 @@ model User {
   sellerApplication  SellerApplication?
   sellerProfile      SellerProfile?
   adminDealLogs      DealLog[]        @relation("AdminDealLogs")
+  callRoomsCreated   CallRoom[]       @relation("CallRoomCreator")
+  callParticipants   CallParticipant[]
+  noroConversations  NoroConversation[]
+  noroMessages       NoroMessage[]
+  userMoodProfile    UserMoodProfile?
+  crisisEvents       CrisisEvent[]
+  emergencyContacts  UserEmergencyContact[]
+  reels              Reel[]
+  reelViews          ReelView[]
+  reelLikes          ReelLike[]
+  reelComments       ReelComment[]
+  reelShares         ReelShare[]
 }
 
 model Session {
@@ -727,6 +739,247 @@ model NoroChat {
   @@index([userId])
 }
 
+model CallRoom {
+  id              String            @id
+  createdById     String?
+  createdBy       User?             @relation("CallRoomCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  endedAt         DateTime?
+  maxParticipants Int               @default(16)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  participants    CallParticipant[]
+
+  @@index([createdById])
+}
+
+model CallParticipant {
+  id          String    @id @default(uuid())
+  roomId      String
+  room        CallRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  peerId      String
+  isAudioOn   Boolean   @default(true)
+  isVideoOn   Boolean   @default(true)
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([roomId, leftAt])
+  @@index([userId, roomId])
+  @@index([peerId])
+}
+
+model NoroConversation {
+  id         String        @id @default(uuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trigger    NoroTrigger?
+  moodScore  Int?
+  startedAt  DateTime      @default(now())
+  endedAt    DateTime?
+  deletedAt  DateTime?
+  messages   NoroMessage[]
+  moodSource UserMoodProfile[] @relation("MoodSourceConversation")
+
+  @@index([userId, startedAt])
+  @@index([deletedAt])
+}
+
+model NoroMessage {
+  id             String           @id @default(uuid())
+  conversationId String
+  conversation   NoroConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           NoroMessageRole
+  content        String           @db.Text
+  sentiment      Json?
+  keywords       String[]         @default([])
+  createdAt      DateTime         @default(now())
+  deletedAt      DateTime?
+  crisisEvents   CrisisEvent[]
+
+  @@index([conversationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([deletedAt])
+}
+
+model UserMoodProfile {
+  userId        String            @id
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moodScore     Decimal?          @db.Decimal(4, 2)
+  dominantMood  String?
+  energyLevel   Decimal?          @db.Decimal(4, 2)
+  lastUpdated   DateTime          @default(now())
+  sourceConvId  String?
+  sourceConv    NoroConversation? @relation("MoodSourceConversation", fields: [sourceConvId], references: [id], onDelete: SetNull)
+
+  @@index([lastUpdated])
+  @@index([sourceConvId])
+}
+
+model CrisisEvent {
+  id           String               @id @default(uuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId    String?
+  message      NoroMessage?         @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  crisisScore  Decimal              @db.Decimal(5, 4)
+  severity     CrisisSeverity
+  intervention CrisisIntervention?
+  keywordsHit  String[]             @default([])
+  resolvedAt   DateTime?
+  createdAt    DateTime             @default(now())
+
+  @@index([userId, createdAt])
+  @@index([severity, createdAt])
+}
+
+model CrisisHotline {
+  id          String   @id @default(uuid())
+  countryCode String   @db.Char(2)
+  name        String
+  phone       String?
+  sms         String?
+  chatUrl     String?
+  language    String   @default("en")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([countryCode, language, isActive])
+}
+
+model UserEmergencyContact {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contactName    String
+  contactPhone   String?
+  contactEmail   String?
+  notifyOnCrisis Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Reel {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoUrl      String?
+  rawVideoKey   String?
+  thumbnailUrl  String?
+  caption       String?     @db.Text
+  audioTrackId  String?
+  audioTrack    AudioTrack? @relation(fields: [audioTrackId], references: [id], onDelete: SetNull)
+  audioOffsetMs Int         @default(0)
+  durationSec   Int?
+  width         Int?
+  height        Int?
+  fileSizeBytes BigInt?
+  status        ReelStatus  @default(PENDING)
+  failReason    String?
+  viewsCount    BigInt      @default(0)
+  likesCount    BigInt      @default(0)
+  commentsCount BigInt      @default(0)
+  sharesCount   BigInt      @default(0)
+  hashtags      String[]    @default([])
+  isPublic      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  deletedAt     DateTime?
+  views         ReelView[]
+  likes         ReelLike[]
+  comments      ReelComment[]
+  shares        ReelShare[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([isPublic, status, createdAt])
+  @@index([audioTrackId])
+}
+
+model AudioTrack {
+  id           String   @id @default(uuid())
+  title        String
+  artist       String?
+  durationSec  Int
+  audioUrl     String
+  waveformData Json?
+  genre        String?
+  isLicensed   Boolean  @default(false)
+  usageCount   BigInt   @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  reels        Reel[]
+
+  @@index([usageCount])
+  @@index([genre])
+}
+
+model ReelView {
+  id        String   @id @default(uuid())
+  reelId    String
+  reel      Reel     @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  viewerId  String?
+  viewer    User?    @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+  viewedAt  DateTime @default(now())
+  watchPct  Int?
+  sessionId String?
+
+  @@index([reelId, viewedAt])
+  @@index([viewerId, viewedAt])
+  @@index([sessionId, reelId])
+}
+
+model ReelLike {
+  reelId    String
+  reel      Reel     @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([reelId, userId])
+  @@index([userId, createdAt])
+}
+
+model ReelComment {
+  id         String        @id @default(uuid())
+  reelId     String
+  reel       Reel          @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId   String?
+  parent     ReelComment?  @relation("ReelCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    ReelComment[] @relation("ReelCommentReplies")
+  content    String        @db.Text
+  likesCount Int           @default(0)
+  createdAt  DateTime      @default(now())
+  deletedAt  DateTime?
+
+  @@index([reelId, createdAt])
+  @@index([parentId, createdAt])
+  @@index([deletedAt])
+}
+
+model ReelShare {
+  id        String    @id @default(uuid())
+  reelId    String
+  reel      Reel      @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  sharerId  String
+  sharer    User      @relation(fields: [sharerId], references: [id], onDelete: Cascade)
+  shareType ShareType
+  targetId  String?
+  createdAt DateTime  @default(now())
+
+  @@index([reelId, createdAt])
+  @@index([sharerId, createdAt])
+}
+
 // ─────────────────────────────────────────────
 // Marketplace: Roles, Seller KYC & Admin Audit
 // ─────────────────────────────────────────────
@@ -756,6 +1009,44 @@ enum DealLogAction {
   CANCEL_DEAL
   APPROVE_APPLICATION
   DECLINE_APPLICATION
+}
+
+enum NoroTrigger {
+  USER_INITIATED
+  PERIODIC_CHECKIN
+  CRISIS_ALERT
+}
+
+enum NoroMessageRole {
+  USER
+  ASSISTANT
+}
+
+enum CrisisSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CrisisIntervention {
+  NONE
+  SOFT
+  HOTLINE
+  ESCALATED
+}
+
+enum ReelStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum ShareType {
+  STORY
+  FEED
+  EXTERNAL
+  DM
 }
 
 /// Full KYC application submitted by a user requesting Seller status

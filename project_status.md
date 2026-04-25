@@ -1,48 +1,62 @@
-# Ding Platform Backend - Status Report
+# Ding Platform Backend - Project Checkpoint
 
-**Date**: 2026-02-06
-**Status**: All Planned Sprints (5-13) Completed
+**Date**: 2026-04-24  
+**Active Branch**: `sprint16-17/screen-share-and-reels`  
+**Current Status**: Sprints 16 and 17 backend foundations implemented and compile-validated
 
-## Accomplishments
+## Delivered in This Checkpoint
 
-### 📱 Social Core
+### Sprint 16 - Calls + Noro Wellbeing
+- Call signaling upgraded for group-call lifecycle and screen sharing:
+  - Participant join/leave state handling
+  - Screen share lock (`SCREEN_SHARE_IN_PROGRESS`)
+  - Active speaker event logic (debounced)
+  - Bandwidth reporting ingestion
+  - Quality hints endpoint
+- Noro v2 data flow added:
+  - Conversations/messages persistence with cursor pagination
+  - Mood profile updates from user sentiment
+  - Crisis events + hotline lookup + intervention logging
+  - Legacy Noro endpoints preserved for backward compatibility
 
-- **Feed**: Personalized (Home), Chronological (Following), and Discovery (Explore) feeds backed by Neo4j & Redis.
-- **Posts**: Rich media support (Images, Video placeholders), Likes, Comments, Bookmarks.
-- **Messaging**: Real-time chat (Socket.io), Group Chats, Typing indicators.
+### Sprint 17 - Reels (Part 1)
+- Reels module added with:
+  - Upload URL creation + finalize + status + CRUD
+  - Feed ranking (recency/engagement/relevance proxy + mood boost)
+  - View deduplication by `(sessionId, reelId)` via Redis
+  - Reactions (like toggle), comments/replies, sharing
+  - Audio tracks listing/trending/usage APIs
 
-### 🤖 AI (Noro)
+### Data Layer + Infra Wiring
+- Prisma schema expanded with additive models only (safe with existing modules).
+- Migration added for all Sprint 16/17 models and enums.
+- Redis service expanded with hash/zset/NX helpers needed by calls/reels.
+- Seed script updated to populate:
+  - `crisis_hotlines` equivalent table (`CrisisHotline`)
+  - `AudioTrack`
+  - Sample Noro conversation/mood/crisis records
+  - Sample reel with view/like/comment/share
+  - Sample call room participants
 
-- **Chat**: Context-aware assistant using Ollama (Llama 3).
-- **Voice**: Speech-to-Text and Text-to-Speech endpoints (Ready for integration).
-- **Moderation**: Automated text analysis, User Reporting, Ban system.
+### QA Assets Updated
+- Added new unit tests for:
+  - `CallService`
+  - `NoroService` (new flows)
+  - `ReelsService`
+  - `ReelsController`
+- Postman collection updated with Sprint 16/17 folders and variables:
+  - Calls endpoints
+  - Noro v2 + crisis endpoints
+  - Reels endpoints
+  - Audio tracks endpoints
 
-### 🛍️ Marketplace
+## Validation Snapshot
+- `pnpm build` passes after these changes.
+- New tests added; run them with:
+  - `pnpm test -- src/modules/call/call.service.spec.ts src/modules/noro/noro.service.spec.ts src/modules/reels/reels.service.spec.ts src/modules/reels/reels.controller.spec.ts`
 
-- **Commerce**: Product Listings, Categories.
-- **Transactions**: Atomic purchase logic (Buyer/Seller transaction records).
-
-### ⚡ Performance & Infrastructure
-
-- **Caching**: Redis caching for high-load endpoints (Feed).
-- **Security**: Global Rate Limiting, JWT Authentication, Role-based Access (Admin/Mod).
-- **Real-time**: WebRTC Signaling Gateway for Voice/Video calls.
-
-## MVP Match Check (vs Agile Plan)
-
-- ✅ **Core Social**: Auth, Feed, Posts, Messaging, Groups (Done).
-- ✅ **AI**: Noro, Moderation (Done).
-- 🔄 **Deviations**:
-  - **Stories**: Originally Sprint 12. Replaced with **Performance/Caching**.
-  - **Global Search**: Originally Sprint 14.
-  - **Marketplace**: Originally Sprint 15. **Moved Up to Sprint 13**.
-  - **Pages**: Originally Sprint 14.
-
-**Verdict**: Technically "MVP Plus" (due to Marketplace/Performance), but missing **Stories** and **Pages** from original scope.
-
-## Next Potential Initiatives
-
-1.  **Stories Feature** (Original Sprint 12 goal).
-2.  **Global Search & Pages** (Original Sprint 14 goal).
-3.  **Payment Integration** (Stripe/PayPal) for Marketplace.
-4.  **Mobile App Integration** (Flutter/React Native).
+## Known Follow-up Work (Non-blocking for this checkpoint)
+1. Replace placeholder in-process reels finalize path with full S3 -> queue -> FFmpeg worker pipeline.
+2. Replace heuristic sentiment/crisis detection with queue-based NLP/ML services.
+3. Add rate-limit guards and DTO validation classes for all newly added endpoints.
+4. Add integration/e2e tests for new modules.
