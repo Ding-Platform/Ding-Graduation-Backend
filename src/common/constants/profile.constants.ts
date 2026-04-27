@@ -46,4 +46,11 @@ export const PROFILE_CONSTANTS = {
 } as const;
 
 // Type exports
-export type VisibilityType = 'PUBLIC' | 'FRIENDS' | 'FRIENDS_OF_FRIENDS' | 'ONLY_ME' | 'PRIVATE' | 'EVERYONE' | 'CUSTOM';
+export type VisibilityType =
+  | 'PUBLIC'
+  | 'FRIENDS'
+  | 'FRIENDS_OF_FRIENDS'
+  | 'ONLY_ME'
+  | 'PRIVATE'
+  | 'EVERYONE'
+  | 'CUSTOM';

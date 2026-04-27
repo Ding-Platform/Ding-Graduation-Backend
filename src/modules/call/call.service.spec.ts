@@ -11,7 +11,9 @@ describe('CallService', () => {
   beforeEach(async () => {
     prismaMock = {
       callRoom: {
-        upsert: jest.fn().mockResolvedValue({ id: 'room-1', maxParticipants: 16 }),
+        upsert: jest
+          .fn()
+          .mockResolvedValue({ id: 'room-1', maxParticipants: 16 }),
       },
       callParticipant: {
         create: jest.fn().mockResolvedValue({}),
@@ -68,7 +70,10 @@ describe('CallService', () => {
 
   it('rejects join when room is full', async () => {
     redisMock.hLen.mockResolvedValue(16);
-    prismaMock.callRoom.upsert.mockResolvedValue({ id: 'room-1', maxParticipants: 16 });
+    prismaMock.callRoom.upsert.mockResolvedValue({
+      id: 'room-1',
+      maxParticipants: 16,
+    });
 
     const result = await service.joinRoomParticipant({
       roomId: 'room-1',

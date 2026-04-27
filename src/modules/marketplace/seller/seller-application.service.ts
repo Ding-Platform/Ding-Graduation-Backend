@@ -55,7 +55,9 @@ export class SellerApplicationService {
 
     // ── Validate sensitive fields ──────────────────────────────────
     if (!luhnCheck(dto.bankCardNumber)) {
-      throw new BadRequestException('Bank card number is invalid (Luhn check failed).');
+      throw new BadRequestException(
+        'Bank card number is invalid (Luhn check failed).',
+      );
     }
     if (!validateCommercialReg(dto.commercialRegNumber)) {
       throw new BadRequestException(
@@ -63,7 +65,9 @@ export class SellerApplicationService {
       );
     }
     if (!validateCardExpiry(dto.bankCardExpiry)) {
-      throw new BadRequestException('Bank card is expired or expiry format is invalid (MM/YY).');
+      throw new BadRequestException(
+        'Bank card is expired or expiry format is invalid (MM/YY).',
+      );
     }
 
     // ── Required file validation ───────────────────────────────────

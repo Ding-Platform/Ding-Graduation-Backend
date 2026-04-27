@@ -47,7 +47,6 @@ export class UserResponse {
   @Expose()
   emailVerified: boolean;
 
-
   @Expose()
   createdAt: Date;
 

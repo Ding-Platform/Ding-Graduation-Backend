@@ -90,7 +90,10 @@ export class NoroService {
     });
   }
 
-  async createConversation(userId: string, trigger: NoroTrigger = 'USER_INITIATED') {
+  async createConversation(
+    userId: string,
+    trigger: NoroTrigger = 'USER_INITIATED',
+  ) {
     return this.prisma.noroConversation.create({
       data: {
         userId,
@@ -128,7 +131,11 @@ export class NoroService {
         sentiment.score,
         payload.conversationId,
       );
-      await this.maybeCreateCrisisEvent(payload.userId, message.id, payload.content);
+      await this.maybeCreateCrisisEvent(
+        payload.userId,
+        message.id,
+        payload.content,
+      );
     }
 
     return this.prisma.noroMessage.findUnique({
@@ -298,40 +305,83 @@ export class NoroService {
 
   private estimateSentiment(content: string) {
     const lower = content.toLowerCase();
-    const positiveWords = ['good', 'great', 'happy', 'better', 'love', 'thanks'];
-    const negativeWords = ['sad', 'depressed', 'anxious', 'hurt', 'alone', 'bad'];
-    const crisisWords = ['suicide', 'kill myself', 'end my life', 'self harm', 'hopeless'];
+    const positiveWords = [
+      'good',
+      'great',
+      'happy',
+      'better',
+      'love',
+      'thanks',
+    ];
+    const negativeWords = [
+      'sad',
+      'depressed',
+      'anxious',
+      'hurt',
+      'alone',
+      'bad',
+    ];
+    const crisisWords = [
+      'suicide',
+      'kill myself',
+      'end my life',
+      'self harm',
+      'hopeless',
+    ];
     const words = lower.split(/\s+/).filter(Boolean);
 
-    const positiveHits = positiveWords.filter((word) => lower.includes(word)).length;
-    const negativeHits = negativeWords.filter((word) => lower.includes(word)).length;
-    const crisisHits = crisisWords.filter((word) => lower.includes(word)).length;
+    const positiveHits = positiveWords.filter((word) =>
+      lower.includes(word),
+    ).length;
+    const negativeHits = negativeWords.filter((word) =>
+      lower.includes(word),
+    ).length;
+    const crisisHits = crisisWords.filter((word) =>
+      lower.includes(word),
+    ).length;
 
     const rawScore = positiveHits - negativeHits - crisisHits * 2;
     const normalized = Math.max(-1, Math.min(1, rawScore / 4));
-    const label = normalized > 0.2 ? 'positive' : normalized < -0.2 ? 'negative' : 'neutral';
+    const label =
+      normalized > 0.2
+        ? 'positive'
+        : normalized < -0.2
+          ? 'negative'
+          : 'neutral';
 
     return {
       score: normalized,
       label,
-      keywords: words
-        .filter((word) => word.length > 3)
-        .slice(0, 10),
+      keywords: words.filter((word) => word.length > 3).slice(0, 10),
     };
   }
 
-  private async updateMoodProfile(userId: string, sentimentScore: number, conversationId: string) {
+  private async updateMoodProfile(
+    userId: string,
+    sentimentScore: number,
+    conversationId: string,
+  ) {
     const existing = await this.prisma.userMoodProfile.findUnique({
       where: { userId },
     });
 
     const latestMoodScore = this.normalizeMoodScore(sentimentScore);
     const moodScore = existing?.moodScore
-      ? Number((0.3 * latestMoodScore + 0.7 * Number(existing.moodScore)).toFixed(2))
+      ? Number(
+          (0.3 * latestMoodScore + 0.7 * Number(existing.moodScore)).toFixed(2),
+        )
       : latestMoodScore;
-    const energyLevel = Number(Math.max(1, Math.min(10, moodScore + 0.5)).toFixed(2));
+    const energyLevel = Number(
+      Math.max(1, Math.min(10, moodScore + 0.5)).toFixed(2),
+    );
     const dominantMood =
-      moodScore >= 6.8 ? 'happy' : moodScore <= 4 ? 'sad' : moodScore <= 5.5 ? 'anxious' : 'neutral';
+      moodScore >= 6.8
+        ? 'happy'
+        : moodScore <= 4
+          ? 'sad'
+          : moodScore <= 5.5
+            ? 'anxious'
+            : 'neutral';
 
     await this.prisma.userMoodProfile.upsert({
       where: { userId },
@@ -356,15 +406,27 @@ export class NoroService {
     return Number((5.5 + sentimentScore * 3.5).toFixed(2));
   }
 
-  private async maybeCreateCrisisEvent(userId: string, messageId: string, content: string) {
+  private async maybeCreateCrisisEvent(
+    userId: string,
+    messageId: string,
+    content: string,
+  ) {
     const lower = content.toLowerCase();
-    const keywords = ['suicide', 'kill myself', 'end my life', 'self harm', 'i want to die'];
+    const keywords = [
+      'suicide',
+      'kill myself',
+      'end my life',
+      'self harm',
+      'i want to die',
+    ];
     const hits = keywords.filter((keyword) => lower.includes(keyword));
     if (!hits.length) {
       return null;
     }
 
-    const crisisScore = Number(Math.min(0.95, 0.45 + hits.length * 0.18).toFixed(4));
+    const crisisScore = Number(
+      Math.min(0.95, 0.45 + hits.length * 0.18).toFixed(4),
+    );
     return this.prisma.crisisEvent.create({
       data: {
         userId,

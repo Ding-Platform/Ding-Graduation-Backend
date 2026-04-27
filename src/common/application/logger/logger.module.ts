@@ -60,7 +60,8 @@ import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
           });
 
         // Check both ConfigService and process.env for environment detection
-        const nodeEnv = config.get('NODE_ENV') || process.env.NODE_ENV || 'development';
+        const nodeEnv =
+          config.get('NODE_ENV') || process.env.NODE_ENV || 'development';
         const isProduction = nodeEnv === 'production';
         const isTest = nodeEnv === 'test';
 

@@ -101,10 +101,7 @@ export class AuthController {
     @SessionId() sessionId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    return await this.authService.refreshTokensWithCookie(
-      sessionId,
-      response,
-    );
+    return await this.authService.refreshTokensWithCookie(sessionId, response);
   }
 
   @Delete('logout')

@@ -16,6 +16,10 @@ export class SocialService {
     private readonly notificationService: NotificationService,
   ) {}
 
+  isGraphConnected(): boolean {
+    return this.neo4jservice.isConnected();
+  }
+
   /**
    * Safely convert Neo4j Integer or Float to JavaScript number
    */
@@ -291,7 +295,10 @@ export class SocialService {
         );
       }
 
-      const requestExists = await this.friendRequestExists(fromUserId, toUserId);
+      const requestExists = await this.friendRequestExists(
+        fromUserId,
+        toUserId,
+      );
       if (!requestExists) {
         throw new GenericHttpException(
           ERROR_MESSAGES.FRIEND_REQUEST_NOT_FOUND,
@@ -425,14 +432,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -456,7 +463,7 @@ export class SocialService {
              LIMIT $limit`,
         { userId, offset: neo4j.int(offsetInt), limit: neo4j.int(limitInt) },
       );
-      
+
       const friendIds = result.records.map((r) => r.get('userId'));
 
       // Batch fetch profile details from PostgreSQL with all data
@@ -560,14 +567,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -591,7 +598,7 @@ export class SocialService {
              LIMIT $limit`,
         { userId, offset: neo4j.int(offsetInt), limit: neo4j.int(limitInt) },
       );
-      
+
       const requesterIds = result.records.map((r) => r.get('userId'));
 
       // Batch fetch profile details from PostgreSQL with all data
@@ -784,14 +791,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -815,7 +822,7 @@ export class SocialService {
          LIMIT $limit`,
         { userId, offset: neo4j.int(offsetInt), limit: neo4j.int(limitInt) },
       );
-      
+
       const followerIds = result.records.map((r) => r.get('userId'));
 
       // Identify which of the followers the user also follows back
@@ -856,9 +863,7 @@ export class SocialService {
           };
         })
         .filter(
-          (
-            p,
-          ): p is Profile & { user: User } & { isFollowedBack: boolean } =>
+          (p): p is Profile & { user: User } & { isFollowedBack: boolean } =>
             p !== undefined,
         );
 
@@ -946,14 +951,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -977,7 +982,7 @@ export class SocialService {
          LIMIT $limit`,
         { userId, offset: neo4j.int(offsetInt), limit: neo4j.int(limitInt) },
       );
-      
+
       const followingIds = result.records.map((r) => r.get('userId'));
 
       // Batch fetch profile details from PostgreSQL with all data
@@ -1134,14 +1139,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -1245,7 +1250,11 @@ export class SocialService {
           }
 
           const locationBoost =
-            userLocation && profile.location && userLocation === profile.location ? 20 : 0;
+            userLocation &&
+            profile.location &&
+            userLocation === profile.location
+              ? 20
+              : 0;
           const finalScore = neo4jData.score + locationBoost;
 
           return {
@@ -1362,14 +1371,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -1473,7 +1482,11 @@ export class SocialService {
           }
 
           const locationBoost =
-            userLocation && profile.location && userLocation === profile.location ? 20 : 0;
+            userLocation &&
+            profile.location &&
+            userLocation === profile.location
+              ? 20
+              : 0;
           const finalScore = neo4jData.score + locationBoost;
 
           return {
@@ -1556,14 +1569,14 @@ export class SocialService {
       // Ensure offset and limit are integers (Neo4j requires integer, not float)
       const offsetInt = Math.floor(Number(offset)) || 0;
       const limitInt = Math.floor(Number(limit)) || 10;
-      
+
       if (offsetInt < 0) {
         throw new GenericHttpException(
           'Offset must be a non-negative integer',
           HttpStatus.BAD_REQUEST,
         );
       }
-      
+
       if (limitInt < 1) {
         throw new GenericHttpException(
           'Limit must be a positive integer',
@@ -1585,9 +1598,14 @@ export class SocialService {
          RETURN mutual.userId as userId
          SKIP $offset
          LIMIT $limit`,
-        { userId1, userId2, offset: neo4j.int(offsetInt), limit: neo4j.int(limitInt) },
+        {
+          userId1,
+          userId2,
+          offset: neo4j.int(offsetInt),
+          limit: neo4j.int(limitInt),
+        },
       );
-      
+
       const mutualFriendIds = result.records.map((r) => r.get('userId'));
 
       // Batch fetch profile details from PostgreSQL with all data

@@ -14,6 +14,7 @@ import { currentUser } from 'src/common/decorators/currentUser.decorator';
 import { currentUserType } from 'src/common/types/current-user.type';
 import { JwtAuthenticationGuard } from 'src/common/guards/strategy.guards/jwt.guard';
 import { Serialize } from 'src/common/interceptors/serialize.interceptor';
+import { OffsetPaginationDto } from 'src/common/dto/offset-pagination.dto';
 import {
   MessageResponse,
   FriendResponse,
@@ -33,13 +34,15 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getFriendRequests(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
-    return await this.socialservice.getFriendRequests(user.id, offsetNum, limitNum);
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
+    return await this.socialservice.getFriendRequests(
+      user.id,
+      offsetNum,
+      limitNum,
+    );
   }
 
   @Get('friends')
@@ -47,12 +50,10 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getFriends(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getFriends(user.id, offsetNum, limitNum);
   }
 
@@ -130,12 +131,10 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getFollowers(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getFollowers(user.id, offsetNum, limitNum);
   }
 
@@ -144,12 +143,10 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getFollowing(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getFollowing(user.id, offsetNum, limitNum);
   }
 
@@ -159,12 +156,10 @@ export class SocialController {
   @Serialize(RecommendationsListResponse, RecommendedUserResponse)
   async getFriendRecommendations(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getFriendRecommendations(
       user.id,
       offsetNum,
@@ -177,12 +172,10 @@ export class SocialController {
   @Serialize(RecommendationsListResponse, RecommendedUserResponse)
   async getFollowerRecommendations(
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getFollowerRecommendations(
       user.id,
       offsetNum,
@@ -203,12 +196,10 @@ export class SocialController {
   async getMutualFriends(
     @Param('userId') userId: string,
     @currentUser() user: currentUserType,
-    @Query('offset') offset?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    // Parse offset and limit from query string and convert to numbers
-    const offsetNum = offset ? parseInt(offset, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const offsetNum = pagination.offset ?? 0;
+    const limitNum = pagination.limit ?? 10;
     return await this.socialservice.getMutualFriends(
       user.id,
       userId,
@@ -245,9 +236,9 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getBlockedUsers(
     @currentUser() user: currentUserType,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    const limitNum = pagination.limit ?? undefined;
     const blocked = await this.socialservice.getBlockedUsers(user.id, limitNum);
     return {
       data: blocked,
@@ -283,9 +274,9 @@ export class SocialController {
   @Serialize(FriendsListResponse, FriendResponse)
   async getMutedUsers(
     @currentUser() user: currentUserType,
-    @Query('limit') limit?: string,
+    @Query() pagination: OffsetPaginationDto,
   ) {
-    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    const limitNum = pagination.limit ?? undefined;
     const muted = await this.socialservice.getMutedUsers(user.id, limitNum);
     return {
       data: muted,

@@ -15,13 +15,7 @@ import { User } from '../../common/decorators/user.decorator';
 import { currentUserType } from '../../common/types/current-user.type';
 import { ReelsService } from './reels.service';
 
-/** Parse a query-string number safely. Returns `fallback` if the value is
- *  missing, NaN, or negative. */
-function safeInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const n = parseInt(value, 10);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
+import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 
 @Controller('reels')
 export class ReelsController {
@@ -64,10 +58,13 @@ export class ReelsController {
   @UseGuards(JwtAuthGuard)
   async getFeed(
     @User() user: currentUserType,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: CursorPaginationDto,
   ) {
-    return this.reelsService.getFeed(user.id, cursor, safeInt(limit, 10));
+    return this.reelsService.getFeed(
+      user.id,
+      pagination.cursor,
+      pagination.limit ?? 10,
+    );
   }
 
   @Get(':id')
@@ -115,23 +112,25 @@ export class ReelsController {
   @Get(':id/comments')
   async listComments(
     @Param('id') id: string,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: CursorPaginationDto,
   ) {
-    return this.reelsService.listComments(id, cursor, safeInt(limit, 20));
+    return this.reelsService.listComments(
+      id,
+      pagination.cursor,
+      pagination.limit ?? 20,
+    );
   }
 
   @Get(':id/comments/:cid/replies')
   async listReplies(
     @Param('id') id: string,
     @Param('cid') commentId: string,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: CursorPaginationDto,
   ) {
     return this.reelsService.listComments(
       id,
-      cursor,
-      safeInt(limit, 20),
+      pagination.cursor,
+      pagination.limit ?? 20,
       commentId,
     );
   }

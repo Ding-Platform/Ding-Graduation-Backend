@@ -51,5 +51,3 @@ export class MigrationService {
     console.log('✓ All posts queued for sync');
   }
 }
-
-

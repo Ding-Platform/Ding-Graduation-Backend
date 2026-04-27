@@ -94,7 +94,7 @@ export class RoomService {
       });
       if (room) {
         // Return existing room
-        return this.getRoomWithMembers(room._id!.toHexString());
+        return this.getRoomWithMembers(room._id.toHexString());
       }
     }
 
@@ -350,10 +350,10 @@ export class RoomService {
     const roomsWithMembers: RoomWithMembers[] = await Promise.all(
       rooms.map(async (room) => {
         const membership = memberships.find(
-          (m) => m.roomId === room._id!.toHexString(),
+          (m) => m.roomId === room._id.toHexString(),
         );
         const members = await membersCollection
-          .find({ roomId: room._id!.toHexString(), leftAt: null })
+          .find({ roomId: room._id.toHexString(), leftAt: null })
           .toArray();
 
         // Calculate unread count
@@ -368,7 +368,7 @@ export class RoomService {
           });
           if (lastReadMessage) {
             unreadCount = await messagesCollection.countDocuments({
-              roomId: room._id!.toHexString(),
+              roomId: room._id.toHexString(),
               createdAt: { $gt: lastReadMessage.createdAt },
               deletedForEveryone: false,
               deletedForUsers: { $ne: userId },

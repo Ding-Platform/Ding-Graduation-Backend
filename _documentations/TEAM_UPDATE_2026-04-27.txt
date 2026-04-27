@@ -1,0 +1,50 @@
+Ding Platform Backend - Team Update
+Date: 2026-04-27
+Stage: Sprint 1-20 parity + hardening + documentation cleanup
+
+1) What was completed
+- Fixed requested target files:
+  - src/common/constants/error-messages.constant.ts
+  - src/common/guards/profile-permission.guard.ts
+  - src/modules/feed/feed.controller.spec.ts
+  - src/modules/profile/profile.service.ts
+- Added/finished Sprint 12-20 backend modules and integrations:
+  - stories, groups, pages, search, streaming, analytics, events
+- Added missing advanced flows:
+  - Stories highlight/unhighlight with ownership checks
+  - Groups post moderation/review and insights
+  - Analytics typed batch ingestion with DTO validation and limits
+  - Search upgraded toward Postgres full-text ranked behavior
+  - Streaming gateway lifecycle/chat/viewer state support
+  - Events RSVP/ticket/group-linking workflows
+
+2) Validation status in this environment
+- PASS: pnpm tsc --noEmit
+- PASS: pnpm test --runInBand (10/10 suites, 36/36 tests)
+- PASS: pnpm build
+- PASS: pnpm lint (0 errors, warnings remain)
+- NOTE: e2e reliability is environment-dependent (DB/infra profile must be stable)
+
+3) Documentation work done
+- Created and updated:
+  - _documentations/RECENT_WORKLOG_2026-04-27.md
+    - includes what changed, why it changed, and impact/effect
+- Added canonical sprint docs (separate file per sprint):
+  - _documentations/sprints/sprint01.md ... sprint20.md
+  - each file contains: Update / Reason / Effect
+- Cleaned documentation structure:
+  - Added _documentations/README.md index
+  - Archived legacy duplicate sprint docs into:
+    _documentations/archive/legacy-sprint-notes/
+
+4) Current repo quality summary
+- Sprint 1-20 feature structure is documented and wired.
+- Build/type/unit checks are green.
+- Remaining technical debt is mostly lint warnings and environment consistency for e2e.
+
+5) Suggested immediate next steps
+- Stabilize dedicated e2e infra profile (DB/Redis/env parity)
+- Burn down lint warnings module-by-module
+- Run light performance benchmark/profiling pass on high-traffic endpoints
+
+Prepared for handoff to backend/mobile/frontend/QA coordination.

@@ -103,4 +103,3 @@ export class RecommendationsListResponse {
   @Type(() => RecommendationsListMeta)
   meta: RecommendationsListMeta;
 }
-
