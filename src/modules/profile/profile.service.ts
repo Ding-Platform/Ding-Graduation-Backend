@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
 // src/modules/profile/profile.service.ts
 import { Injectable, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  type Prisma,
+  type Profile as PrismaProfile,
+  type VisibilityType,
+} from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
@@ -14,6 +14,26 @@ import { UpdateProfileRequest } from './dtos/request/update-profile.request';
 import { UpdatePrivacyRequest } from './dtos/request/update-privacy.request';
 import { SearchProfileRequest } from './dtos/request/search-profile.request';
 import { SocialService } from '../social/social.service';
+
+type ProfileWithUserAndPrivacy = Prisma.ProfileGetPayload<{
+  include: {
+    privacySettings: true;
+    user: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        image: true;
+      };
+    };
+  };
+}>;
+
+type FilteredProfileResponse = Omit<ProfileWithUserAndPrivacy, 'user'> & {
+  user: Omit<ProfileWithUserAndPrivacy['user'], 'email'> & {
+    email: string | null;
+  };
+};
 
 @Injectable()
 export class ProfileService {
@@ -27,7 +47,10 @@ export class ProfileService {
    * Get user profile by userId
    * Applies privacy filtering if requester is not the owner
    */
-  async getProfile(userId: string, requesterId?: string) {
+  async getProfile(
+    userId: string,
+    requesterId?: string,
+  ): Promise<ProfileWithUserAndPrivacy | FilteredProfileResponse> {
     const profile = await this.prisma.profile.findUnique({
       where: { userId },
       include: {
@@ -52,12 +75,12 @@ export class ProfileService {
 
     // Check if requester has access to view this profile
     if (requesterId && requesterId !== userId) {
-      this.checkProfileAccess(profile, requesterId);
+      await this.checkProfileAccess(profile, requesterId);
     }
 
     // Filter sensitive data based on privacy settings for non-owners
     if (requesterId !== userId) {
-      return this.filterProfileData(profile, requesterId);
+      return await this.filterProfileData(profile, requesterId);
     }
 
     return profile;
@@ -67,8 +90,11 @@ export class ProfileService {
    * Create or update user profile
    * Auto-creates privacy settings with defaults if new profile
    */
-  async createOrUpdateProfile(userId: string, data: UpdateProfileRequest) {
-    let existingProfile;
+  async createOrUpdateProfile(
+    userId: string,
+    data: UpdateProfileRequest,
+  ): Promise<ProfileWithUserAndPrivacy> {
+    let existingProfile: PrismaProfile | null = null;
     try {
       existingProfile = await this.prisma.profile.findUnique({
         where: { userId },
@@ -109,28 +135,7 @@ export class ProfileService {
           phoneNumber: data.phoneNumber,
           dateOfBirth: data.dateOfBirth,
           privacySettings: {
-            create: {
-              profileVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_PROFILE_VISIBILITY as any,
-              postsVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_POSTS_VISIBILITY as any,
-              friendsVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_FRIENDS_VISIBILITY as any,
-              bioVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_BIO_VISIBILITY as any,
-              emailVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_EMAIL_VISIBILITY as any,
-              phoneVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_PHONE_VISIBILITY as any,
-              locationVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_LOCATION_VISIBILITY as any,
-              dateOfBirthVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_DOB_VISIBILITY as any,
-              whoCanSendFriendRequests: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_FRIEND_REQUEST_PERMISSION as any,
-              whoCanMessageMe: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_MESSAGE_PERMISSION as any,
-            },
+            create: this.getDefaultPrivacySettings(),
           },
         },
         include: {
@@ -146,12 +151,14 @@ export class ProfileService {
         },
       });
 
-      // Create corresponding node in Neo4j
-      try {
-        await this.socialService.createUserNode(profile.user.id);
-      } catch (error) {
-        // Log error but don't fail profile creation if Neo4j fails
-        console.error('Failed to create Neo4j node for user:', error);
+      // Create corresponding node in Neo4j when graph service is available
+      if (this.socialService.isGraphConnected()) {
+        try {
+          await this.socialService.createUserNode(profile.user.id);
+        } catch (error) {
+          // Log error but don't fail profile creation if Neo4j fails
+          console.error('Failed to create Neo4j node for user:', error);
+        }
       }
 
       return profile;
@@ -189,7 +196,10 @@ export class ProfileService {
 
       return { imageUrl };
     } catch (error) {
-      if (error instanceof GenericHttpException || error instanceof HttpException) {
+      if (
+        error instanceof GenericHttpException ||
+        error instanceof HttpException
+      ) {
         throw error;
       }
       console.error('Profile picture upload error:', error);
@@ -223,7 +233,10 @@ export class ProfileService {
 
       return { coverPhotoUrl };
     } catch (error) {
-      if (error instanceof GenericHttpException || error instanceof HttpException) {
+      if (
+        error instanceof GenericHttpException ||
+        error instanceof HttpException
+      ) {
         throw error;
       }
       console.error('Cover photo upload error:', error);
@@ -280,21 +293,21 @@ export class ProfileService {
     const { query, location, page = 1, limit = 10 } = filters;
 
     // Build WHERE clause with privacy filter
-    const where: any = {
-      AND: [
-        {
-          privacySettings: {
+    const andConditions: Prisma.ProfileWhereInput[] = [
+      {
+        privacySettings: {
+          is: {
             profileVisibility: {
               in: ['PUBLIC', 'EVERYONE'],
             },
           },
         },
-      ],
-    };
+      },
+    ];
 
     // Add search query filter
     if (query) {
-      where.AND.push({
+      andConditions.push({
         OR: [
           { bio: { contains: query, mode: 'insensitive' } },
           { location: { contains: query, mode: 'insensitive' } },
@@ -309,10 +322,12 @@ export class ProfileService {
 
     // Add location filter
     if (location) {
-      where.AND.push({
+      andConditions.push({
         location: { contains: location, mode: 'insensitive' },
       });
     }
+
+    const where: Prisma.ProfileWhereInput = { AND: andConditions };
 
     const skip = (page - 1) * limit;
 
@@ -394,7 +409,7 @@ export class ProfileService {
    * Ensures profile exists for user, creates with defaults if not
    * Used when uploading images before profile is created
    */
-  private async ensureProfileExists(userId: string) {
+  private async ensureProfileExists(userId: string): Promise<PrismaProfile> {
     let profile = await this.prisma.profile.findUnique({
       where: { userId },
     });
@@ -404,28 +419,7 @@ export class ProfileService {
         data: {
           userId,
           privacySettings: {
-            create: {
-              profileVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_PROFILE_VISIBILITY as any,
-              postsVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_POSTS_VISIBILITY as any,
-              friendsVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_FRIENDS_VISIBILITY as any,
-              bioVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_BIO_VISIBILITY as any,
-              emailVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_EMAIL_VISIBILITY as any,
-              phoneVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_PHONE_VISIBILITY as any,
-              locationVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_LOCATION_VISIBILITY as any,
-              dateOfBirthVisibility: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_DOB_VISIBILITY as any,
-              whoCanSendFriendRequests: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_FRIEND_REQUEST_PERMISSION as any,
-              whoCanMessageMe: PROFILE_CONSTANTS.PRIVACY
-                .DEFAULT_MESSAGE_PERMISSION as any,
-            },
+            create: this.getDefaultPrivacySettings(),
           },
         },
       });
@@ -438,9 +432,10 @@ export class ProfileService {
    * Check if requester has permission to view profile
    * Throws GenericHttpException if access denied
    */
-
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  private checkProfileAccess(profile: any, _requesterId: string) {
+  private async checkProfileAccess(
+    profile: ProfileWithUserAndPrivacy,
+    requesterId: string,
+  ): Promise<void> {
     const visibility = profile.privacySettings?.profileVisibility;
 
     // Allow access for PUBLIC/EVERYONE profiles
@@ -458,11 +453,16 @@ export class ProfileService {
 
     // Check FRIENDS visibility
     if (visibility === 'FRIENDS') {
-      // TODO: Implement friend checking when friend system is ready
-      throw new GenericHttpException(
-        PROFILE_ERROR_MESSAGES.UNAUTHORIZED_ACCESS,
-        HttpStatus.FORBIDDEN,
+      const areFriends = await this.socialService.areFriends(
+        profile.userId,
+        requesterId,
       );
+      if (!areFriends) {
+        throw new GenericHttpException(
+          PROFILE_ERROR_MESSAGES.UNAUTHORIZED_ACCESS,
+          HttpStatus.FORBIDDEN,
+        );
+      }
     }
   }
 
@@ -470,51 +470,68 @@ export class ProfileService {
    * Filter profile data based on privacy settings
    * Removes fields that requester doesn't have permission to view
    */
-  private filterProfileData(profile: any, requesterId: string | undefined) {
+  private async filterProfileData(
+    profile: ProfileWithUserAndPrivacy,
+    requesterId: string | undefined,
+  ): Promise<FilteredProfileResponse> {
     const privacy = profile.privacySettings;
-    if (!privacy) return profile;
-
-    const filtered = { ...profile };
+    const filtered: FilteredProfileResponse = {
+      ...profile,
+      user: { ...profile.user, email: profile.user.email },
+    };
+    if (!privacy) return filtered;
 
     // Filter bio based on visibility
     if (
-      !this.canViewField(privacy.bioVisibility, profile.userId, requesterId)
+      !(await this.canViewField(
+        privacy.bioVisibility,
+        profile.userId,
+        requesterId,
+      ))
     ) {
       filtered.bio = null;
     }
 
     // Filter email based on visibility
     if (
-      !this.canViewField(privacy.emailVisibility, profile.userId, requesterId)
+      !(await this.canViewField(
+        privacy.emailVisibility,
+        profile.userId,
+        requesterId,
+      ))
     ) {
       filtered.user = { ...filtered.user, email: null };
     }
 
     // Filter phone based on visibility
     if (
-      !this.canViewField(privacy.phoneVisibility, profile.userId, requesterId)
+      !(await this.canViewField(
+        privacy.phoneVisibility,
+        profile.userId,
+        requesterId,
+      ))
     ) {
       filtered.phoneNumber = null;
     }
 
     // Filter location based on visibility
     if (
-      !this.canViewField(
+      !(await this.canViewField(
         privacy.locationVisibility,
         profile.userId,
         requesterId,
-      )
+      ))
     ) {
       filtered.location = null;
     }
 
     // Filter date of birth based on visibility
     if (
-      !this.canViewField(
+      !(await this.canViewField(
         privacy.dateOfBirthVisibility,
         profile.userId,
         requesterId,
-      )
+      ))
     ) {
       filtered.dateOfBirth = null;
     }
@@ -525,11 +542,11 @@ export class ProfileService {
   /**
    * Check if requester can view a specific field based on visibility setting
    */
-  private canViewField(
-    visibility: string,
+  private async canViewField(
+    visibility: VisibilityType,
     ownerId: string,
     requesterId: string | undefined,
-  ): boolean {
+  ): Promise<boolean> {
     // Owner can always see their own fields
     if (!requesterId || requesterId === ownerId) return true;
 
@@ -541,11 +558,35 @@ export class ProfileService {
 
     // FRIENDS visibility
     if (visibility === 'FRIENDS') {
-      // TODO: Check friendship when friend system is implemented
-      return false;
+      return await this.socialService.areFriends(ownerId, requesterId);
     }
 
     // Default deny
     return false;
+  }
+
+  private getDefaultPrivacySettings(): Prisma.ProfilePrivacyCreateWithoutProfileInput {
+    return {
+      profileVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_PROFILE_VISIBILITY as VisibilityType,
+      postsVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_POSTS_VISIBILITY as VisibilityType,
+      friendsVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_FRIENDS_VISIBILITY as VisibilityType,
+      bioVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_BIO_VISIBILITY as VisibilityType,
+      emailVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_EMAIL_VISIBILITY as VisibilityType,
+      phoneVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_PHONE_VISIBILITY as VisibilityType,
+      locationVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_LOCATION_VISIBILITY as VisibilityType,
+      dateOfBirthVisibility: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_DOB_VISIBILITY as VisibilityType,
+      whoCanSendFriendRequests: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_FRIEND_REQUEST_PERMISSION as VisibilityType,
+      whoCanMessageMe: PROFILE_CONSTANTS.PRIVACY
+        .DEFAULT_MESSAGE_PERMISSION as VisibilityType,
+    };
   }
 }

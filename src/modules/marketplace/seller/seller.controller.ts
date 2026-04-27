@@ -14,6 +14,7 @@ import { currentUser } from 'src/common/decorators/currentUser.decorator';
 import type { currentUserType } from 'src/common/types/current-user.type';
 import { SellerService } from './seller.service';
 import { UpdateSellerProfileDto } from '../dtos/seller-profile-update.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('marketplace/seller')
 @UseGuards(JwtAuthenticationGuard, SellerGuard)
@@ -42,10 +43,13 @@ export class SellerController {
   @HttpCode(HttpStatus.OK)
   getMyProducts(
     @currentUser() user: currentUserType,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() pagination: PaginationDto,
   ) {
-    return this.sellerService.getMyProducts(user.id, page, limit);
+    return this.sellerService.getMyProducts(
+      user.id,
+      pagination.page,
+      pagination.limit,
+    );
   }
 
   /** GET /marketplace/seller/deals?page=1&limit=20 */
@@ -53,10 +57,13 @@ export class SellerController {
   @HttpCode(HttpStatus.OK)
   getMyDeals(
     @currentUser() user: currentUserType,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() pagination: PaginationDto,
   ) {
-    return this.sellerService.getMyActiveDeals(user.id, page, limit);
+    return this.sellerService.getMyActiveDeals(
+      user.id,
+      pagination.page,
+      pagination.limit,
+    );
   }
 
   /** GET /marketplace/seller/deals/history */
@@ -64,9 +71,12 @@ export class SellerController {
   @HttpCode(HttpStatus.OK)
   getDealHistory(
     @currentUser() user: currentUserType,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() pagination: PaginationDto,
   ) {
-    return this.sellerService.getMyDealHistory(user.id, page, limit);
+    return this.sellerService.getMyDealHistory(
+      user.id,
+      pagination.page,
+      pagination.limit,
+    );
   }
 }

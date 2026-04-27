@@ -398,7 +398,13 @@ export class ChatMediaService {
       const upload = cloudinary.uploader.upload_stream(
         uploadOptions,
         (error, result) => {
-          if (error) return reject(error);
+          if (error) {
+            const normalizedError: Error =
+              error instanceof Error
+                ? error
+                : new Error('Cloudinary upload failed');
+            return reject(normalizedError);
+          }
           resolve({
             url: result!.secure_url,
             publicId: result!.public_id,

@@ -16,7 +16,10 @@ export class PrivacyService {
     return privacy as any;
   }
 
-  async updatePrivacySettings(userId: string, dto: UpdatePrivacyDto): Promise<PrivacyResponseDto> {
+  async updatePrivacySettings(
+    userId: string,
+    dto: UpdatePrivacyDto,
+  ): Promise<PrivacyResponseDto> {
     const data: Prisma.ProfilePrivacyUpdateInput = {};
     // map only defined fields
     Object.entries(dto).forEach(([key, value]) => {
@@ -27,11 +30,11 @@ export class PrivacyService {
     });
     const updated = await this.prisma.profilePrivacy.upsert({
       where: { profileId: userId },
-      create: { 
+      create: {
         profileId: userId,
         ...Object.fromEntries(
-          Object.entries(dto).filter(([_, v]) => v !== undefined)
-        )
+          Object.entries(dto).filter(([_, v]) => v !== undefined),
+        ),
       } as Prisma.ProfilePrivacyUncheckedCreateInput,
       update: data,
     });

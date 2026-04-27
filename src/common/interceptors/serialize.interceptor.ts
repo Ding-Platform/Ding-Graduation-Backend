@@ -71,7 +71,7 @@ class SerializationInterceptor<T> implements NestInterceptor {
   }
 }
 interface ClassConstructor {
-  new (...args: any[]): {};
+  new (...args: any[]): object;
 }
 
 export function Serialize<T>(

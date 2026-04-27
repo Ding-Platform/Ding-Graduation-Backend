@@ -19,13 +19,13 @@ export class FileCleanupInterceptor implements NestInterceptor {
     const files = request.files;
 
     return next.handle().pipe(
-      catchError(err => {
+      catchError((err) => {
         // Cleanup files on error
         if (file?.path) {
           this.deleteFile(file.path);
         }
         if (files && Array.isArray(files)) {
-          files.forEach(f => {
+          files.forEach((f) => {
             if (f.path) this.deleteFile(f.path);
           });
         }

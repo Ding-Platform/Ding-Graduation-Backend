@@ -13,10 +13,7 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Serialize } from '../../common/interceptors/serialize.interceptor';
-import {
-  UserIdResponse,
-  UserResponse,
-} from './dtos/response/user.response';
+import { UserIdResponse, UserResponse } from './dtos/response/user.response';
 import { CheckEmailResponse } from './dtos/response/check-email.response';
 import { UserListFilterInput } from './dtos/request/user-filter.input';
 import { CheckEmailRequest } from './dtos/request/check-email.request';
@@ -60,9 +57,7 @@ export class UserController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async deleteUser(
-    @Param('id') userId: string,
-  ) {
+  async deleteUser(@Param('id') userId: string) {
     return await this.userService.deleteUser(userId);
   }
 

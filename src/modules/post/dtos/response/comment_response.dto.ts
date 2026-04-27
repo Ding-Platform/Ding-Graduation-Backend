@@ -5,7 +5,7 @@ export class CommentResponseDto {
   parentId: string | null;
   createdAt: Date;
   updatedAt: Date;
-  
+
   author: {
     id: string;
     name: string | null;

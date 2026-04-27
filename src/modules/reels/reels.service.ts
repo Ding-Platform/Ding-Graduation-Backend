@@ -66,7 +66,8 @@ export class ReelsService {
       throw new BadRequestException('Video duration cannot exceed 60 seconds');
     }
 
-    const processingBase = process.env.REELS_CDN_BASE_URL || 'https://cdn.ding.local';
+    const processingBase =
+      process.env.REELS_CDN_BASE_URL || 'https://cdn.ding.local';
     return this.prisma.reel.update({
       where: { id: reelId },
       data: {
@@ -79,7 +80,9 @@ export class ReelsService {
         durationSec: payload.durationSec ?? 30,
         width: payload.width ?? 1080,
         height: payload.height ?? 1920,
-        fileSizeBytes: payload.fileSizeBytes ? BigInt(payload.fileSizeBytes) : null,
+        fileSizeBytes: payload.fileSizeBytes
+          ? BigInt(payload.fileSizeBytes)
+          : null,
         videoUrl: `${processingBase}/reels/${reelId}/video.mp4`,
         thumbnailUrl: `${processingBase}/reels/${reelId}/thumb.jpg`,
         failReason: null,
@@ -148,7 +151,8 @@ export class ReelsService {
       data: {
         caption: payload.caption,
         hashtags: payload.hashtags,
-        audioTrackId: payload.audioTrackId === null ? null : payload.audioTrackId,
+        audioTrackId:
+          payload.audioTrackId === null ? null : payload.audioTrackId,
         audioOffsetMs: payload.audioOffsetMs,
         isPublic: payload.isPublic,
       },
@@ -213,7 +217,10 @@ export class ReelsService {
           Number(reel.commentsCount) * 2 +
           Number(reel.sharesCount) * 3;
         const completionScore = reel._count.views > 0 ? 0.6 : 0.1;
-        const moodBoost = this.calculateMoodBoost(moodProfile?.dominantMood || null, reel);
+        const moodBoost = this.calculateMoodBoost(
+          moodProfile?.dominantMood || null,
+          reel,
+        );
         const score =
           0.2 * recencyScore +
           0.35 * this.normalizeScore(engagementScore) +
@@ -227,7 +234,9 @@ export class ReelsService {
 
     const items = scored.slice(0, safeLimit).map((row) => row.reel);
     const nextCursor =
-      items.length > 0 ? this.encodeCursor(items[items.length - 1].createdAt) : null;
+      items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
 
     return {
       reels: items,
@@ -322,7 +331,12 @@ export class ReelsService {
     return { liked: true, count: Number(updated?.likesCount || 0) };
   }
 
-  async listComments(reelId: string, cursor?: string, limit = 20, parentId?: string) {
+  async listComments(
+    reelId: string,
+    cursor?: string,
+    limit = 20,
+    parentId?: string,
+  ) {
     const safeLimit = Math.min(Math.max(limit, 1), 50);
     const cursorDate = this.decodeCursor(cursor);
 
@@ -388,7 +402,9 @@ export class ReelsService {
   }
 
   async deleteComment(userId: string, reelId: string, commentId: string) {
-    const comment = await this.prisma.reelComment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.reelComment.findUnique({
+      where: { id: commentId },
+    });
     if (!comment || comment.reelId !== reelId || comment.deletedAt) {
       throw new NotFoundException('Comment not found');
     }
@@ -495,11 +511,18 @@ export class ReelsService {
     return Math.min(1, Math.log10(value + 1) / 3);
   }
 
-  private calculateMoodBoost(dominantMood: string | null, reel: { caption: string | null }) {
+  private calculateMoodBoost(
+    dominantMood: string | null,
+    reel: { caption: string | null },
+  ) {
     if (!dominantMood) return 0.1;
     if (dominantMood === 'sad') {
       const caption = (reel.caption || '').toLowerCase();
-      if (caption.includes('fun') || caption.includes('happy') || caption.includes('motivat')) {
+      if (
+        caption.includes('fun') ||
+        caption.includes('happy') ||
+        caption.includes('motivat')
+      ) {
         return 0.8;
       }
       return 0.25;

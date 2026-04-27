@@ -29,7 +29,8 @@ COMPOSE_FILES="-f docker-compose.yml -f docker-compose.prod.yml"
 SAFE_DB_MODE=true
 SERVER_IP="localhost"
 # Nest uses global prefix api/v1; GET / returns 404, so do not probe bare :3000/
-BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://localhost:3000/api/v1/health}"
+# Use 127.0.0.1 to avoid IPv6 localhost resolution issues inside containers.
+BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://127.0.0.1:3000/api/v1/health}"
 
 check_docker() {
     if ! command -v docker &> /dev/null; then
@@ -68,12 +69,12 @@ deploy_services() {
 }
 
 wait_for_services() {
-    print_info "Waiting for backend at $BACKEND_HEALTH_URL ..."
+    print_info "Waiting for backend to become healthy ..."
     
     max_attempts=30
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if curl -fsS "$BACKEND_HEALTH_URL" &> /dev/null; then
+        if docker compose $COMPOSE_FILES exec -T backend node -e "fetch(process.env.BACKEND_HEALTH_URL || '$BACKEND_HEALTH_URL').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" &> /dev/null; then
             print_success "Backend is healthy"
             break
         fi
@@ -83,7 +84,7 @@ wait_for_services() {
     done
     
     if [ $attempt -eq $max_attempts ]; then
-        print_error "Backend failed to become healthy (no OK response from $BACKEND_HEALTH_URL)"
+        print_error "Backend failed to become healthy (no successful response from $BACKEND_HEALTH_URL)"
         print_info "Check logs: docker compose $COMPOSE_FILES logs --tail=80 backend"
         return 1
     fi

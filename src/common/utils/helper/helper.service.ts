@@ -46,7 +46,10 @@ export class HelperService {
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(tag);
 
-    const plain = Buffer.concat([decipher.update(cipherText), decipher.final()]);
+    const plain = Buffer.concat([
+      decipher.update(cipherText),
+      decipher.final(),
+    ]);
     return plain.toString('utf8');
   }
 

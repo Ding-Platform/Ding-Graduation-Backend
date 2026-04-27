@@ -11,6 +11,7 @@ import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.
 import { currentUser } from '../../common/decorators/currentUser.decorator';
 import { FeedResponseDto } from './dtos/response/feed.response';
 import { Serialize } from '../../common/interceptors/serialize.interceptor';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @UseGuards(JwtAuthenticationGuard)
 @Controller('feed')
@@ -22,12 +23,11 @@ export class FeedController {
   @Serialize(FeedResponseDto)
   async getFeed(
     @currentUser() user: any,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: PaginationDto,
     @Query('type') type: 'HOME' | 'FOLLOWING' | 'EXPLORE' = 'HOME',
   ) {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 20;
+    const pageNum = pagination.page ?? 1;
+    const limitNum = pagination.limit ?? 20;
     return this.feedService.getFeed(user.id, type, pageNum, limitNum);
   }
 }

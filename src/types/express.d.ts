@@ -23,4 +23,3 @@ declare module 'express' {
     clearCookie(name: string, options?: any): this;
   }
 }
-

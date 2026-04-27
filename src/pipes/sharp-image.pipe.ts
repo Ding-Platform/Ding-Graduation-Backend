@@ -10,7 +10,10 @@ export interface SharpOptions {
 }
 
 @Injectable()
-export class SharpImagePipe implements PipeTransform<Express.Multer.File, Promise<Express.Multer.File>> {
+export class SharpImagePipe implements PipeTransform<
+  Express.Multer.File,
+  Promise<Express.Multer.File>
+> {
   constructor(private options: SharpOptions = {}) {}
 
   async transform(file: Express.Multer.File): Promise<Express.Multer.File> {
@@ -19,7 +22,13 @@ export class SharpImagePipe implements PipeTransform<Express.Multer.File, Promis
     }
 
     try {
-      const { width = 800, height = 800, fit = 'cover', format = 'jpeg', quality = 80 } = this.options;
+      const {
+        width = 800,
+        height = 800,
+        fit = 'cover',
+        format = 'jpeg',
+        quality = 80,
+      } = this.options;
 
       const processedBuffer = await sharp(file.buffer)
         .resize(width, height, { fit })

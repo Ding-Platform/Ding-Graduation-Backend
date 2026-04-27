@@ -6,5 +6,3 @@ export class UpdateCommentDto {
   @MaxLength(2000, { message: 'Content must not exceed 2000 characters' })
   content: string;
 }
-
-

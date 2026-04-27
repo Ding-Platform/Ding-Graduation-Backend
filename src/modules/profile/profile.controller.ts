@@ -61,9 +61,8 @@ export class ProfileController {
     summary: 'Get current user profile (requires authentication)',
   })
   async getCurrentProfile(@currentUser() user: currentUserType) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return await this.profileService.getProfile(userId, userId);
   }
 
@@ -78,11 +77,9 @@ export class ProfileController {
     @Req() request: Request & { user?: currentUserType },
   ) {
     const requesterId: string | undefined = request.user?.id;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return await this.profileService.getProfile(userId, requesterId);
   }
-
-  
 
   @Put()
   @UseGuards(JwtAuthenticationGuard)
@@ -96,9 +93,8 @@ export class ProfileController {
     @currentUser() user: currentUserType,
     @Body() data: UpdateProfileRequest,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return await this.profileService.createOrUpdateProfile(userId, data);
   }
 
@@ -136,7 +132,6 @@ export class ProfileController {
     )
     file: Express.Multer.File,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
     return await this.profileService.uploadProfilePicture(userId, file);
   }
@@ -175,7 +170,6 @@ export class ProfileController {
     )
     file: Express.Multer.File,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
     return await this.profileService.uploadCoverPhoto(userId, file);
   }
@@ -192,9 +186,8 @@ export class ProfileController {
     @currentUser() user: currentUserType,
     @Body() data: UpdatePrivacyRequest,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+
     return await this.profileService.updatePrivacySettings(userId, data);
   }
 
@@ -204,7 +197,6 @@ export class ProfileController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete own profile (requires authentication)' })
   async deleteProfile(@currentUser() user: currentUserType) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const userId: string = user.id;
     return await this.profileService.deleteProfile(userId);
   }

@@ -119,7 +119,12 @@ export class NotificationService {
     );
   }
 
-  async notifyCommentLike(actorId: string, targetUserId: string, commentId: string, postId: string) {
+  async notifyCommentLike(
+    actorId: string,
+    targetUserId: string,
+    commentId: string,
+    postId: string,
+  ) {
     return this.createNotification(
       targetUserId,
       NotificationType.COMMENT_LIKE,

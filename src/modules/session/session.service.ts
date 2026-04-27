@@ -8,11 +8,7 @@ import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 export class SessionService {
   constructor(private readonly prisma: DatabaseService) {}
 
-  async create(
-    user: User,
-    ipAddress?: string,
-    userAgent?: string,
-  ) {
+  async create(user: User, ipAddress?: string, userAgent?: string) {
     try {
       return await this.prisma.session.create({
         data: {
@@ -30,7 +26,9 @@ export class SessionService {
     }
   }
 
-  async findById(sessionId: string): Promise<(Session & { user: User }) | null> {
+  async findById(
+    sessionId: string,
+  ): Promise<(Session & { user: User }) | null> {
     try {
       return await this.prisma.session.findUnique({
         where: { id: sessionId },
@@ -44,7 +42,10 @@ export class SessionService {
     }
   }
 
-  async updateRefreshToken(sessionId: string, refreshToken: string | null): Promise<void> {
+  async updateRefreshToken(
+    sessionId: string,
+    refreshToken: string | null,
+  ): Promise<void> {
     try {
       await this.prisma.session.update({
         where: { id: sessionId },
@@ -88,7 +89,9 @@ export class SessionService {
     }
   }
 
-  async getSessionCount(userId: string): Promise<{ total: number; active: number }> {
+  async getSessionCount(
+    userId: string,
+  ): Promise<{ total: number; active: number }> {
     try {
       const [total, active] = await Promise.all([
         this.prisma.session.count({
@@ -108,8 +111,6 @@ export class SessionService {
     }
   }
 
-  
-
   async terminateAllSessions(userId: string): Promise<void> {
     try {
       await this.prisma.session.deleteMany({
@@ -122,5 +123,4 @@ export class SessionService {
       );
     }
   }
-
 }

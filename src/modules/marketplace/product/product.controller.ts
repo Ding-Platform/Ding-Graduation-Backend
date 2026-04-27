@@ -16,7 +16,11 @@ import { JwtAuthenticationGuard } from 'src/common/guards/strategy.guards/jwt.gu
 import { SellerGuard } from '../guards/seller.guard';
 import { currentUser } from 'src/common/decorators/currentUser.decorator';
 import type { currentUserType } from 'src/common/types/current-user.type';
-import { CreateProductDto, UpdateProductDto, GetProductsQueryDto } from '../dtos/product.dto';
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  GetProductsQueryDto,
+} from '../dtos/product.dto';
 
 @Controller('marketplace/products')
 export class ProductController {
@@ -78,10 +82,7 @@ export class ProductController {
   @Delete(':id')
   @UseGuards(JwtAuthenticationGuard, SellerGuard)
   @HttpCode(HttpStatus.OK)
-  deleteProduct(
-    @currentUser() user: currentUserType,
-    @Param('id') id: string,
-  ) {
+  deleteProduct(@currentUser() user: currentUserType, @Param('id') id: string) {
     return this.productService.deleteProduct(id, user.id);
   }
 
@@ -92,10 +93,7 @@ export class ProductController {
   @Post(':id/buy')
   @UseGuards(JwtAuthenticationGuard)
   @HttpCode(HttpStatus.CREATED)
-  buyProduct(
-    @currentUser() user: currentUserType,
-    @Param('id') id: string,
-  ) {
+  buyProduct(@currentUser() user: currentUserType, @Param('id') id: string) {
     return this.productService.buyProduct(user.id, id);
   }
 }

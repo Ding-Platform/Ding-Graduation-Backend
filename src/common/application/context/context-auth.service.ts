@@ -19,7 +19,7 @@ export class ContextAuthService implements IContextAuthService {
   async getUserFromReqHeaders(req: Request): Promise<User | null> {
     let auth: string | undefined;
     if (req.headers.authorization) auth = req.headers.authorization;
-    if (req.headers.Authorization) auth = <string>req.headers.Authorization;
+    if (req.headers.Authorization) auth = req.headers.Authorization;
 
     if (!auth) return null;
 

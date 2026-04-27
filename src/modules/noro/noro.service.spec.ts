@@ -73,7 +73,10 @@ describe('NoroService', () => {
     prismaMock.noroMessage.update.mockResolvedValue({});
     prismaMock.userMoodProfile.findUnique.mockResolvedValue(null);
     prismaMock.userMoodProfile.upsert.mockResolvedValue({});
-    prismaMock.noroMessage.findUnique.mockResolvedValue({ id: 'msg-1', role: 'USER' });
+    prismaMock.noroMessage.findUnique.mockResolvedValue({
+      id: 'msg-1',
+      role: 'USER',
+    });
 
     const result = await service.addMessage({
       conversationId: 'conv-1',
@@ -85,7 +88,8 @@ describe('NoroService', () => {
     expect(prismaMock.noroMessage.create).toHaveBeenCalled();
     expect(prismaMock.noroMessage.update).toHaveBeenCalled();
     expect(prismaMock.userMoodProfile.upsert).toHaveBeenCalled();
-    expect(result.id).toBe('msg-1');
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('msg-1');
   });
 
   it('returns paginated conversations with next cursor', async () => {

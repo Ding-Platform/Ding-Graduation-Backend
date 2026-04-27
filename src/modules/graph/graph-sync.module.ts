@@ -17,6 +17,3 @@ import { DatabaseModule } from '../../configs/database/database.module';
   exports: [MigrationService],
 })
 export class GraphSyncModule {}
-
-
-
