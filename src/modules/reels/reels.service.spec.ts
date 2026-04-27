@@ -116,7 +116,10 @@ describe('ReelsService', () => {
     prismaMock.reel.findUnique
       .mockResolvedValueOnce({ id: 'reel-1', deletedAt: null })
       .mockResolvedValueOnce({ likesCount: BigInt(4) });
-    prismaMock.reelLike.findUnique.mockResolvedValue({ reelId: 'reel-1', userId: 'user-1' });
+    prismaMock.reelLike.findUnique.mockResolvedValue({
+      reelId: 'reel-1',
+      userId: 'user-1',
+    });
 
     const result = await service.toggleLike('user-1', 'reel-1');
     expect(result.liked).toBe(false);

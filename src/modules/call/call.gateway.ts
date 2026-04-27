@@ -91,7 +91,9 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.leave(data.roomId);
       client.to(data.roomId).emit('participant_left', { peerId: data.peerId });
-      client.to(data.roomId).emit('peer_screen_share_stopped', { peerId: data.peerId });
+      client
+        .to(data.roomId)
+        .emit('peer_screen_share_stopped', { peerId: data.peerId });
     } catch (err) {
       this.logger.error('leave_room failed', err);
     }
@@ -109,7 +111,12 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      await this.callService.setMediaState(data.roomId, data.peerId, data.audio, data.video);
+      await this.callService.setMediaState(
+        data.roomId,
+        data.peerId,
+        data.audio,
+        data.video,
+      );
       client.to(data.roomId).emit('peer_media_state', {
         peerId: data.peerId,
         audio: data.audio,
@@ -130,7 +137,10 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const started = await this.callService.tryStartScreenShare(data.roomId, data.peerId);
+      const started = await this.callService.tryStartScreenShare(
+        data.roomId,
+        data.peerId,
+      );
       if (!started) {
         client.emit('call_error', { code: 'SCREEN_SHARE_IN_PROGRESS' });
         return;
@@ -152,7 +162,10 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const stopped = await this.callService.stopScreenShare(data.roomId, data.peerId);
+      const stopped = await this.callService.stopScreenShare(
+        data.roomId,
+        data.peerId,
+      );
       if (!stopped) {
         return;
       }
@@ -183,7 +196,9 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      this.server.to(data.roomId).emit('active_speaker', { peerId: activeSpeaker });
+      this.server
+        .to(data.roomId)
+        .emit('active_speaker', { peerId: activeSpeaker });
     } catch (err) {
       this.logger.error('audio_level_report failed', err);
     }
@@ -204,7 +219,11 @@ export class CallGateway implements OnGatewayConnection, OnGatewayDisconnect {
     },
   ) {
     try {
-      await this.callService.reportBandwidth(data.roomId, data.peerId, data.stats);
+      await this.callService.reportBandwidth(
+        data.roomId,
+        data.peerId,
+        data.stats,
+      );
     } catch (err) {
       this.logger.error('bandwidth_report failed', err);
     }

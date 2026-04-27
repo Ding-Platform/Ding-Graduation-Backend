@@ -5,14 +5,20 @@ import { get } from 'env-var';
 @Injectable()
 export class Neo4jService implements OnModuleInit, OnModuleDestroy {
   private driver: Driver;
+  private connected = false;
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'test') {
+      this.connected = false;
+      return;
+    }
+
     const uri = get('NEO4J_URI').default('bolt://localhost:7687').asString();
-    
+
     // Support both NEO4J_AUTH (username/password) and individual variables
     let username: string;
     let password: string;
-    
+
     const neo4jAuth = get('NEO4J_AUTH').asString();
     if (neo4jAuth) {
       // Parse NEO4J_AUTH format: username/password
@@ -33,19 +39,28 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     // Retry connection with exponential backoff
     const maxRetries = 5;
     const baseDelay = 2000; // 2 seconds
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.driver.verifyConnectivity();
+        this.connected = true;
         console.log('Neo4j connected successfully');
+        console.log('Neo4j URL: ', uri);
         return;
       } catch (error) {
         if (attempt === maxRetries) {
-          console.error('Failed to connect to Neo4j after', maxRetries, 'attempts:', error);
+          console.error(
+            'Failed to connect to Neo4j after',
+            maxRetries,
+            'attempts:',
+            error,
+          );
           throw error;
         }
         const delay = baseDelay * Math.pow(2, attempt - 1);
-        console.log(`Neo4j connection attempt ${attempt} failed, retrying in ${delay}ms...`);
+        console.log(
+          `Neo4j connection attempt ${attempt} failed, retrying in ${delay}ms...`,
+        );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
@@ -56,16 +71,23 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
       await this.driver.close();
       console.log('Neo4j connection closed');
     }
+    this.connected = false;
   }
 
   getDriver(): Driver {
     return this.driver;
   }
 
+  isConnected(): boolean {
+    return this.connected && !!this.driver;
+  }
+
   getSession(database?: string): Session {
+    if (!this.driver) {
+      throw new Error('Neo4j driver is not initialized');
+    }
     return this.driver.session({
       database: database || 'neo4j',
     });
   }
 }
-

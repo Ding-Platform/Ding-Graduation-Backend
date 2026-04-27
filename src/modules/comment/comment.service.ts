@@ -194,8 +194,7 @@ export class CommentService {
 
     if (sort === 'top') {
       comments.sort((a, b) => {
-        const replyDiff =
-          (b._count?.replies ?? 0) - (a._count?.replies ?? 0);
+        const replyDiff = (b._count?.replies ?? 0) - (a._count?.replies ?? 0);
         if (replyDiff !== 0) {
           return replyDiff;
         }
@@ -351,7 +350,7 @@ export class CommentService {
       // Get the comment details before deletion for counter updates
       const commentToDelete = await tx.comment.findUnique({
         where: { id: commentId },
-        select: { postId: true, parentId: true, replyCount: true }
+        select: { postId: true, parentId: true, replyCount: true },
       });
 
       if (!commentToDelete) {
@@ -420,7 +419,7 @@ export class CommentService {
             image: comment.author.image,
           }
         : null,
-      liked: userId ? (comment.likes && comment.likes.length > 0) : false,
+      liked: userId ? comment.likes && comment.likes.length > 0 : false,
     };
   }
 
@@ -433,11 +432,16 @@ export class CommentService {
   }) {
     try {
       // Validate payload before queuing
-      if (!payload.userId || !payload.postId || !payload.commentId || !payload.timestamp) {
+      if (
+        !payload.userId ||
+        !payload.postId ||
+        !payload.commentId ||
+        !payload.timestamp
+      ) {
         console.error('Invalid payload for comment sync:', payload);
         return;
       }
-      
+
       await this.graphQueue.add('sync-comment', payload);
     } catch (error) {
       console.error('Failed to enqueue comment sync job', error);

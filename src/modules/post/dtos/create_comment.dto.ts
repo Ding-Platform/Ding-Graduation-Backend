@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsString, MaxLength, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateCommentDto {
   @IsNotEmpty({ message: 'Comment content is required' })

@@ -23,6 +23,10 @@ export class DatabaseService
     const baseDelay = 2000; // 2 seconds
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      console.log(
+        'Connecting with DATABASE_URL:',
+        this.configService.get('DATABASE_URL'),
+      );
       try {
         await this.$connect();
         console.log('Database connected successfully');

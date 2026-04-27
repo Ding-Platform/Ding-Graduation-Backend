@@ -1,4 +1,12 @@
-import { Controller, Query, Post, Delete, Param, Get, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Query,
+  Post,
+  Delete,
+  Param,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { LikeService } from './like.service';
 import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.guard';
 import { currentUser } from '../../common/decorators/currentUser.decorator';
@@ -9,10 +17,7 @@ export class LikeController {
 
   @Post('posts/:postId')
   @UseGuards(JwtAuthenticationGuard)
-  likePost(
-    @Param('postId') postId: string,
-    @currentUser('id') userId: string,
-  ) {
+  likePost(@Param('postId') postId: string, @currentUser('id') userId: string) {
     return this.likeService.likePost(userId, postId);
   }
 

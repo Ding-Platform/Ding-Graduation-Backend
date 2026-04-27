@@ -14,7 +14,11 @@ export const POST_CONSTANTS = {
       'image/gif',
       'image/webp',
     ] as const,
-    ALLOWED_VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'] as const,
+    ALLOWED_VIDEO_TYPES: [
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+    ] as const,
   },
   CLOUDINARY: {
     FOLDER: 'posts',

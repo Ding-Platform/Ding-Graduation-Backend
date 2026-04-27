@@ -9,6 +9,10 @@ export class MongodbService implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
 
   async onModuleInit() {
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
+
     const mongoUri = get('MONGODB_URI').asString();
 
     // Skip MongoDB in development if not configured

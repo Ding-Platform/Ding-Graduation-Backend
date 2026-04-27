@@ -5,7 +5,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { DatabaseService } from 'src/configs/database/database.service';
-import { CreateProductDto, UpdateProductDto, GetProductsQueryDto } from '../dtos/product.dto';
+import {
+  CreateProductDto,
+  UpdateProductDto,
+  GetProductsQueryDto,
+} from '../dtos/product.dto';
 
 @Injectable()
 export class ProductService {
@@ -29,7 +33,14 @@ export class ProductService {
 
   /** LIST public products with filters and pagination */
   async getProducts(query: GetProductsQueryDto) {
-    const { categoryId, search, minPrice, maxPrice, page = 1, limit = 20 } = query;
+    const {
+      categoryId,
+      search,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 20,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -86,7 +97,9 @@ export class ProductService {
       throw new ForbiddenException('You can only update your own products');
     }
     if (product.status === 'SOLD') {
-      throw new BadRequestException('Cannot update a product that has been sold');
+      throw new BadRequestException(
+        'Cannot update a product that has been sold',
+      );
     }
 
     return this.db.product.update({
@@ -115,7 +128,9 @@ export class ProductService {
       throw new ForbiddenException('You can only delete your own products');
     }
     if (product.status === 'SOLD') {
-      throw new BadRequestException('Cannot delete a product that has an active sale — cancel the deal first');
+      throw new BadRequestException(
+        'Cannot delete a product that has an active sale — cancel the deal first',
+      );
     }
 
     await this.db.product.delete({ where: { id } });
@@ -143,7 +158,9 @@ export class ProductService {
         select: { isBanned: true, isSuspended: true },
       });
       if (sellerProfile?.isBanned || sellerProfile?.isSuspended) {
-        throw new BadRequestException('This product is temporarily unavailable');
+        throw new BadRequestException(
+          'This product is temporarily unavailable',
+        );
       }
 
       // Guarded stock decrement to prevent overselling under concurrent buys.

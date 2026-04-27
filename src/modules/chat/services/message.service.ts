@@ -190,7 +190,7 @@ export class MessageService {
     }
 
     // Fetch reactions for messages
-    const messageIds = messages.map((m) => m._id!.toHexString());
+    const messageIds = messages.map((m) => m._id.toHexString());
     const reactionsCollection =
       this.mongodbService.getCollection<MessageReactionDocument>(
         MESSAGE_REACTIONS_COLLECTION,
@@ -221,10 +221,10 @@ export class MessageService {
       (message) => ({
         ...message,
         reactions: reactions.filter(
-          (r) => r.messageId === message._id!.toHexString(),
+          (r) => r.messageId === message._id.toHexString(),
         ),
         media: mediaItems.filter(
-          (m) => m.messageId === message._id!.toHexString(),
+          (m) => m.messageId === message._id.toHexString(),
         ),
         user: userMap.get(message.userId) || undefined,
       }),
@@ -236,10 +236,10 @@ export class MessageService {
         hasMore,
         nextCursor:
           messages.length > 0
-            ? messages[messages.length - 1]._id!.toHexString()
+            ? messages[messages.length - 1]._id.toHexString()
             : undefined,
         prevCursor:
-          messages.length > 0 ? messages[0]._id!.toHexString() : undefined,
+          messages.length > 0 ? messages[0]._id.toHexString() : undefined,
       },
     };
   }
@@ -654,7 +654,7 @@ export class MessageService {
     return messages.map((message) => ({
       ...message,
       media: mediaItems.filter(
-        (m) => m.messageId === message._id!.toHexString(),
+        (m) => m.messageId === message._id.toHexString(),
       ),
       user: userMap.get(message.userId) || undefined,
     }));

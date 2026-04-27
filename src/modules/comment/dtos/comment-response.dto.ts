@@ -43,5 +43,3 @@ export class CommentResponseDto {
   @Expose()
   liked?: boolean;
 }
-
-

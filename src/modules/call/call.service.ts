@@ -88,7 +88,10 @@ export class CallService implements OnModuleDestroy {
       JSON.stringify(participantState),
     );
     await this.redisService.expire(participantsHashKey, this.ROOM_TTL_SECONDS);
-    await this.redisService.expire(this.stateKey(payload.roomId), this.ROOM_TTL_SECONDS);
+    await this.redisService.expire(
+      this.stateKey(payload.roomId),
+      this.ROOM_TTL_SECONDS,
+    );
 
     this.prisma.callParticipant
       .create({
@@ -98,13 +101,18 @@ export class CallService implements OnModuleDestroy {
           peerId: payload.peerId,
         },
       })
-      .catch((error) => this.logger.error('Failed to record call participant join', error));
+      .catch((error) =>
+        this.logger.error('Failed to record call participant join', error),
+      );
 
-    const allParticipants = await this.redisService.hGetAll(participantsHashKey);
+    const allParticipants =
+      await this.redisService.hGetAll(participantsHashKey);
     return {
       participants: Object.values(allParticipants)
         .map((participant) => this.safeParseParticipant(participant))
-        .filter((participant): participant is ParticipantState => Boolean(participant)),
+        .filter((participant): participant is ParticipantState =>
+          Boolean(participant),
+        ),
       roomFull: false,
     };
   }
@@ -125,7 +133,9 @@ export class CallService implements OnModuleDestroy {
           leftAt: new Date(),
         },
       })
-      .catch((error) => this.logger.error('Failed to record participant leave', error));
+      .catch((error) =>
+        this.logger.error('Failed to record participant leave', error),
+      );
   }
 
   async setMediaState(
@@ -134,13 +144,24 @@ export class CallService implements OnModuleDestroy {
     audio: boolean,
     video: boolean,
   ) {
-    await this.redisService.hSet(this.stateKey(roomId), `audio:${peerId}`, String(audio));
-    await this.redisService.hSet(this.stateKey(roomId), `video:${peerId}`, String(video));
+    await this.redisService.hSet(
+      this.stateKey(roomId),
+      `audio:${peerId}`,
+      String(audio),
+    );
+    await this.redisService.hSet(
+      this.stateKey(roomId),
+      `video:${peerId}`,
+      String(video),
+    );
   }
 
   async tryStartScreenShare(roomId: string, peerId: string) {
     const roomStateKey = this.stateKey(roomId);
-    const active = await this.redisService.hGet(roomStateKey, 'screenShareActive');
+    const active = await this.redisService.hGet(
+      roomStateKey,
+      'screenShareActive',
+    );
     if (active === '1') {
       return false;
     }
@@ -153,7 +174,10 @@ export class CallService implements OnModuleDestroy {
 
   async stopScreenShare(roomId: string, peerId?: string) {
     const roomStateKey = this.stateKey(roomId);
-    const currentSharer = await this.redisService.hGet(roomStateKey, 'screenSharerId');
+    const currentSharer = await this.redisService.hGet(
+      roomStateKey,
+      'screenSharerId',
+    );
     if (peerId && currentSharer && currentSharer !== peerId) {
       return false;
     }
@@ -165,8 +189,14 @@ export class CallService implements OnModuleDestroy {
 
   async getScreenShareState(roomId: string) {
     const roomStateKey = this.stateKey(roomId);
-    const active = await this.redisService.hGet(roomStateKey, 'screenShareActive');
-    const sharerId = await this.redisService.hGet(roomStateKey, 'screenSharerId');
+    const active = await this.redisService.hGet(
+      roomStateKey,
+      'screenShareActive',
+    );
+    const sharerId = await this.redisService.hGet(
+      roomStateKey,
+      'screenSharerId',
+    );
     return {
       active: active === '1',
       sharerId: sharerId ?? null,
@@ -231,7 +261,9 @@ export class CallService implements OnModuleDestroy {
   }
 
   async getQualityHints(roomId: string) {
-    const participantCount = await this.redisService.hLen(this.participantsKey(roomId));
+    const participantCount = await this.redisService.hLen(
+      this.participantsKey(roomId),
+    );
 
     let recommendedVideoLayers: 'low' | 'medium' | 'high' = 'high';
     if (participantCount > 8) {
@@ -243,7 +275,8 @@ export class CallService implements OnModuleDestroy {
     return {
       participantCount,
       recommendedVideoLayers,
-      networkCondition: participantCount > 8 ? ('degraded' as const) : ('good' as const),
+      networkCondition:
+        participantCount > 8 ? ('degraded' as const) : ('good' as const),
     };
   }
 

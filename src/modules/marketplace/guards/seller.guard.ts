@@ -33,7 +33,12 @@ export class SellerGuard implements CanActivate {
     // Check seller profile for ban/suspension
     const profile = await this.db.sellerProfile.findUnique({
       where: { userId: user.id },
-      select: { isBanned: true, isSuspended: true, banReason: true, suspendReason: true },
+      select: {
+        isBanned: true,
+        isSuspended: true,
+        banReason: true,
+        suspendReason: true,
+      },
     });
 
     if (!profile) {

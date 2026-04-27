@@ -93,9 +93,7 @@ export class FeedService {
       },
     });
 
-    const scoreMap = new Map(
-      scoredPostIds.map((s) => [s.postId, s.score as number]),
-    );
+    const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
 
     const items = posts.map((p) => ({
       id: p.id,
@@ -174,9 +172,9 @@ export class FeedService {
 
       const rawFollowing = result.records[0]?.get('followingIds');
       const followingIds =
-        rawFollowing && typeof (rawFollowing as any).toArray === 'function'
+        rawFollowing && typeof rawFollowing.toArray === 'function'
           ? // Neo4j List
-            (rawFollowing as any).toArray()
+            rawFollowing.toArray()
           : Array.isArray(rawFollowing)
             ? // Already a plain JS array
               rawFollowing

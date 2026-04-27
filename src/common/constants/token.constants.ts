@@ -31,7 +31,10 @@ export const TOKEN_CONSTANTS = {
     // Secure flag must be true when SameSite is 'none'
     // In production, use 'none' to allow cookies across different domains
     // In development, use 'lax' for localhost
-    SAME_SITE: (process.env.NODE_ENV === 'production' ? ('none' as const) : ('lax' as const)),
+    SAME_SITE:
+      process.env.NODE_ENV === 'production'
+        ? ('none' as const)
+        : ('lax' as const),
   },
 
   // Session Configuration
@@ -82,6 +85,8 @@ export const TOKEN_CONSTANTS = {
 } as const;
 
 // Type definitions for better TypeScript support
-export type TokenType = typeof TOKEN_CONSTANTS.ACCESS_TOKEN.TYPE | typeof TOKEN_CONSTANTS.REFRESH_TOKEN.TYPE;
+export type TokenType =
+  | typeof TOKEN_CONSTANTS.ACCESS_TOKEN.TYPE
+  | typeof TOKEN_CONSTANTS.REFRESH_TOKEN.TYPE;
 export type TokenAlgorithm = typeof TOKEN_CONSTANTS.ACCESS_TOKEN.ALGORITHM;
 export type SameSitePolicy = typeof TOKEN_CONSTANTS.COOKIE.SAME_SITE;

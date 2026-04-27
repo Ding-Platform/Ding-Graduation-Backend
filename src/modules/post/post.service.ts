@@ -5,7 +5,10 @@ import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.s
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 import { POST_CONSTANTS } from '../../common/constants/post.constants';
-import { CreatePostDto } from './dtos/create_post.dto';
+import {
+  CreatePostDto,
+  PostPrivacy as CreatePostPrivacy,
+} from './dtos/create_post.dto';
 import { UpdatePostDto } from './dtos/update_post.dto';
 import { NotificationService } from '../notification/notification.service';
 import { CreateCommentDto } from './dtos/create_comment.dto';
@@ -59,14 +62,16 @@ export class PostService {
             Comments: true,
           },
         },
-        Likes: userId ? {
-          where: {
-            userId: userId,
-          },
-          select: {
-            userId: true,
-          },
-        } : false,
+        Likes: userId
+          ? {
+              where: {
+                userId: userId,
+              },
+              select: {
+                userId: true,
+              },
+            }
+          : false,
       },
       orderBy: {
         createdAt: 'desc',
@@ -85,7 +90,10 @@ export class PostService {
     return posts.map((post) => this.mapPostToSimple(post, userId));
   }
 
-  async getPostById(postId: string, userId?: string): Promise<SimplePostResponse> {
+  async getPostById(
+    postId: string,
+    userId?: string,
+  ): Promise<SimplePostResponse> {
     const post = await this.getPostWithRelations(postId, userId);
     return this.mapPostToSimple(post, userId);
   }
@@ -113,7 +121,7 @@ export class PostService {
         },
       });
 
-      let mediaUrls: string[] = [];
+      const mediaUrls: string[] = [];
       const mediaRecords: Array<{
         url: string;
         type: 'IMAGE' | 'VIDEO';
@@ -183,7 +191,7 @@ export class PostService {
 
       // Handle custom audience
       if (
-        data.privacy === 'CUSTOM' &&
+        data.privacy === CreatePostPrivacy.CUSTOM &&
         data.customAudienceIds &&
         data.customAudienceIds.length > 0
       ) {
@@ -256,7 +264,7 @@ export class PostService {
       });
 
       // Handle custom audience update
-      if (data.privacy === 'CUSTOM' && data.customAudienceIds) {
+      if (data.privacy === CreatePostPrivacy.CUSTOM && data.customAudienceIds) {
         // Remove old audience
         await this.prisma.postAudience.deleteMany({
           where: { postId },
@@ -293,7 +301,7 @@ export class PostService {
         postId,
         updatedPost.content,
         updatedPost.mediaUrls,
-        updatedPost.privacy as PostPrivacy,
+        updatedPost.privacy,
         'UPDATED',
       );
 
@@ -350,7 +358,7 @@ export class PostService {
         postId,
         post.content,
         post.mediaUrls,
-        post.privacy as PostPrivacy,
+        post.privacy,
         'DELETED',
       );
 
@@ -389,14 +397,16 @@ export class PostService {
             Comments: true,
           },
         },
-        Likes: userId ? {
-          where: {
-            userId: userId,
-          },
-          select: {
-            userId: true,
-          },
-        } : false,
+        Likes: userId
+          ? {
+              where: {
+                userId: userId,
+              },
+              select: {
+                userId: true,
+              },
+            }
+          : false,
       },
     });
 
@@ -424,7 +434,7 @@ export class PostService {
       likes: post._count?.Likes ?? 0,
       comments: post._count?.Comments ?? 0,
       image: post.mediaUrls?.[0] ?? post.PostMedia?.[0]?.url ?? null,
-      liked: userId ? (post.Likes && post.Likes.length > 0) : false,
+      liked: userId ? post.Likes && post.Likes.length > 0 : false,
     };
   }
 

@@ -16,13 +16,7 @@ import { NoroService } from './noro.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../../common/decorators/user.decorator';
 import { currentUserType } from '../../common/types/current-user.type';
-
-/** Parse a query-string number safely. Returns `fallback` if missing or NaN. */
-function safeInt(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const n = parseInt(value, 10);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
+import { CursorPaginationDto } from '../../common/dto/cursor-pagination.dto';
 
 @Controller('noro')
 @UseGuards(JwtAuthGuard)
@@ -50,13 +44,12 @@ export class NoroController {
   @Get('conversations')
   async listConversations(
     @User() user: currentUserType,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: CursorPaginationDto,
   ) {
     return this.noroService.listConversations(
       user.id,
-      cursor,
-      safeInt(limit, 20),
+      pagination.cursor,
+      pagination.limit ?? 20,
     );
   }
 
@@ -80,19 +73,21 @@ export class NoroController {
   async getConversationMessages(
     @User() user: currentUserType,
     @Param('id') conversationId: string,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
+    @Query() pagination: CursorPaginationDto,
   ) {
     return this.noroService.getConversationMessages(
       user.id,
       conversationId,
-      cursor,
-      safeInt(limit, 20),
+      pagination.cursor,
+      pagination.limit ?? 20,
     );
   }
 
   @Delete('conversations/:id')
-  async deleteConversation(@User() user: currentUserType, @Param('id') conversationId: string) {
+  async deleteConversation(
+    @User() user: currentUserType,
+    @Param('id') conversationId: string,
+  ) {
     await this.noroService.softDeleteConversation(user.id, conversationId);
     return { deleted: true };
   }

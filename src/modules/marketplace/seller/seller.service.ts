@@ -16,7 +16,13 @@ export class SellerService {
       where: { userId },
       include: {
         user: {
-          select: { id: true, name: true, email: true, image: true, createdAt: true },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            createdAt: true,
+          },
         },
       },
     });
@@ -33,7 +39,9 @@ export class SellerService {
 
   /** PATCH /marketplace/seller/profile */
   async updateMyProfile(userId: string, dto: UpdateSellerProfileDto) {
-    const profile = await this.db.sellerProfile.findUnique({ where: { userId } });
+    const profile = await this.db.sellerProfile.findUnique({
+      where: { userId },
+    });
     if (!profile) throw new NotFoundException('Seller profile not found');
 
     return this.db.sellerProfile.update({
@@ -79,7 +87,9 @@ export class SellerService {
           status: { in: ['PENDING'] },
         },
         include: {
-          product: { select: { id: true, title: true, price: true, images: true } },
+          product: {
+            select: { id: true, title: true, price: true, images: true },
+          },
           buyer: { select: { id: true, name: true, email: true, image: true } },
         },
         orderBy: { createdAt: 'desc' },
@@ -111,7 +121,10 @@ export class SellerService {
         take: limit,
       }),
       this.db.transaction.count({
-        where: { sellerId: userId, status: { in: ['FAILED', 'REFUNDED', 'CANCELLED'] } },
+        where: {
+          sellerId: userId,
+          status: { in: ['FAILED', 'REFUNDED', 'CANCELLED'] },
+        },
       }),
     ]);
     return { data: deals, total, page, limit };

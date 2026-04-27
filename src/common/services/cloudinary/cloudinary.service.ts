@@ -135,7 +135,10 @@ export class CloudinaryService {
       });
       return result.secure_url;
     } catch (error) {
-      console.error(`Cloudinary seller document upload error (${docType}):`, error);
+      console.error(
+        `Cloudinary seller document upload error (${docType}):`,
+        error,
+      );
       throw new BadRequestException(`Failed to upload ${docType} image.`);
     }
   }
@@ -178,7 +181,13 @@ export class CloudinaryService {
       const upload = cloudinary.uploader.upload_stream(
         options,
         (error, result) => {
-          if (error) return reject(error);
+          if (error) {
+            const normalizedError: Error =
+              error instanceof Error
+                ? error
+                : new Error('Cloudinary upload failed');
+            return reject(normalizedError);
+          }
           resolve(result!);
         },
       );
@@ -200,9 +209,10 @@ export class CloudinaryService {
     const POST_CONSTANTS = await import('../../constants/post.constants').then(
       (m) => m.POST_CONSTANTS,
     );
-    const ERROR_MESSAGES = await import(
-      '../../constants/error-messages.constant'
-    ).then((m) => m.ERROR_MESSAGES);
+    const ERROR_MESSAGES =
+      await import('../../constants/error-messages.constant').then(
+        (m) => m.ERROR_MESSAGES,
+      );
 
     // Validate file type
     if (
@@ -254,9 +264,10 @@ export class CloudinaryService {
     const POST_CONSTANTS = await import('../../constants/post.constants').then(
       (m) => m.POST_CONSTANTS,
     );
-    const ERROR_MESSAGES = await import(
-      '../../constants/error-messages.constant'
-    ).then((m) => m.ERROR_MESSAGES);
+    const ERROR_MESSAGES =
+      await import('../../constants/error-messages.constant').then(
+        (m) => m.ERROR_MESSAGES,
+      );
 
     // Validate file type
     if (

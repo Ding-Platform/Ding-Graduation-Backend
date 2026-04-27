@@ -39,4 +39,3 @@ export class CreatePostDto {
   @IsUUID('4', { each: true, message: 'Each audience ID must be a valid UUID' })
   customAudienceIds?: string[];
 }
-

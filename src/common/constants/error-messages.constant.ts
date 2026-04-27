@@ -162,6 +162,75 @@ export const ERROR_MESSAGES = {
   COMMENT_ALREADY_LIKED: 'Comment is already liked',
   COMMENT_LIKES_NOT_SUPPORTED:
     'Comment likes are not supported in the current schema',
+
+  // Story Errors (Sprint 12)
+  STORY_NOT_FOUND: 'Story not found',
+  STORY_UNAUTHORIZED: 'You do not have permission to modify this story',
+  STORY_CREATION_FAILED: 'Failed to create story. Please try again',
+  STORY_DELETE_FAILED: 'Failed to delete story. Please try again',
+  STORY_EXPIRED: 'This story has expired',
+  STORY_ALREADY_VIEWED: 'Story already viewed',
+  STORY_VIEW_FAILED: 'Failed to record story view',
+  HIGHLIGHT_NOT_FOUND: 'Story highlight not found',
+
+  // Group Errors (Sprint 13)
+  GROUP_NOT_FOUND: 'Group not found',
+  GROUP_UNAUTHORIZED:
+    'You do not have permission to perform this action in the group',
+  GROUP_CREATION_FAILED: 'Failed to create group. Please try again',
+  GROUP_UPDATE_FAILED: 'Failed to update group. Please try again',
+  GROUP_DELETE_FAILED: 'Failed to delete group. Please try again',
+  ALREADY_GROUP_MEMBER: 'You are already a member of this group',
+  NOT_GROUP_MEMBER: 'You are not a member of this group',
+  GROUP_JOIN_REQUEST_PENDING: 'Your join request is already pending',
+  GROUP_JOIN_REQUEST_NOT_FOUND: 'Join request not found',
+  GROUP_CANNOT_REMOVE_OWNER: 'Cannot remove the group creator',
+  GROUP_RULE_NOT_FOUND: 'Group rule not found',
+  GROUP_SECRET_NO_JOIN: 'Cannot join a secret group without an invitation',
+  GROUP_POST_UNAUTHORIZED:
+    'Only admins and moderators can post in this restricted group',
+  GROUP_MUST_ACCEPT_RULES: 'You must accept the group rules before joining',
+
+  // Page Errors (Sprint 14)
+  PAGE_NOT_FOUND: 'Page not found',
+  PAGE_UNAUTHORIZED: 'You do not have permission to manage this page',
+  PAGE_CREATION_FAILED: 'Failed to create page. Please try again',
+  PAGE_UPDATE_FAILED: 'Failed to update page. Please try again',
+  ALREADY_FOLLOWING_PAGE: 'You are already following this page',
+  NOT_FOLLOWING_PAGE: 'You are not following this page',
+  ALREADY_PAGE_MEMBER: 'User is already a member of this page',
+
+  // Search Errors (Sprint 14)
+  SEARCH_QUERY_REQUIRED: 'Search query is required',
+  SEARCH_QUERY_TOO_SHORT: 'Search query must be at least 2 characters',
+  SEARCH_FAILED: 'Search failed. Please try again',
+
+  // Streaming Errors (Sprint 18)
+  STREAM_NOT_FOUND: 'Stream not found',
+  STREAM_UNAUTHORIZED: 'You do not have permission to manage this stream',
+  STREAM_ALREADY_LIVE: 'You already have an active stream',
+  STREAM_NOT_LIVE: 'This stream is not currently live',
+  STREAM_CREATION_FAILED: 'Failed to create stream. Please try again',
+  STREAM_END_FAILED: 'Failed to end stream. Please try again',
+
+  // Event Errors (Sprint 20)
+  EVENT_NOT_FOUND: 'Event not found',
+  EVENT_UNAUTHORIZED: 'You do not have permission to manage this event',
+  EVENT_CREATION_FAILED: 'Failed to create event. Please try again',
+  EVENT_UPDATE_FAILED: 'Failed to update event. Please try again',
+  EVENT_DELETE_FAILED: 'Failed to delete event. Please try again',
+  EVENT_ALREADY_RSVPED: 'You have already RSVPed to this event',
+  EVENT_NOT_RSVPED: 'You have not RSVPed to this event',
+  EVENT_FULL: 'This event has reached its maximum capacity',
+  EVENT_STARTED: 'Cannot modify RSVP after the event has started',
+  EVENT_TICKET_NOT_FOUND: 'Event ticket not found',
+  EVENT_INVALID_DATES: 'Event end time must be after start time',
+  GROUP_EVENT_ALREADY_LINKED: 'This event is already linked to the group',
+  GROUP_EVENT_NOT_LINKED: 'This event is not linked to the group',
+
+  // Analytics Errors (Sprint 19)
+  ANALYTICS_BATCH_TOO_LARGE: 'Batch cannot exceed 100 events at once',
+  ANALYTICS_INVALID_EVENT_TYPE: 'Invalid analytics event type',
 } as const;
 
 // Type for error message keys

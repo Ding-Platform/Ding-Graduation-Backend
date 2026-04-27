@@ -20,14 +20,17 @@ export class ImageFileValidator extends FileValidator<ImageValidatorOptions> {
     }
 
     // Check file size
-    if (this.validationOptions.maxSize && file.size > this.validationOptions.maxSize) {
+    if (
+      this.validationOptions.maxSize &&
+      file.size > this.validationOptions.maxSize
+    ) {
       return false;
     }
 
     // Check file type
     if (this.validationOptions.allowedTypes) {
-      const isAllowedType = this.validationOptions.allowedTypes.some(type =>
-        file.mimetype.includes(type)
+      const isAllowedType = this.validationOptions.allowedTypes.some((type) =>
+        file.mimetype.includes(type),
       );
       if (!isAllowedType) {
         return false;
@@ -41,11 +44,15 @@ export class ImageFileValidator extends FileValidator<ImageValidatorOptions> {
     const errors: string[] = [];
 
     if (this.validationOptions.maxSize) {
-      errors.push(`Maximum file size is ${this.validationOptions.maxSize / 1024 / 1024}MB`);
+      errors.push(
+        `Maximum file size is ${this.validationOptions.maxSize / 1024 / 1024}MB`,
+      );
     }
 
     if (this.validationOptions.allowedTypes) {
-      errors.push(`Allowed types: ${this.validationOptions.allowedTypes.join(', ')}`);
+      errors.push(
+        `Allowed types: ${this.validationOptions.allowedTypes.join(', ')}`,
+      );
     }
 
     return errors.join('. ');
