@@ -87,7 +87,7 @@ function setupStaticFileServing(app: NestExpressApplication) {
   }
 }
 
-function setupGlobalFilters(_app: NestExpressApplication) {
+function setupGlobalFilters() {
   // Global filters are set up in AppModule with proper dependency injection
 }
 
@@ -133,7 +133,7 @@ async function bootstrap(): Promise<void> {
 
   app.setGlobalPrefix(APP_CONSTANTS.API.PREFIX);
   setupMiddlewares(app);
-  setupGlobalFilters(app);
+  setupGlobalFilters();
   setupStaticFileServing(app);
   setupSwagger(app);
 
@@ -158,4 +158,4 @@ async function bootstrap(): Promise<void> {
   );
 }
 
-bootstrap();
+void bootstrap();
