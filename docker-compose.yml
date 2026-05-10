@@ -30,6 +30,7 @@ services:
       - NEO4J_URI=${NEO4J_URI}
       - NEO4J_AUTH=${NEO4J_AUTH}
       - REDIS_URL=${REDIS_URL}
+      - DOCKERIZED=true
     volumes:
       - .:/app
       - /app/node_modules
@@ -40,6 +41,8 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      meilisearch:
+        condition: service_started
     networks:
       - ding-dev-network
     stdin_open: true
@@ -106,11 +109,27 @@ services:
     networks:
       - ding-dev-network
 
+  # MeiliSearch
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: ding-meilisearch-dev
+    restart: always
+    ports:
+      - '7700:7700'
+    environment:
+      - MEILI_MASTER_KEY=${MEILISEARCH_API_KEY:-masterKey123}
+      - MEILI_ENV=development
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - ding-dev-network
+
 volumes:
   pgdata_dev:
   neo4j_data_dev:
   redis_data_dev:
   mongodb_data_dev:
+  meilisearch_data:
 
 networks:
   ding-dev-network:

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { BullModule } from '@nestjs/bull';
 import { ContextModule } from '../../common/application/context/context.module';
 import { HelperModule } from '../../common/utils/helper/helper.module';
 import { EmailModule } from '../../common/services/email.module';
@@ -41,6 +42,9 @@ import { TOKEN_CONSTANTS } from '../../common/constants';
     HelperModule,
     SessionModule,
     EmailModule,
+    BullModule.registerQueue({
+      name: 'search-indexing',
+    }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy, SessionIdGuard],
   controllers: [AuthController],

@@ -34,6 +34,7 @@ import { ModerationModule } from './modules/moderation/moderation.module';
 import { CallModule } from './modules/call/call.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { ReelsModule } from './modules/reels/reels.module';
+import { SearchModule } from './modules/search/search.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -99,6 +100,7 @@ try {
     CallModule,
     MarketplaceModule,
     ReelsModule,
+    SearchModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

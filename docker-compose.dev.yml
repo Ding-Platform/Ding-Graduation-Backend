@@ -1,4 +1,18 @@
 services:
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: ding-meilisearch-dev
+    restart: always
+    ports:
+      - '7700:7700'
+    environment:
+      - MEILI_MASTER_KEY=masterKey123
+      - MEILI_ENV=development
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - ding-dev-network
+
   prisma-studio:
     build:
       context: .
@@ -17,6 +31,7 @@ services:
       - /app/node_modules
     depends_on:
       - postgres
+      - meilisearch
     networks:
       - ding-dev-network
     command: sh -c "pnpm prisma generate && npx prisma studio --hostname 0.0.0.0 --port 5555"
@@ -26,6 +41,7 @@ volumes:
   neo4j_data_dev:
   redis_data_dev:
   mongodb_data_dev:
+  meilisearch_data:
 
 networks:
   ding-dev-network:
