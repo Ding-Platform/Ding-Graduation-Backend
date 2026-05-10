@@ -39,7 +39,6 @@ import { SearchModule } from './modules/search/search.module';
 import { StoriesModule } from './modules/stories/stories.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { PagesModule } from './modules/pages/pages.module';
-import { SearchModule } from './modules/search/search.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { EventsModule } from './modules/events/events.module';
@@ -117,7 +116,6 @@ try {
     StoriesModule,
     GroupsModule,
     PagesModule,
-    SearchModule,
     StreamingModule,
     AnalyticsModule,
     EventsModule,
