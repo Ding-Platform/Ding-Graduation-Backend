@@ -1,4 +1,4 @@
-import { PrismaClient, VisibilityType } from '@prisma/client';
+import { PrismaClient, UserRole, VisibilityType } from '@prisma/client';
 import neo4j, { Driver } from 'neo4j-driver';
 import * as bcrypt from 'bcryptjs';
 import { get } from 'env-var';
@@ -185,6 +185,7 @@ interface DeveloperAccount {
   name: string;
   email: string;
   password: string;
+  role?: UserRole;
 }
 
 const developerAccounts: DeveloperAccount[] = [
@@ -192,6 +193,12 @@ const developerAccounts: DeveloperAccount[] = [
     name: 'Ziad Hamdy',
     email: 'ziadhamdy667@gmail.com',
     password: 'Password#1',
+  },
+  {
+    name: 'admin',
+    email: 'admin@gmail.com',
+    password: 'admin@123',
+    role: UserRole.ADMIN,
   },
   {
     name: 'Ziad',
@@ -469,6 +476,7 @@ async function createDeveloperAccounts(neo4jSession: any): Promise<string[]> {
           password,
           emailVerified: true,
           active: true,
+          role: dev.role ?? UserRole.USER,
           Profile: {
             create: {
               bio,
