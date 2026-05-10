@@ -23,18 +23,10 @@ export const TOKEN_CONSTANTS = {
     // No MAX_AGE - persistent cookie (no expiration)
     PATH: '/',
     HTTP_ONLY: true,
-    // Secure must be true when SameSite is 'none' (browser requirement)
-    // Also required for HTTPS in production
-    SECURE: process.env.NODE_ENV === 'production',
-    // Use 'none' for cross-origin cookies (different top-level domains)
-    // Required when frontend and backend are on different domains (e.g., frontend.com and backend.com)
-    // Secure flag must be true when SameSite is 'none'
-    // In production, use 'none' to allow cookies across different domains
-    // In development, use 'lax' for localhost
-    SAME_SITE:
-      process.env.NODE_ENV === 'production'
-        ? ('none' as const)
-        : ('lax' as const),
+SECURE: false,
+    // Use 'lax' for same-origin cookies (frontend and backend on same domain)
+    // Use 'none' only when frontend and backend are on different domains with HTTPS
+    SAME_SITE: 'lax' as const,
   },
 
   // Session Configuration
