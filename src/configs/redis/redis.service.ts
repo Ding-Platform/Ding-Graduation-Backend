@@ -9,7 +9,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private isConnected = false;
 
   async onModuleInit() {
-    let redisUrl = get('REDIS_URL').default('redis://localhost:6379').asString();
+    if (process.env.NODE_ENV === 'test') {
+      this.isConnected = false;
+      return;
+    }
+
+    let redisUrl = get('REDIS_URL')
+      .default('redis://localhost:6379')
+      .asString();
 
     // When running on host (not in Docker), "redis" hostname doesn't resolve — use localhost
     const inDocker = existsSync('/.dockerenv');
@@ -52,7 +59,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       console.error('Failed to connect to Redis:', error);
       this.isConnected = false;
     }
-
   }
 
   async onModuleDestroy() {
@@ -195,7 +201,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     if (!this.isConnected) return false;
 
     try {
-      const result = await this.client.set(key, value, { NX: true, EX: seconds });
+      const result = await this.client.set(key, value, {
+        NX: true,
+        EX: seconds,
+      });
       return result === 'OK';
     } catch (error) {
       console.error('Redis setNxEx error:', error);

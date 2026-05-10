@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PostController } from './post.controller';
 import { PostService } from './post.service';
-import { CreatePostDto } from './dtos/create_post.dto';
+import { CreatePostDto, PostPrivacy } from './dtos/create_post.dto';
 import { UpdatePostDto } from './dtos/update_post.dto';
 import { CreateCommentDto } from './dtos/create_comment.dto';
 
 describe('PostController', () => {
   let controller: PostController;
-  let service: PostService;
 
   const mockPostService = {
     getAllPosts: jest.fn(),
@@ -34,7 +33,6 @@ describe('PostController', () => {
     }).compile();
 
     controller = module.get<PostController>(PostController);
-    service = module.get<PostService>(PostService);
   });
 
   it('should be defined', () => {
@@ -47,7 +45,7 @@ describe('PostController', () => {
       mockPostService.getAllPosts.mockResolvedValue(result);
 
       expect(await controller.getAllPosts(1, 20, 'user1')).toBe(result);
-      expect(service.getAllPosts).toHaveBeenCalledWith('user1', 1, 20);
+      expect(mockPostService.getAllPosts).toHaveBeenCalledWith('user1', 1, 20);
     });
   });
 
@@ -57,19 +55,28 @@ describe('PostController', () => {
       mockPostService.getPostById.mockResolvedValue(result);
 
       expect(await controller.getPostById('1', 'user1')).toBe(result);
-      expect(service.getPostById).toHaveBeenCalledWith('1', 'user1');
+      expect(mockPostService.getPostById).toHaveBeenCalledWith('1', 'user1');
     });
   });
 
   describe('createPost', () => {
     it('should create a new post', async () => {
-      const dto: CreatePostDto = { content: 'New post', privacy: 'PUBLIC' };
+      const dto: CreatePostDto = {
+        content: 'New post',
+        authorId: '00000000-0000-0000-0000-000000000000',
+        privacy: PostPrivacy.PUBLIC,
+      };
       const files = { images: [] };
       const result = { id: '1', ...dto };
       mockPostService.createPost.mockResolvedValue(result);
 
-      expect(await controller.createPost(files as any, dto, 'user1')).toBe(result);
-      expect(service.createPost).toHaveBeenCalledWith({ ...dto, authorId: 'user1' }, files);
+      expect(await controller.createPost(files as any, dto, 'user1')).toBe(
+        result,
+      );
+      expect(mockPostService.createPost).toHaveBeenCalledWith(
+        { ...dto, authorId: 'user1' },
+        files,
+      );
     });
   });
 
@@ -80,7 +87,11 @@ describe('PostController', () => {
       mockPostService.updatePost.mockResolvedValue(result);
 
       expect(await controller.updatePost('1', dto, 'user1')).toBe(result);
-      expect(service.updatePost).toHaveBeenCalledWith('1', 'user1', dto);
+      expect(mockPostService.updatePost).toHaveBeenCalledWith(
+        '1',
+        'user1',
+        dto,
+      );
     });
   });
 
@@ -90,7 +101,7 @@ describe('PostController', () => {
       mockPostService.toggleLike.mockResolvedValue(result);
 
       expect(await controller.toggleLike('1', 'user1')).toBe(result);
-      expect(service.toggleLike).toHaveBeenCalledWith('1', 'user1');
+      expect(mockPostService.toggleLike).toHaveBeenCalledWith('1', 'user1');
     });
   });
 
@@ -101,7 +112,11 @@ describe('PostController', () => {
       mockPostService.createComment.mockResolvedValue(result);
 
       expect(await controller.createComment('1', 'user1', dto)).toBe(result);
-      expect(service.createComment).toHaveBeenCalledWith('1', 'user1', dto);
+      expect(mockPostService.createComment).toHaveBeenCalledWith(
+        '1',
+        'user1',
+        dto,
+      );
     });
   });
 
@@ -111,7 +126,7 @@ describe('PostController', () => {
       mockPostService.deleteComment.mockResolvedValue(result);
 
       expect(await controller.deleteComment('c1', 'user1')).toBe(result);
-      expect(service.deleteComment).toHaveBeenCalledWith('c1', 'user1');
+      expect(mockPostService.deleteComment).toHaveBeenCalledWith('c1', 'user1');
     });
   });
 
@@ -121,7 +136,7 @@ describe('PostController', () => {
       mockPostService.getComments.mockResolvedValue(result);
 
       expect(await controller.getComments('1', 1, 10)).toBe(result);
-      expect(service.getComments).toHaveBeenCalledWith('1', 1, 10);
+      expect(mockPostService.getComments).toHaveBeenCalledWith('1', 1, 10);
     });
   });
 
@@ -131,7 +146,7 @@ describe('PostController', () => {
       mockPostService.getPostLikes.mockResolvedValue(result);
 
       expect(await controller.getPostLikes('1', 1, 10)).toBe(result);
-      expect(service.getPostLikes).toHaveBeenCalledWith('1', 1, 10);
+      expect(mockPostService.getPostLikes).toHaveBeenCalledWith('1', 1, 10);
     });
   });
 
@@ -141,7 +156,7 @@ describe('PostController', () => {
       mockPostService.deletePost.mockResolvedValue(result);
 
       expect(await controller.deletePost('1', 'user1')).toBe(result);
-      expect(service.deletePost).toHaveBeenCalledWith('1', 'user1');
+      expect(mockPostService.deletePost).toHaveBeenCalledWith('1', 'user1');
     });
   });
 });

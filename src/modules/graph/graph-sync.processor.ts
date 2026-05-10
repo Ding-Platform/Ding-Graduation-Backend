@@ -9,13 +9,13 @@ export class GraphSyncProcessor {
   @Process('sync-post')
   async handlePostSync(job: Job) {
     const { postId, authorId, createdAt, action, updatedAt } = job.data;
-    
+
     // Validate job data
     if (!postId || !authorId || !action) {
       console.error('Invalid post sync job data:', job.data);
       return;
     }
-    
+
     const session = this.neo4j.getSession();
 
     try {
@@ -32,7 +32,9 @@ export class GraphSyncProcessor {
           {
             postId,
             authorId,
-            createdAt: createdAt ? new Date(createdAt).toISOString() : new Date().toISOString(),
+            createdAt: createdAt
+              ? new Date(createdAt).toISOString()
+              : new Date().toISOString(),
           },
         );
         console.log(`✓ Created post ${postId} in Neo4j`);
@@ -44,7 +46,10 @@ export class GraphSyncProcessor {
         `,
           {
             postId,
-            updatedAt: (updatedAt ? new Date(updatedAt) : new Date()).toISOString(),
+            updatedAt: (updatedAt
+              ? new Date(updatedAt)
+              : new Date()
+            ).toISOString(),
           },
         );
         console.log(`✓ Updated post ${postId} in Neo4j`);
@@ -69,13 +74,13 @@ export class GraphSyncProcessor {
   @Process('sync-like')
   async handleLikeSync(job: Job) {
     const { userId, postId, action, timestamp } = job.data;
-    
+
     // Validate job data
     if (!userId || !postId || !action) {
       console.error('Invalid like sync job data:', job.data);
       return;
     }
-    
+
     const session = this.neo4j.getSession();
 
     try {
@@ -96,7 +101,10 @@ export class GraphSyncProcessor {
           {
             userId,
             postId,
-            timestamp: (timestamp ? new Date(timestamp) : new Date()).toISOString(),
+            timestamp: (timestamp
+              ? new Date(timestamp)
+              : new Date()
+            ).toISOString(),
           },
         );
       } else if (action === 'UNLIKE') {
@@ -120,13 +128,13 @@ export class GraphSyncProcessor {
   @Process('sync-comment')
   async handleCommentSync(job: Job) {
     const { userId, postId, commentId, timestamp, action } = job.data;
-    
+
     // Validate job data
     if (!userId || !postId || !commentId || !timestamp) {
       console.error('Invalid comment sync job data:', job.data);
       return;
     }
-    
+
     const session = this.neo4j.getSession();
 
     try {
@@ -139,7 +147,9 @@ export class GraphSyncProcessor {
         `,
           { userId, postId, commentId },
         );
-        console.log(`✓ Synced comment deletion for user ${userId} on post ${postId}`);
+        console.log(
+          `✓ Synced comment deletion for user ${userId} on post ${postId}`,
+        );
       } else {
         await session.run(
           `
@@ -159,7 +169,10 @@ export class GraphSyncProcessor {
             userId,
             postId,
             commentId,
-            timestamp: (timestamp ? new Date(timestamp) : new Date()).toISOString(),
+            timestamp: (timestamp
+              ? new Date(timestamp)
+              : new Date()
+            ).toISOString(),
           },
         );
         console.log(`✓ Synced comment for user ${userId} on post ${postId}`);
@@ -177,13 +190,13 @@ export class GraphSyncProcessor {
     const { posts } = job.data as {
       posts: { id: string; authorId: string; createdAt: string }[];
     };
-    
+
     // Validate job data
     if (!posts || !Array.isArray(posts) || posts.length === 0) {
       console.error('Invalid batch sync job data:', job.data);
       return;
     }
-    
+
     const session = this.neo4j.getSession();
 
     try {
@@ -208,5 +221,3 @@ export class GraphSyncProcessor {
     }
   }
 }
-
-

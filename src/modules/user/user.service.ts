@@ -101,11 +101,7 @@ export class UserService {
     return { id: user.id };
   }
 
-  async getLoginUserOrError({
-    email,
-  }: {
-    email: string;
-  }) {
+  async getLoginUserOrError({ email }: { email: string }) {
     const user = await this.prisma.user.findUnique({
       where: {
         email,
@@ -124,10 +120,7 @@ export class UserService {
     return user;
   }
 
-  async toggleUserActivity(
-    userId: string,
-    currentUserId: string,
-  ) {
+  async toggleUserActivity(userId: string, currentUserId: string) {
     // Check if user exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -157,9 +150,7 @@ export class UserService {
     return user;
   }
 
-  async deleteUser(
-    userId: string,
-  ) {
+  async deleteUser(userId: string) {
     // Check if user exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -176,7 +167,6 @@ export class UserService {
         HttpStatus.NOT_FOUND,
       );
     }
-
 
     // Delete related sessions first
     await this.prisma.session.deleteMany({

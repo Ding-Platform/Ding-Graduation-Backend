@@ -1,113 +1,69 @@
 services:
   postgres:
     image: postgres:15
-    container_name: ding-postgres-dev
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-    ports:
-      - '5432:5432'
     volumes:
-      - pgdata_dev:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     networks:
-      - ding-dev-network
+      - internal
+    # ❌ NO PORTS EXPOSED
+
+  mongodb:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  neo4j:
+    image: neo4j:5
+    restart: always
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH}
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - internal
 
   backend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
-    container_name: ding-backend-dev
+      dockerfile: Dockerfile
     restart: always
-    ports:
-      - '3000:3000'
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - NEO4J_URI=${NEO4J_URI}
-      - NEO4J_AUTH=${NEO4J_AUTH}
-      - REDIS_URL=${REDIS_URL}
-      - DOCKERIZED=true
-    volumes:
-      - .:/app
-      - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_started
-      neo4j:
-        condition: service_started
-      redis:
-        condition: service_healthy
-      meilisearch:
-        condition: service_started
+      - postgres
+      - mongodb
+      - redis
+      - neo4j
     networks:
-      - ding-dev-network
-    stdin_open: true
-    tty: true
-    # Generate Prisma client and start in development mode
-    command: sh -c "pnpm prisma generate && pnpm run start:dev"
+      - internal
+      - public
+    # ❌ NO VOLUMES
+    command: sh -c "pnpm prisma generate && pnpm start"
 
   frontend:
-    container_name: ding-frontend-dev
     build:
       context: ../Ding-Platform-Frontend
       dockerfile: Dockerfile.dev
-    ports:
-      - 5173:5173
-    volumes:
-      - ../Ding-Platform-Frontend:/app
-      - /app/node_modules
-
-  # MongoDB Database
-  mongodb:
-    image: mongo:7
-    container_name: ding-mongodb-dev
     restart: always
-    ports:
-      - '27017:27017'
-    volumes:
-      - mongodb_data_dev:/data/db
     networks:
-      - ding-dev-network
-
-  
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: ding-redis-dev
-    restart: unless-stopped
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data_dev:/data
-    networks:
-      - ding-dev-network
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: redis-server --appendonly yes
-  
-  # Neo4j Graph Database
-  neo4j:
-    image: neo4j:latest
-    container_name: ding-neo4j-dev
-    restart: always
-    ports:
-      - '7474:7474'
-      - '7687:7687'
-    environment:
-      - NEO4J_AUTH=${NEO4J_AUTH}
-      - NEO4J_PLUGINS=["apoc"]
-      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
-    volumes:
-      - neo4j_data_dev:/data
-    networks:
-      - ding-dev-network
+      - public
 
   # MeiliSearch
   meilisearch:
@@ -125,12 +81,13 @@ services:
       - ding-dev-network
 
 volumes:
-  pgdata_dev:
-  neo4j_data_dev:
-  redis_data_dev:
-  mongodb_data_dev:
+  pgdata:
+  mongodb_data:
+  redis_data:
+  neo4j_data:
   meilisearch_data:
 
 networks:
-  ding-dev-network:
-    driver: bridge
+  internal:
+    internal: true
+  public:

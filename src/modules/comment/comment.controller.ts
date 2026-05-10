@@ -39,7 +39,7 @@ export class CommentController {
     @Query('sort') sort: 'top' | 'recent' = 'top',
     @currentUser('id') userId: string,
   ) {
-    console.log(userId)
+    console.log(userId);
     return this.commentService.getPostComments(
       postId,
       userId,
@@ -80,5 +80,4 @@ export class CommentController {
   ) {
     return this.commentService.deleteComment(commentId, userId);
   }
-
 }

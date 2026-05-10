@@ -164,7 +164,10 @@ export class AuthService {
           if (request && response) {
             const sessionIdFromCookie =
               request.cookies?.[TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME];
-            if (sessionIdFromCookie && sessionIdFromCookie === oldestSession.id) {
+            if (
+              sessionIdFromCookie &&
+              sessionIdFromCookie === oldestSession.id
+            ) {
               this.clearSessionIdCookie(response);
             }
           }
@@ -177,14 +180,22 @@ export class AuthService {
     }
     // If IP or userAgent are not provided, allow unlimited sessions (no limit check)
 
-    const session = await this.sessionService.create(user, ipAddress, userAgent);
+    const session = await this.sessionService.create(
+      user,
+      ipAddress,
+      userAgent,
+    );
 
     const refreshToken = this.generateRefreshToken({
       userId: user.id,
       sessionId: session.id,
     });
-    const encryptedRefreshToken = this.helperService.encryptAuthToken(refreshToken);
-    await this.sessionService.updateRefreshToken(session.id, encryptedRefreshToken);
+    const encryptedRefreshToken =
+      this.helperService.encryptAuthToken(refreshToken);
+    await this.sessionService.updateRefreshToken(
+      session.id,
+      encryptedRefreshToken,
+    );
 
     return this.appendAuthTokenToResponse(user, session);
   }
@@ -276,10 +287,7 @@ export class AuthService {
     return result;
   }
 
-  async appendAuthTokenToResponse(
-    user: User,
-    session: Session,
-  ) {
+  async appendAuthTokenToResponse(user: User, session: Session) {
     const accessToken = this.generateAccessToken({
       userId: user.id,
       sessionId: session.id,
@@ -325,7 +333,9 @@ export class AuthService {
 
       let refreshToken: string;
       try {
-        refreshToken = this.helperService.decryptAuthToken(session.refreshToken);
+        refreshToken = this.helperService.decryptAuthToken(
+          session.refreshToken,
+        );
       } catch {
         await this.sessionService.remove(session);
         throw new GenericHttpException(
@@ -345,7 +355,10 @@ export class AuthService {
         );
       }
 
-      if (payload.userId !== session.userId || payload.sessionId !== session.id) {
+      if (
+        payload.userId !== session.userId ||
+        payload.sessionId !== session.id
+      ) {
         await this.sessionService.remove(session);
         throw new GenericHttpException(
           ERROR_MESSAGES.INVALID_SESSION,

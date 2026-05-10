@@ -74,14 +74,20 @@ export class AdminMarketplaceService {
     });
     if (!app) throw new NotFoundException('Application not found');
     if (app.status !== 'PENDING') {
-      throw new BadRequestException(`Application is already ${app.status.toLowerCase()}`);
+      throw new BadRequestException(
+        `Application is already ${app.status.toLowerCase()}`,
+      );
     }
 
     await this.db.$transaction(async (tx) => {
       // 1. Update application status
       await tx.sellerApplication.update({
         where: { id: applicationId },
-        data: { status: 'APPROVED', reviewedById: adminId, reviewedAt: new Date() },
+        data: {
+          status: 'APPROVED',
+          reviewedById: adminId,
+          reviewedAt: new Date(),
+        },
       });
 
       // 2. Promote user role
@@ -99,7 +105,7 @@ export class AdminMarketplaceService {
           city: app.city,
           country: app.country,
           commercialRegNumber: app.commercialRegNumber, // stays encrypted
-          bankAccountNumber: app.bankAccountNumber,     // stays encrypted
+          bankAccountNumber: app.bankAccountNumber, // stays encrypted
           bankCardLast4: maskCardNumber(decrypt(app.bankCardNumber)),
         },
       });
@@ -130,7 +136,9 @@ export class AdminMarketplaceService {
     });
     if (!app) throw new NotFoundException('Application not found');
     if (app.status !== 'PENDING') {
-      throw new BadRequestException(`Application is already ${app.status.toLowerCase()}`);
+      throw new BadRequestException(
+        `Application is already ${app.status.toLowerCase()}`,
+      );
     }
 
     await this.db.$transaction(async (tx) => {
@@ -168,7 +176,15 @@ export class AdminMarketplaceService {
     const [sellers, total] = await Promise.all([
       this.db.sellerProfile.findMany({
         include: {
-          user: { select: { id: true, name: true, email: true, image: true, createdAt: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+              createdAt: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -194,7 +210,15 @@ export class AdminMarketplaceService {
     const profile = await this.db.sellerProfile.findUnique({
       where: { userId: sellerUserId },
       include: {
-        user: { select: { id: true, name: true, email: true, image: true, createdAt: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            createdAt: true,
+          },
+        },
       },
     });
     if (!profile) throw new NotFoundException('Seller not found');
@@ -205,16 +229,24 @@ export class AdminMarketplaceService {
 
     const [currentDeals, historyDeals, productCount] = await Promise.all([
       this.db.transaction.findMany({
-        where: { sellerId: sellerUserId, status: { in: ['PENDING', 'COMPLETED'] } },
+        where: {
+          sellerId: sellerUserId,
+          status: { in: ['PENDING', 'COMPLETED'] },
+        },
         include: {
-          product: { select: { id: true, title: true, price: true, images: true } },
+          product: {
+            select: { id: true, title: true, price: true, images: true },
+          },
           buyer: { select: { id: true, name: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },
         take: 50,
       }),
       this.db.transaction.findMany({
-        where: { sellerId: sellerUserId, status: { in: ['FAILED', 'REFUNDED', 'CANCELLED'] } },
+        where: {
+          sellerId: sellerUserId,
+          status: { in: ['FAILED', 'REFUNDED', 'CANCELLED'] },
+        },
         include: {
           product: { select: { id: true, title: true, price: true } },
           buyer: { select: { id: true, name: true, email: true } },
@@ -227,8 +259,12 @@ export class AdminMarketplaceService {
 
     // Decrypt for admin view
     const sensitiveProfile = {
-      commercialRegNumber: application ? decrypt(application.commercialRegNumber) : null,
-      bankAccountNumber: application ? decrypt(application.bankAccountNumber) : null,
+      commercialRegNumber: application
+        ? decrypt(application.commercialRegNumber)
+        : null,
+      bankAccountNumber: application
+        ? decrypt(application.bankAccountNumber)
+        : null,
       idCardNumber: application ? decrypt(application.idCardNumber) : null,
       bankCardNumberMasked: '•••• •••• •••• ' + profile.bankCardLast4,
     };
@@ -248,7 +284,10 @@ export class AdminMarketplaceService {
             bankCardNumber: sensitiveProfile.bankCardNumberMasked,
           }
         : null,
-      stats: { productCount, totalDeals: currentDeals.length + historyDeals.length },
+      stats: {
+        productCount,
+        totalDeals: currentDeals.length + historyDeals.length,
+      },
       currentDeals,
       dealHistory: historyDeals,
     };
@@ -259,14 +298,21 @@ export class AdminMarketplaceService {
   // ════════════════════════════════════════════
 
   private async findSellerProfile(userId: string) {
-    const profile = await this.db.sellerProfile.findUnique({ where: { userId } });
+    const profile = await this.db.sellerProfile.findUnique({
+      where: { userId },
+    });
     if (!profile) throw new NotFoundException('Seller profile not found');
     return profile;
   }
 
-  async banSeller(sellerUserId: string, adminId: string, dto: AdminActionWithCauseDto) {
+  async banSeller(
+    sellerUserId: string,
+    adminId: string,
+    dto: AdminActionWithCauseDto,
+  ) {
     const profile = await this.findSellerProfile(sellerUserId);
-    if (profile.isBanned) throw new ConflictException('Seller is already banned');
+    if (profile.isBanned)
+      throw new ConflictException('Seller is already banned');
 
     await this.db.$transaction(async (tx) => {
       await tx.sellerProfile.update({
@@ -278,7 +324,13 @@ export class AdminMarketplaceService {
         data: { isBanned: true, banReason: dto.cause },
       });
       await tx.dealLog.create({
-        data: { adminId, targetType: 'SELLER', targetId: sellerUserId, action: 'BAN_SELLER', cause: dto.cause },
+        data: {
+          adminId,
+          targetType: 'SELLER',
+          targetId: sellerUserId,
+          action: 'BAN_SELLER',
+          cause: dto.cause,
+        },
       });
     });
 
@@ -299,24 +351,45 @@ export class AdminMarketplaceService {
         data: { isBanned: false, banReason: null },
       });
       await tx.dealLog.create({
-        data: { adminId, targetType: 'SELLER', targetId: sellerUserId, action: 'UNBAN_SELLER', cause: 'Ban lifted by admin' },
+        data: {
+          adminId,
+          targetType: 'SELLER',
+          targetId: sellerUserId,
+          action: 'UNBAN_SELLER',
+          cause: 'Ban lifted by admin',
+        },
       });
     });
 
     return { message: 'Seller unbanned successfully.' };
   }
 
-  async suspendSeller(sellerUserId: string, adminId: string, dto: AdminActionWithCauseDto) {
+  async suspendSeller(
+    sellerUserId: string,
+    adminId: string,
+    dto: AdminActionWithCauseDto,
+  ) {
     const profile = await this.findSellerProfile(sellerUserId);
-    if (profile.isSuspended) throw new ConflictException('Seller is already suspended');
+    if (profile.isSuspended)
+      throw new ConflictException('Seller is already suspended');
 
     await this.db.$transaction(async (tx) => {
       await tx.sellerProfile.update({
         where: { userId: sellerUserId },
-        data: { isSuspended: true, suspendReason: dto.cause, suspendedAt: new Date() },
+        data: {
+          isSuspended: true,
+          suspendReason: dto.cause,
+          suspendedAt: new Date(),
+        },
       });
       await tx.dealLog.create({
-        data: { adminId, targetType: 'SELLER', targetId: sellerUserId, action: 'SUSPEND_SELLER', cause: dto.cause },
+        data: {
+          adminId,
+          targetType: 'SELLER',
+          targetId: sellerUserId,
+          action: 'SUSPEND_SELLER',
+          cause: dto.cause,
+        },
       });
     });
 
@@ -325,7 +398,8 @@ export class AdminMarketplaceService {
 
   async unsuspendSeller(sellerUserId: string, adminId: string) {
     const profile = await this.findSellerProfile(sellerUserId);
-    if (!profile.isSuspended) throw new ConflictException('Seller is not suspended');
+    if (!profile.isSuspended)
+      throw new ConflictException('Seller is not suspended');
 
     await this.db.$transaction(async (tx) => {
       await tx.sellerProfile.update({
@@ -333,7 +407,13 @@ export class AdminMarketplaceService {
         data: { isSuspended: false, suspendReason: null, suspendedAt: null },
       });
       await tx.dealLog.create({
-        data: { adminId, targetType: 'SELLER', targetId: sellerUserId, action: 'UNSUSPEND_SELLER', cause: 'Suspension lifted by admin' },
+        data: {
+          adminId,
+          targetType: 'SELLER',
+          targetId: sellerUserId,
+          action: 'UNSUSPEND_SELLER',
+          cause: 'Suspension lifted by admin',
+        },
       });
     });
 
@@ -344,15 +424,22 @@ export class AdminMarketplaceService {
   //  DEAL MANAGEMENT
   // ════════════════════════════════════════════
 
-  async cancelDeal(transactionId: string, adminId: string, dto: AdminCancelDealDto) {
+  async cancelDeal(
+    transactionId: string,
+    adminId: string,
+    dto: AdminCancelDealDto,
+  ) {
     const tx = await this.db.transaction.findUnique({
       where: { id: transactionId },
       include: { product: true },
     });
     if (!tx) throw new NotFoundException('Transaction not found');
-    if (tx.status === 'CANCELLED') throw new ConflictException('Deal is already cancelled');
+    if (tx.status === 'CANCELLED')
+      throw new ConflictException('Deal is already cancelled');
     if (tx.status !== 'PENDING' && tx.status !== 'COMPLETED') {
-      throw new BadRequestException('Only PENDING or COMPLETED deals can be cancelled');
+      throw new BadRequestException(
+        'Only PENDING or COMPLETED deals can be cancelled',
+      );
     }
 
     await this.db.$transaction(async (prisma) => {

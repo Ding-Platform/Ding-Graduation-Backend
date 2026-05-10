@@ -77,6 +77,8 @@ SECURE: false,
 } as const;
 
 // Type definitions for better TypeScript support
-export type TokenType = typeof TOKEN_CONSTANTS.ACCESS_TOKEN.TYPE | typeof TOKEN_CONSTANTS.REFRESH_TOKEN.TYPE;
+export type TokenType =
+  | typeof TOKEN_CONSTANTS.ACCESS_TOKEN.TYPE
+  | typeof TOKEN_CONSTANTS.REFRESH_TOKEN.TYPE;
 export type TokenAlgorithm = typeof TOKEN_CONSTANTS.ACCESS_TOKEN.ALGORITHM;
 export type SameSitePolicy = typeof TOKEN_CONSTANTS.COOKIE.SAME_SITE;

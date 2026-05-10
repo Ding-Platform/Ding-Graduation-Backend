@@ -7,7 +7,10 @@ export class AudioTracksController {
   constructor(private readonly reelsService: ReelsService) {}
 
   @Get()
-  async listTracks(@Query('genre') genre?: string, @Query('search') search?: string) {
+  async listTracks(
+    @Query('genre') genre?: string,
+    @Query('search') search?: string,
+  ) {
     return this.reelsService.listAudioTracks(genre, search);
   }
 

@@ -24,7 +24,10 @@ function initializeLogging() {
       });
     }
   } catch (error) {
-    console.warn('Could not initialize file logging:', (error as Error).message);
+    console.warn(
+      'Could not initialize file logging:',
+      (error as Error).message,
+    );
   }
 }
 
@@ -77,7 +80,10 @@ function setupStaticFileServing(app: NestExpressApplication) {
     app.use('/uploads', staticMiddleware(uploadPath));
     console.log(`Static file serving enabled for: ${uploadPath}`);
   } catch (error) {
-    console.warn('Could not setup static file serving:', (error as Error).message);
+    console.warn(
+      'Could not setup static file serving:',
+      (error as Error).message,
+    );
   }
 }
 

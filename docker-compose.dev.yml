@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   meilisearch:
     image: getmeili/meilisearch:v1.5
@@ -13,19 +15,103 @@ services:
     networks:
       - ding-dev-network
 
+  postgres:
+    image: postgres:15
+    container_name: ding-postgres-dev
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    networks:
+      - ding-dev-network
+
+  mongodb:
+    image: mongo:7
+    container_name: ding-mongodb-dev
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_dev:/data/db
+    networks:
+      - ding-dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ding-redis-dev
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - ding-dev-network
+
+  neo4j:
+    image: neo4j:5
+    container_name: ding-neo4j-dev
+    restart: always
+    ports:
+      - "7474:7474"   # browser UI
+      - "7687:7687"   # bolt
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH}
+    volumes:
+      - neo4j_data_dev:/data
+    networks:
+      - ding-dev-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: ding-backend-dev
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+      - neo4j
+    networks:
+      - ding-dev-network
+    command: sh -c "pnpm prisma generate && pnpm run start:dev"
+
+  frontend:
+    build:
+      context: ../Ding-Platform-Frontend
+      dockerfile: Dockerfile.dev
+    container_name: ding-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../Ding-Platform-Frontend:/app
+      - /app/node_modules
+    networks:
+      - ding-dev-network
+
   prisma-studio:
     build:
       context: .
       dockerfile: Dockerfile.dev
-
     container_name: ding-prisma-studio-dev
     restart: always
     ports:
-      - '5555:5555'
+      - "5555:5555"
     env_file:
       - .env
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
     volumes:
       - .:/app
       - /app/node_modules
@@ -38,10 +124,10 @@ services:
 
 volumes:
   pgdata_dev:
-  neo4j_data_dev:
-  redis_data_dev:
   mongodb_data_dev:
   meilisearch_data:
+  redis_data_dev:
+  neo4j_data_dev:
 
 networks:
   ding-dev-network:

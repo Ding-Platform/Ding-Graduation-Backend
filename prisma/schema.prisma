@@ -77,6 +77,31 @@ model User {
   reelLikes          ReelLike[]
   reelComments       ReelComment[]
   reelShares         ReelShare[]
+
+  // Sprint 12 — Stories
+  stories            Story[]
+  storyViews         StoryView[]
+
+  // Sprint 13 — Social Groups
+  ownedGroups        Group[]       @relation("GroupCreator")
+  groupMemberships   GroupMember[]
+  groupJoinRequests  GroupJoinRequest[]
+
+  // Sprint 14 — Pages
+  ownedPages         Page[]        @relation("PageCreator")
+  pageRoles          PageMember[]
+
+  // Sprint 18 — Live Streaming
+  hostedStreams      LiveStream[]  @relation("StreamHost")
+
+  // Sprint 19 — Analytics
+  analyticsEvents    AnalyticsEvent[]
+
+  // Sprint 20 — Events
+  hostedEvents       Event[]       @relation("EventHost")
+  eventRsvps         EventAttendee[]
+  eventTickets       EventTicket[]
+  eventReminders     EventReminder[]
 }
 
 model Session {
@@ -189,6 +214,19 @@ enum NotificationType {
   COMMENT_LIKE
   MENTION
   SYSTEM
+  // Sprint 12
+  STORY_REACTION
+  // Sprint 13
+  GROUP_INVITE
+  GROUP_JOIN
+  GROUP_JOIN_REQUEST
+  GROUP_JOIN_APPROVED
+  // Sprint 18
+  LIVE_STARTED
+  // Sprint 20
+  EVENT_INVITE
+  EVENT_REMINDER
+  EVENT_RSVP
 }
 
 model Notification {
@@ -239,10 +277,13 @@ model Post {
   Likes        Like[]
   Comments     Comment[]
   savedBy      SavedPost[]
+  groupPosts   GroupPost[]
+  pagePosts    PagePost[]
 
   @@index([authorId])
   @@index([isDeleted])
   @@index([createdAt])
+  @@index([authorId, isDeleted])
 }
 
 model Like {
@@ -1142,4 +1183,437 @@ model DealLog {
   @@index([adminId])
   @@index([targetId])
   @@index([targetType, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 12: Stories
+// ─────────────────────────────────────────────
+
+enum StoryPrivacy {
+  PUBLIC
+  FRIENDS
+  CLOSE_FRIENDS
+}
+
+model Story {
+  id           String       @id @default(uuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  mediaUrl     String
+  thumbnailUrl String?
+  caption      String?      @db.Text
+  privacy      StoryPrivacy @default(FRIENDS)
+  isHighlight  Boolean      @default(false)
+
+  viewsCount   Int          @default(0)
+  expiresAt    DateTime     // Set to createdAt + 24h; null means highlight (no expiry)
+
+  createdAt    DateTime     @default(now())
+  deletedAt    DateTime?
+
+  views        StoryView[]
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+  @@index([privacy, expiresAt])
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewerId  String
+  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@unique([storyId, viewerId])
+  @@index([storyId, viewedAt])
+  @@index([viewerId])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 13: Social Groups
+// ─────────────────────────────────────────────
+
+enum GroupType {
+  PUBLIC
+  PRIVATE
+  SECRET
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+model Group {
+  id           String      @id @default(uuid())
+  name         String
+  description  String?     @db.Text
+  coverPhoto   String?
+  type         GroupType   @default(PUBLIC)
+
+  createdById  String
+  createdBy    User        @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  membersCount Int         @default(0)
+  postsCount   Int         @default(0)
+
+  // Who can post: true = only admins/mods, false = all members
+  restrictPosting Boolean  @default(false)
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  members      GroupMember[]
+  joinRequests GroupJoinRequest[]
+  rules        GroupRule[]
+  groupPosts   GroupPost[]
+  groupEvents  GroupEvent[]
+
+  @@index([createdById])
+  @@index([type, createdAt])
+  @@index([deletedAt])
+}
+
+model GroupMember {
+  id            String          @id @default(uuid())
+  groupId       String
+  group         Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          GroupMemberRole @default(MEMBER)
+  acceptedRulesAt DateTime?
+  joinedAt      DateTime        @default(now())
+  isMuted       Boolean         @default(false)
+
+  @@unique([groupId, userId])
+  @@index([groupId, role])
+  @@index([userId])
+}
+
+model GroupJoinRequest {
+  id        String            @id @default(uuid())
+  groupId   String
+  group     Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    JoinRequestStatus @default(PENDING)
+  message   String?           @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([groupId, userId])
+  @@index([groupId, status])
+  @@index([userId])
+}
+
+model GroupRule {
+  id          String   @id @default(uuid())
+  groupId     String
+  group       Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  title       String
+  description String?  @db.Text
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([groupId, order])
+}
+
+model GroupPost {
+  id        String   @id @default(uuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  isApproved Boolean @default(true) // false = pending approval (when restrictPosting=true)
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, postId])
+  @@index([groupId, isApproved, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 14: Pages
+// ─────────────────────────────────────────────
+
+enum PageCategory {
+  BUSINESS
+  BRAND
+  ARTIST
+  COMMUNITY
+  PUBLIC_FIGURE
+  OTHER
+}
+
+enum PageRole {
+  ADMIN
+  EDITOR
+  MODERATOR
+}
+
+model Page {
+  id             String      @id @default(uuid())
+  name           String
+  description    String?     @db.Text
+  category       PageCategory @default(OTHER)
+  coverPhoto     String?
+  logoUrl        String?
+  website        String?
+  phone          String?
+  isVerified     Boolean     @default(false)
+  followersCount Int         @default(0)
+
+  createdById    String
+  createdBy      User        @relation("PageCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  members        PageMember[]
+  pagePosts      PagePost[]
+  pageFollows    PageFollow[]
+
+  @@index([createdById])
+  @@index([category])
+  @@index([isVerified])
+  @@index([deletedAt])
+}
+
+model PageMember {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      PageRole @default(EDITOR)
+  joinedAt  DateTime @default(now())
+
+  @@unique([pageId, userId])
+  @@index([pageId, role])
+  @@index([userId])
+}
+
+model PageFollow {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([pageId, userId])
+  @@index([pageId])
+  @@index([userId])
+}
+
+model PagePost {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([pageId, postId])
+  @@index([pageId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 18: Live Streaming
+// ─────────────────────────────────────────────
+
+enum StreamStatus {
+  IDLE
+  LIVE
+  ENDED
+}
+
+model LiveStream {
+  id            String       @id @default(uuid())
+  hostId        String
+  host          User         @relation("StreamHost", fields: [hostId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?      @db.Text
+  thumbnailUrl  String?
+  streamKey     String       @unique @default(uuid()) // opaque RTMP key
+  status        StreamStatus @default(IDLE)
+  viewerCount   Int          @default(0)
+  peakViewers   Int          @default(0)
+  isRecorded    Boolean      @default(true)
+  recordingUrl  String?      // set after stream ends
+  startedAt     DateTime?
+  endedAt       DateTime?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([hostId, status])
+  @@index([status, startedAt])
+  @@index([streamKey])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 19: Analytics Event Ingestion
+// ─────────────────────────────────────────────
+
+enum AnalyticsEventType {
+  VIEW_POST
+  LIKE_POST
+  COMMENT_POST
+  SHARE_POST
+  VIEW_REEL
+  LIKE_REEL
+  VIEW_PROFILE
+  VIEW_EVENT
+  VIEW_GROUP
+  VIEW_PAGE
+  VIEW_STORY
+  SEARCH
+  JOIN_GROUP
+  RSVP_EVENT
+  FOLLOW_USER
+  FOLLOW_PAGE
+}
+
+model AnalyticsEvent {
+  id         String             @id @default(uuid())
+  userId     String
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType  AnalyticsEventType
+  targetId   String?            // postId, reelId, eventId, groupId, pageId, userId, etc.
+  targetType String?            // 'POST' | 'REEL' | 'EVENT' | 'GROUP' | 'PAGE' | 'USER' | 'STORY'
+  metadata   Json?              // any additional context (search query, watchPct, etc.)
+  sessionId  String?
+  createdAt  DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([targetId, targetType])
+  @@index([sessionId])
+}
+
+// ─────────────────────────────────────────────
+// Sprint 20: Events & Advanced Groups
+// ─────────────────────────────────────────────
+
+enum EventType {
+  ONLINE
+  OFFLINE
+}
+
+enum RSVPStatus {
+  GOING
+  INTERESTED
+  NOT_GOING
+}
+
+enum EventTicketStatus {
+  ACTIVE
+  USED
+  CANCELLED
+  PENDING_PAYMENT
+}
+
+model Event {
+  id               String      @id @default(uuid())
+  title            String
+  description      String?     @db.Text
+  coverPhoto       String?
+  hostId           String
+  host             User        @relation("EventHost", fields: [hostId], references: [id], onDelete: Cascade)
+  eventType        EventType   @default(OFFLINE)
+  startTime        DateTime
+  endTime          DateTime?
+  location         String?     // physical address for OFFLINE events
+  onlineMeetingUrl String?     // link for ONLINE events
+  isPublic         Boolean     @default(true)
+  maxAttendees     Int?        // null = unlimited
+  attendeeCount    Int         @default(0)
+  ticketPrice      Float?      // null = free event
+  currency         String      @default("USD")
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
+
+  attendees        EventAttendee[]
+  tickets          EventTicket[]
+  reminders        EventReminder[]
+  groupEvents      GroupEvent[]
+
+  @@index([hostId, createdAt])
+  @@index([startTime, isPublic])
+  @@index([eventType, startTime])
+  @@index([deletedAt])
+}
+
+model EventAttendee {
+  id         String     @id @default(uuid())
+  eventId    String
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rsvpStatus RSVPStatus @default(INTERESTED)
+  rsvpAt     DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId, rsvpStatus])
+  @@index([userId, rsvpAt])
+}
+
+model EventTicket {
+  id          String            @id @default(uuid())
+  eventId     String
+  event       Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ticketCode  String            @unique @default(uuid())
+  status      EventTicketStatus @default(ACTIVE)
+  paidAmount  Float             @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([ticketCode])
+}
+
+model EventReminder {
+  id         String   @id @default(uuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  remindAt   DateTime // scheduled reminder time
+  sent       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([remindAt, sent])
+}
+
+model GroupEvent {
+  id        String   @id @default(uuid())
+  groupId   String
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  linkedAt  DateTime @default(now())
+  linkedById String?
+
+  @@unique([groupId, eventId])
+  @@index([groupId, linkedAt])
+  @@index([eventId])
 }

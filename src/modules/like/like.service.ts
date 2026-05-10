@@ -159,7 +159,7 @@ export class LikeService {
       select: { likeCount: true },
     });
 
-    return { 
+    return {
       success: true,
       likesCount: updatedPost?.likeCount || 0,
     };
@@ -167,7 +167,9 @@ export class LikeService {
 
   async likeComment(userId: string, commentId: string) {
     // Check if comment exists
-    const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });
+    const comment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    });
     if (!comment) {
       throw new GenericHttpException(
         ERROR_MESSAGES.COMMENT_NOT_FOUND,
@@ -246,7 +248,10 @@ export class LikeService {
         timestamp: new Date(),
       });
     } catch (queueError) {
-      console.error('Failed to enqueue comment like for graph sync', queueError);
+      console.error(
+        'Failed to enqueue comment like for graph sync',
+        queueError,
+      );
     }
 
     return {
@@ -292,7 +297,10 @@ export class LikeService {
         timestamp: new Date(),
       });
     } catch (queueError) {
-      console.error('Failed to enqueue comment unlike for graph sync', queueError);
+      console.error(
+        'Failed to enqueue comment unlike for graph sync',
+        queueError,
+      );
     }
 
     // Get updated comment with like count
@@ -301,7 +309,7 @@ export class LikeService {
       select: { likeCount: true },
     });
 
-    return { 
+    return {
       success: true,
       likesCount: updatedComment?.likeCount || 0,
     };

@@ -100,9 +100,14 @@ export class ChatGateway
     this.logger.log('ChatGateway Initialized');
 
     // Register Socket.IO middleware for JWT authentication
-    server.use(
-      SocketAuthMiddleware(this.logger, this.jwtService, this.authService),
+    const socketAuth = SocketAuthMiddleware(
+      this.logger,
+      this.jwtService,
+      this.authService,
     );
+    server.use((socket, next) => {
+      void socketAuth(socket, next);
+    });
   }
 
   async handleConnection(client: Socket) {

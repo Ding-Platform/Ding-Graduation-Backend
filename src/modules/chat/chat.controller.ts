@@ -54,6 +54,7 @@ import {
   RoomListPaginationDto,
 } from './dtos';
 import { RoomDocument, RoomMemberDocument } from './schemas';
+import { OffsetPaginationDto } from 'src/common/dto/offset-pagination.dto';
 
 @ApiTags('Chat')
 @ApiBearerAuth()
@@ -230,7 +231,7 @@ export class ChatController {
     // Use `getMessage()` to enrich with user/media/reactions as needed by the UI.
     if (message?._id) {
       const fullMessage = await this.messageService.getMessage(
-        message._id!.toHexString(),
+        message._id.toHexString(),
         user.id,
       );
       // Deliver to all connected clients in the room (when they joined the room).
@@ -299,7 +300,7 @@ export class ChatController {
     // Broadcast enriched message to the room for real-time UI updates.
     if (message?._id) {
       const fullMessage = await this.messageService.getMessage(
-        message._id!.toHexString(),
+        message._id.toHexString(),
         user.id,
       );
       this.chatGateway.sendToRoom(roomId, 'newMessage', fullMessage);
@@ -495,9 +496,14 @@ export class ChatController {
     @currentUser() user: User,
     @Query('query') query: string,
     @Query('roomId') roomId?: string,
-    @Query('limit') limit?: number,
+    @Query() pagination?: OffsetPaginationDto,
   ) {
-    return this.messageService.searchMessages(user.id, query, roomId, limit);
+    return this.messageService.searchMessages(
+      user.id,
+      query,
+      roomId,
+      pagination?.limit,
+    );
   }
 
   @Get('rooms/:roomId/media')
@@ -507,9 +513,13 @@ export class ChatController {
   async getMediaMessages(
     @Param('roomId') roomId: string,
     @currentUser() user: User,
-    @Query('limit') limit?: number,
+    @Query() pagination?: OffsetPaginationDto,
   ) {
-    return this.messageService.getMediaMessages(roomId, user.id, limit);
+    return this.messageService.getMediaMessages(
+      roomId,
+      user.id,
+      pagination?.limit,
+    );
   }
 
   @Get('rooms/:roomId/stats')

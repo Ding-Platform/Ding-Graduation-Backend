@@ -19,6 +19,7 @@ import {
   AdminActionWithCauseDto,
   AdminCancelDealDto,
 } from '../dtos/admin-action.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('marketplace/admin')
 @UseGuards(JwtAuthenticationGuard, AdminMarketplaceGuard)
@@ -32,10 +33,13 @@ export class AdminMarketplaceController {
   @HttpCode(HttpStatus.OK)
   listApplications(
     @Query('status') status?: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query() pagination?: PaginationDto,
   ) {
-    return this.adminService.listApplications(status, page, limit);
+    return this.adminService.listApplications(
+      status,
+      pagination?.page,
+      pagination?.limit,
+    );
   }
 
   /** GET /marketplace/admin/applications/:id */
@@ -71,8 +75,8 @@ export class AdminMarketplaceController {
   /** GET /marketplace/admin/sellers?page=1&limit=20 */
   @Get('sellers')
   @HttpCode(HttpStatus.OK)
-  listSellers(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.adminService.listSellers(page, limit);
+  listSellers(@Query() pagination?: PaginationDto) {
+    return this.adminService.listSellers(pagination?.page, pagination?.limit);
   }
 
   /** GET /marketplace/admin/sellers/:userId */
@@ -142,7 +146,7 @@ export class AdminMarketplaceController {
   /** GET /marketplace/admin/logs?page=1&limit=50 */
   @Get('logs')
   @HttpCode(HttpStatus.OK)
-  getLogs(@Query('page') page?: number, @Query('limit') limit?: number) {
-    return this.adminService.getAuditLogs(page, limit);
+  getLogs(@Query() pagination?: PaginationDto) {
+    return this.adminService.getAuditLogs(pagination?.page, pagination?.limit);
   }
 }

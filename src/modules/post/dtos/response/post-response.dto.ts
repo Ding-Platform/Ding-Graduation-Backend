@@ -8,7 +8,7 @@ export class PostResponseDto {
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
-  
+
   author: {
     id: string;
     name: string | null;

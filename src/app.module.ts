@@ -31,16 +31,25 @@ import { ChatModule } from './modules/chat/chat.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { NoroModule } from './modules/noro/noro.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { HelperModule } from './common/utils/helper/helper.module';
 import { CallModule } from './modules/call/call.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { ReelsModule } from './modules/reels/reels.module';
 import { SearchModule } from './modules/search/search.module';
+import { StoriesModule } from './modules/stories/stories.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { PagesModule } from './modules/pages/pages.module';
+import { SearchModule } from './modules/search/search.module';
+import { StreamingModule } from './modules/streaming/streaming.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { EventsModule } from './modules/events/events.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
 let bullRedisOptions: {
   host: string;
   port: number;
+  password?: string;
   tls?: { rejectUnauthorized: boolean };
 } = {
   host: 'localhost',
@@ -51,17 +60,20 @@ try {
   const parsed = new URL(redisUrl);
   const host = parsed.hostname || 'localhost';
   const port = parsed.port ? parseInt(parsed.port, 10) : 6379;
+  const password = parsed.password || undefined;
 
   const useTls = parsed.protocol === 'rediss:';
   bullRedisOptions = useTls
     ? {
         host,
         port,
+        ...(password ? { password } : {}),
         tls: { rejectUnauthorized: false },
       }
     : {
         host,
         port,
+        ...(password ? { password } : {}),
       };
 } catch {
   // Keep default localhost:6379 if parsing fails
@@ -97,10 +109,18 @@ try {
     NotificationModule,
     NoroModule,
     ModerationModule,
+    HelperModule,
     CallModule,
     MarketplaceModule,
     ReelsModule,
     SearchModule,
+    StoriesModule,
+    GroupsModule,
+    PagesModule,
+    SearchModule,
+    StreamingModule,
+    AnalyticsModule,
+    EventsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [
