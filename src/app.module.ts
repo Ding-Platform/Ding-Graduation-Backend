@@ -35,6 +35,7 @@ import { HelperModule } from './common/utils/helper/helper.module';
 import { CallModule } from './modules/call/call.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { ReelsModule } from './modules/reels/reels.module';
+import { SearchModule } from './modules/search/search.module';
 import { StoriesModule } from './modules/stories/stories.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { PagesModule } from './modules/pages/pages.module';
@@ -112,6 +113,7 @@ try {
     CallModule,
     MarketplaceModule,
     ReelsModule,
+    SearchModule,
     StoriesModule,
     GroupsModule,
     PagesModule,
