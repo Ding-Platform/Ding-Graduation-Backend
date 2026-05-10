@@ -51,6 +51,7 @@ services:
       - mongodb
       - redis
       - neo4j
+      - meilisearch
     networks:
       - internal
       - public
@@ -78,7 +79,7 @@ services:
     volumes:
       - meilisearch_data:/meili_data
     networks:
-      - ding-dev-network
+      - internal
 
 volumes:
   pgdata:
