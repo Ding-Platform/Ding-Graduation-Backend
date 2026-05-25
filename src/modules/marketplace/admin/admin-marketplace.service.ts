@@ -9,12 +9,18 @@ import { decrypt, maskCardNumber } from 'src/common/utils/encryption.util';
 import {
   AdminDeclineApplicationDto,
   AdminActionWithCauseDto,
+  AdminActionOptionalReasonDto,
   AdminCancelDealDto,
 } from '../dtos/admin-action.dto';
+import { ResolveDisputeDto, GetOrdersQueryDto } from '../dtos/order.dto';
+import { OrderService } from '../order/order.service';
 
 @Injectable()
 export class AdminMarketplaceService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly orderService: OrderService,
+  ) {}
 
   // ════════════════════════════════════════════
   //  SELLER APPLICATIONS
@@ -227,7 +233,8 @@ export class AdminMarketplaceService {
       where: { userId: sellerUserId },
     });
 
-    const [currentDeals, historyDeals, productCount] = await Promise.all([
+    const [currentTxDeals, historyTxDeals, currentOrders, historyOrders, productCount] =
+      await Promise.all([
       this.db.transaction.findMany({
         where: {
           sellerId: sellerUserId,
@@ -250,6 +257,34 @@ export class AdminMarketplaceService {
         include: {
           product: { select: { id: true, title: true, price: true } },
           buyer: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.db.order.findMany({
+        where: {
+          sellerId: sellerUserId,
+          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+        },
+        include: {
+          product: {
+            select: { id: true, title: true, price: true, images: true },
+          },
+          buyer: { select: { id: true, name: true, email: true } },
+          transaction: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.db.order.findMany({
+        where: {
+          sellerId: sellerUserId,
+          status: { in: ['COMPLETED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] },
+        },
+        include: {
+          product: { select: { id: true, title: true, price: true } },
+          buyer: { select: { id: true, name: true, email: true } },
+          transaction: true,
         },
         orderBy: { createdAt: 'desc' },
         take: 50,
@@ -286,10 +321,20 @@ export class AdminMarketplaceService {
         : null,
       stats: {
         productCount,
-        totalDeals: currentDeals.length + historyDeals.length,
+        totalDeals:
+          currentTxDeals.length +
+          historyTxDeals.length +
+          currentOrders.length +
+          historyOrders.length,
       },
-      currentDeals,
-      dealHistory: historyDeals,
+      currentDeals: [
+        ...currentTxDeals.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+        ...currentOrders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+      dealHistory: [
+        ...historyTxDeals.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+        ...historyOrders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+      ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
     };
   }
 
@@ -424,6 +469,38 @@ export class AdminMarketplaceService {
   //  DEAL MANAGEMENT
   // ════════════════════════════════════════════
 
+  async listOrders(query: GetOrdersQueryDto) {
+    return this.orderService.listAdminOrders(query);
+  }
+
+  async getOrderDetail(orderId: string) {
+    return this.orderService.getAdminOrderDetail(orderId);
+  }
+
+  async resolveDispute(
+    adminId: string,
+    orderId: string,
+    dto: ResolveDisputeDto,
+  ) {
+    return this.orderService.resolveDispute(adminId, orderId, dto);
+  }
+
+  async forceRelease(
+    adminId: string,
+    orderId: string,
+    dto: AdminActionOptionalReasonDto,
+  ) {
+    return this.orderService.forceRelease(adminId, orderId, dto.reason);
+  }
+
+  async forceRefund(
+    adminId: string,
+    orderId: string,
+    dto: AdminActionOptionalReasonDto,
+  ) {
+    return this.orderService.forceRefund(adminId, orderId, dto.reason);
+  }
+
   async cancelDeal(
     transactionId: string,
     adminId: string,
@@ -431,9 +508,24 @@ export class AdminMarketplaceService {
   ) {
     const tx = await this.db.transaction.findUnique({
       where: { id: transactionId },
-      include: { product: true },
+      include: { product: true, order: true },
     });
     if (!tx) throw new NotFoundException('Transaction not found');
+
+    // Compatibility alias in Sprint 21:
+    // if the transaction is linked to the new Order flow, cancel via escrow refund.
+    if (tx.orderId && tx.order) {
+      const updatedOrder = await this.orderService.forceRefund(
+        adminId,
+        tx.orderId,
+        dto.cause,
+      );
+      return {
+        message: 'Deal cancelled via order escrow flow.',
+        order: updatedOrder,
+      };
+    }
+
     if (tx.status === 'CANCELLED')
       throw new ConflictException('Deal is already cancelled');
     if (tx.status !== 'PENDING' && tx.status !== 'COMPLETED') {

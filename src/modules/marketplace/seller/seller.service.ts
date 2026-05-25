@@ -5,10 +5,15 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from 'src/configs/database/database.service';
 import { UpdateSellerProfileDto } from '../dtos/seller-profile-update.dto';
+import { GetOrdersQueryDto, ConfirmShipmentDto } from '../dtos/order.dto';
+import { OrderService } from '../order/order.service';
 
 @Injectable()
 export class SellerService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly orderService: OrderService,
+  ) {}
 
   /** GET /marketplace/seller/profile — seller's own profile */
   async getMyProfile(userId: string) {
@@ -80,7 +85,7 @@ export class SellerService {
   /** GET /marketplace/seller/deals — active/pending deals */
   async getMyActiveDeals(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    const [deals, total] = await Promise.all([
+    const [transactions, txTotal, orders, orderTotal] = await Promise.all([
       this.db.transaction.findMany({
         where: {
           sellerId: userId,
@@ -99,14 +104,40 @@ export class SellerService {
       this.db.transaction.count({
         where: { sellerId: userId, status: { in: ['PENDING'] } },
       }),
+      this.db.order.findMany({
+        where: {
+          sellerId: userId,
+          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+        },
+        include: {
+          product: {
+            select: { id: true, title: true, price: true, images: true },
+          },
+          buyer: { select: { id: true, name: true, email: true, image: true } },
+          transaction: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.db.order.count({
+        where: {
+          sellerId: userId,
+          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+        },
+      }),
     ]);
-    return { data: deals, total, page, limit };
+    const data = [
+      ...transactions.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+      ...orders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return { data, total: txTotal + orderTotal, page, limit };
   }
 
   /** GET /marketplace/seller/deals/history — old deals */
   async getMyDealHistory(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    const [deals, total] = await Promise.all([
+    const [transactions, txTotal, orders, orderTotal] = await Promise.all([
       this.db.transaction.findMany({
         where: {
           sellerId: userId,
@@ -126,7 +157,51 @@ export class SellerService {
           status: { in: ['FAILED', 'REFUNDED', 'CANCELLED'] },
         },
       }),
+      this.db.order.findMany({
+        where: {
+          sellerId: userId,
+          status: { in: ['COMPLETED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] },
+        },
+        include: {
+          product: { select: { id: true, title: true, price: true } },
+          buyer: { select: { id: true, name: true, email: true } },
+          transaction: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.db.order.count({
+        where: {
+          sellerId: userId,
+          status: { in: ['COMPLETED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] },
+        },
+      }),
     ]);
-    return { data: deals, total, page, limit };
+    const data = [
+      ...transactions.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+      ...orders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return { data, total: txTotal + orderTotal, page, limit };
+  }
+
+  /** GET /marketplace/seller/orders */
+  async getMyOrders(userId: string, query: GetOrdersQueryDto) {
+    return this.orderService.listSellerOrders(userId, query);
+  }
+
+  /** GET /marketplace/seller/orders/:id */
+  async getOrderDetail(userId: string, orderId: string) {
+    return this.orderService.getSellerOrderDetail(userId, orderId);
+  }
+
+  /** POST /marketplace/seller/orders/:id/confirm-shipment */
+  async confirmShipment(
+    userId: string,
+    orderId: string,
+    dto: ConfirmShipmentDto,
+    file: Express.Multer.File,
+  ) {
+    return this.orderService.confirmShipment(userId, orderId, dto, file);
   }
 }

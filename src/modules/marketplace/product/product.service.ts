@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { DatabaseService } from 'src/configs/database/database.service';
+import { OrderService } from '../order/order.service';
 import {
   CreateProductDto,
   UpdateProductDto,
@@ -13,7 +14,10 @@ import {
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly orderService: OrderService,
+  ) {}
 
   /** CREATE — seller only (guard upstream) */
   async createProduct(sellerId: string, dto: CreateProductDto) {
@@ -178,11 +182,18 @@ export class ProductService {
         throw new BadRequestException('Product is out of stock');
       }
 
+      const order = await this.orderService.createOrderFromPurchase(
+        tx,
+        buyerId,
+        product,
+      );
+
       const transaction = await tx.transaction.create({
         data: {
           buyerId,
           sellerId: product.sellerId,
           productId: product.id,
+          orderId: order.id,
           amount: product.price,
           currency: product.currency,
           status: 'PENDING',
@@ -203,7 +214,10 @@ export class ProductService {
         });
       }
 
-      return transaction;
+      return {
+        ...order,
+        transaction,
+      };
     });
   }
 }

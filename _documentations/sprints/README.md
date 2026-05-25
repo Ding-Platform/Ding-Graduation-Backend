@@ -1,4 +1,4 @@
-# Sprint Documentation Index (1-20)
+# Sprint Documentation Index (1-21)
 
 This folder provides one file per sprint in a normalized format.
 
@@ -22,6 +22,7 @@ This folder provides one file per sprint in a normalized format.
 - `sprint18.md`
 - `sprint19.md`
 - `sprint20.md`
+- `sprint21.md` (see `docs/sprints/sprint21.md` for active Sprint 21 escrow implementation notes)
 
 Each sprint file includes:
 - Update

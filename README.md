@@ -125,6 +125,8 @@ pnpm run start:dev
 
 ### Project Documentation
 
+- [docs/README.md](./docs/README.md) - Active sprint plans and implementation reports
+- [docs/sprints/sprint21.md](./docs/sprints/sprint21.md) - Sprint 21 escrow orders summary
 - [\_run_Scripts/ENV_GUIDE.md](./_run_Scripts/ENV_GUIDE.md) - Environment variables
 - [\_documentations/FEED_DOCUMENTATION.md](./_documentations/FEED_DOCUMENTATION.md) - Feed system
 - [\_documentations/PROGRESS.md](./_documentations/PROGRESS.md) - Project progress
@@ -134,6 +136,7 @@ pnpm run start:dev
 ## 📂 Folder Structure
 
 - `src/` - Application source code
+- `docs/` - Active sprint plans and implementation reports
 - `_deploy/` - Infrastructure definitions (Docker, Nginx)
 - `_documentations/` - Project documentation and guides
 - `_run_Scripts/` - Helper scripts for development and deployment

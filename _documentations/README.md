@@ -8,6 +8,7 @@
 
 ## Sprint Docs (Canonical)
 - `sprints/` - one file per sprint (`sprint01.md` ... `sprint20.md`)
+- `../docs/` - active implementation docs (plans and sprint execution reports)
 
 ## Deployment / Setup Docs
 - `COMPLETE_SETUP_SUMMARY.md`

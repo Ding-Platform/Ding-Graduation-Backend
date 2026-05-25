@@ -25,6 +25,17 @@ describe('Marketplace Enhanced (e2e)', () => {
             async (_file: Express.Multer.File, userId: string, docType: string) =>
               `https://mock-cloudinary.local/marketplace/seller-docs/${userId}/${docType}.jpg`,
           ),
+        uploadOrderProof: jest
+          .fn()
+          .mockImplementation(
+            async (
+              _file: Express.Multer.File,
+              orderId: string,
+              userId: string,
+              proofType: string,
+            ) =>
+              `https://mock-cloudinary.local/marketplace/orders/${orderId}/${proofType}-${userId}.jpg`,
+          ),
       })
       .compile();
 
@@ -122,8 +133,9 @@ describe('Marketplace Enhanced (e2e)', () => {
       .set('Authorization', `Bearer ${buyer.token}`)
       .expect(201);
 
-    const transactionId = buyRes.body.data.id as string;
-    expect(buyRes.body.data.status).toBe('PENDING');
+    const orderId = buyRes.body.data.id as string;
+    const transactionId = buyRes.body.data.transaction.id as string;
+    expect(buyRes.body.data.status).toBe('PLACED');
 
     const soldProduct = await prisma.product.findUnique({ where: { id: productId } });
     expect(soldProduct?.quantity).toBe(0);
@@ -137,10 +149,85 @@ describe('Marketplace Enhanced (e2e)', () => {
 
     const restoredProduct = await prisma.product.findUnique({ where: { id: productId } });
     const cancelledTx = await prisma.transaction.findUnique({ where: { id: transactionId } });
+    const refundedOrder = await prisma.order.findUnique({ where: { id: orderId } });
 
     expect(restoredProduct?.quantity).toBe(1);
     expect(restoredProduct?.status).toBe('ACTIVE');
-    expect(cancelledTx?.status).toBe('CANCELLED');
+    expect(cancelledTx?.status).toBe('REFUNDED');
+    expect(refundedOrder?.status).toBe('REFUNDED');
+  });
+
+  it('handles shipment, delivery, dispute, and admin dispute resolution', async () => {
+    const seller = await createAuthedUser('SELLER', true);
+    const buyer = await createAuthedUser('USER');
+    const admin = await createAuthedUser('ADMIN');
+
+    const createProductRes = await request(app.getHttpServer())
+      .post('/api/v1/marketplace/products')
+      .set('Authorization', `Bearer ${seller.token}`)
+      .send({
+        title: 'Escrow Headphones',
+        description: 'Noise cancelling headphones',
+        price: 399,
+        quantity: 1,
+        currency: 'USD',
+        images: ['https://img.local/headphones.jpg'],
+      })
+      .expect(201);
+
+    const productId = createProductRes.body.data.id as string;
+
+    const buyRes = await request(app.getHttpServer())
+      .post(`/api/v1/marketplace/products/${productId}/buy`)
+      .set('Authorization', `Bearer ${buyer.token}`)
+      .expect(201);
+
+    const orderId = buyRes.body.data.id as string;
+    const transactionId = buyRes.body.data.transaction.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/marketplace/seller/orders/${orderId}/confirm-shipment`)
+      .set('Authorization', `Bearer ${seller.token}`)
+      .field('shipmentTrackingNumber', 'TRACK-1234')
+      .field('shipmentCarrier', 'DingExpress')
+      .attach('shipmentProofImage', Buffer.from('shipment-proof'), 'shipment.jpg')
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/marketplace/orders/${orderId}/confirm-delivery`)
+      .set('Authorization', `Bearer ${buyer.token}`)
+      .attach('deliveryProofImage', Buffer.from('delivery-proof'), 'delivery.jpg')
+      .expect(200);
+
+    const afterDelivery = await prisma.order.findUnique({ where: { id: orderId } });
+    expect(afterDelivery?.status).toBe('RELEASE_PENDING');
+    expect(afterDelivery?.releaseScheduledAt).toBeTruthy();
+    expect(afterDelivery?.releaseScheduledAt!.getTime()).toBeGreaterThan(
+      Date.now() + 2.5 * 24 * 60 * 60 * 1000,
+    );
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/marketplace/orders/${orderId}/dispute`)
+      .set('Authorization', `Bearer ${buyer.token}`)
+      .send({ disputeReason: 'Item condition does not match description' })
+      .expect(200);
+
+    const disputed = await prisma.order.findUnique({ where: { id: orderId } });
+    expect(disputed?.status).toBe('DISPUTED');
+
+    await request(app.getHttpServer())
+      .post(`/api/v1/marketplace/admin/orders/${orderId}/resolve-dispute`)
+      .set('Authorization', `Bearer ${admin.token}`)
+      .send({ resolution: 'REFUND', adminNote: 'Verified buyer evidence' })
+      .expect(200);
+
+    const refundedOrder = await prisma.order.findUnique({ where: { id: orderId } });
+    const refundedTx = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+    });
+    expect(refundedOrder?.status).toBe('REFUNDED');
+    expect(refundedOrder?.escrowStatus).toBe('REFUNDED');
+    expect(refundedTx?.status).toBe('REFUNDED');
   });
 
   it('allows admin to approve pending application and creates seller profile', async () => {
@@ -286,6 +373,13 @@ describe('Marketplace Enhanced (e2e)', () => {
       select: { id: true },
     });
     const txIds = txs.map((t) => t.id);
+    const orders = await prisma.order.findMany({
+      where: {
+        OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
+      },
+      select: { id: true },
+    });
+    const orderIds = orders.map((o) => o.id);
 
     await prisma.dealLog.deleteMany({
       where: {
@@ -293,11 +387,17 @@ describe('Marketplace Enhanced (e2e)', () => {
           { adminId: { in: userIds } },
           { targetId: { in: userIds } },
           { targetId: { in: txIds } },
+          { targetId: { in: orderIds } },
         ],
       },
     });
 
     await prisma.transaction.deleteMany({
+      where: {
+        OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
+      },
+    });
+    await prisma.order.deleteMany({
       where: {
         OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
       },

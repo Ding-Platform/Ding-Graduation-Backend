@@ -32,6 +32,13 @@ async function cleanupExistingSeedData() {
     select: { id: true },
   });
   const txIds = txs.map((t) => t.id);
+  const orders = await prisma.order.findMany({
+    where: {
+      OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
+    },
+    select: { id: true },
+  });
+  const orderIds = orders.map((o) => o.id);
 
   await prisma.dealLog.deleteMany({
     where: {
@@ -39,11 +46,17 @@ async function cleanupExistingSeedData() {
         { adminId: { in: userIds } },
         { targetId: { in: userIds } },
         { targetId: { in: txIds } },
+        { targetId: { in: orderIds } },
       ],
     },
   });
 
   await prisma.transaction.deleteMany({
+    where: {
+      OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
+    },
+  });
+  await prisma.order.deleteMany({
     where: {
       OR: [{ buyerId: { in: userIds } }, { sellerId: { in: userIds } }],
     },
@@ -300,11 +313,66 @@ async function seedMarketplaceData() {
     },
   });
 
+  const orderPending = await prisma.order.create({
+    data: {
+      orderNumber: `ORD-SEED-${Date.now()}-PENDING`,
+      status: 'PLACED',
+      buyerId: buyer.id,
+      sellerId: seller1.id,
+      productId: productA.id,
+      quantity: 1,
+      unitPrice: productA.price,
+      currency: productA.currency,
+      totalAmount: productA.price,
+      escrowAmount: productA.price,
+      escrowStatus: 'HELD',
+    },
+  });
+
+  const orderCompleted = await prisma.order.create({
+    data: {
+      orderNumber: `ORD-SEED-${Date.now()}-COMP`,
+      status: 'COMPLETED',
+      buyerId: buyer.id,
+      sellerId: seller1.id,
+      productId: productB.id,
+      quantity: 1,
+      unitPrice: productB.price,
+      currency: productB.currency,
+      totalAmount: productB.price,
+      escrowAmount: productB.price,
+      escrowStatus: 'RELEASED',
+      shippedAt: new Date(),
+      deliveredAt: new Date(),
+      buyerConfirmedAt: new Date(),
+      releasedAt: new Date(),
+    },
+  });
+
+  const orderCancelled = await prisma.order.create({
+    data: {
+      orderNumber: `ORD-SEED-${Date.now()}-CANCEL`,
+      status: 'CANCELLED',
+      buyerId: buyer.id,
+      sellerId: seller2.id,
+      productId: productC.id,
+      quantity: 1,
+      unitPrice: productC.price,
+      currency: productC.currency,
+      totalAmount: productC.price,
+      escrowAmount: productC.price,
+      escrowStatus: 'REFUNDED',
+      cancelledAt: new Date(),
+      cancelReason: 'Seed cancelled order',
+    },
+  });
+
   const txPending = await prisma.transaction.create({
     data: {
       buyerId: buyer.id,
       sellerId: seller1.id,
       productId: productA.id,
+      orderId: orderPending.id,
       amount: productA.price,
       currency: productA.currency,
       status: 'PENDING',
@@ -316,6 +384,7 @@ async function seedMarketplaceData() {
       buyerId: buyer.id,
       sellerId: seller1.id,
       productId: productB.id,
+      orderId: orderCompleted.id,
       amount: productB.price,
       currency: productB.currency,
       status: 'COMPLETED',
@@ -327,6 +396,7 @@ async function seedMarketplaceData() {
       buyerId: buyer.id,
       sellerId: seller2.id,
       productId: productC.id,
+      orderId: orderCancelled.id,
       amount: productC.price,
       currency: productC.currency,
       status: 'CANCELLED',
@@ -358,17 +428,17 @@ async function seedMarketplaceData() {
       },
       {
         adminId: admin.id,
-        targetType: 'TRANSACTION',
-        targetId: txCancelled.id,
-        action: 'CANCEL_DEAL',
-        cause: 'Chargeback dispute',
+        targetType: 'ORDER',
+        targetId: orderCancelled.id,
+        action: 'RESOLVE_DISPUTE',
+        cause: 'Seed order refund resolution',
       },
       {
         adminId: admin.id,
-        targetType: 'TRANSACTION',
-        targetId: txPending.id,
-        action: 'CANCEL_DEAL',
-        cause: 'Example pending deal action log',
+        targetType: 'ORDER',
+        targetId: orderPending.id,
+        action: 'OPEN_DISPUTE',
+        cause: 'Seed pending order dispute log',
       },
     ],
   });
