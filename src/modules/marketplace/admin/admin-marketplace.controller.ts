@@ -17,9 +17,11 @@ import { AdminMarketplaceService } from './admin-marketplace.service';
 import {
   AdminDeclineApplicationDto,
   AdminActionWithCauseDto,
+  AdminActionOptionalReasonDto,
   AdminCancelDealDto,
 } from '../dtos/admin-action.dto';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { GetOrdersQueryDto, ResolveDisputeDto } from '../dtos/order.dto';
 
 @Controller('marketplace/admin')
 @UseGuards(JwtAuthenticationGuard, AdminMarketplaceGuard)
@@ -139,6 +141,53 @@ export class AdminMarketplaceController {
     @Body() dto: AdminCancelDealDto,
   ) {
     return this.adminService.cancelDeal(transactionId, admin.id, dto);
+  }
+
+  /** GET /marketplace/admin/orders */
+  @Get('orders')
+  @HttpCode(HttpStatus.OK)
+  listOrders(@Query() query: GetOrdersQueryDto) {
+    return this.adminService.listOrders(query);
+  }
+
+  /** GET /marketplace/admin/orders/:id */
+  @Get('orders/:id')
+  @HttpCode(HttpStatus.OK)
+  getOrderDetail(@Param('id') id: string) {
+    return this.adminService.getOrderDetail(id);
+  }
+
+  /** POST /marketplace/admin/orders/:id/resolve-dispute */
+  @Post('orders/:id/resolve-dispute')
+  @HttpCode(HttpStatus.OK)
+  resolveDispute(
+    @Param('id') id: string,
+    @currentUser() admin: currentUserType,
+    @Body() dto: ResolveDisputeDto,
+  ) {
+    return this.adminService.resolveDispute(admin.id, id, dto);
+  }
+
+  /** POST /marketplace/admin/orders/:id/force-release */
+  @Post('orders/:id/force-release')
+  @HttpCode(HttpStatus.OK)
+  forceRelease(
+    @Param('id') id: string,
+    @currentUser() admin: currentUserType,
+    @Body() dto: AdminActionOptionalReasonDto,
+  ) {
+    return this.adminService.forceRelease(admin.id, id, dto);
+  }
+
+  /** POST /marketplace/admin/orders/:id/force-refund */
+  @Post('orders/:id/force-refund')
+  @HttpCode(HttpStatus.OK)
+  forceRefund(
+    @Param('id') id: string,
+    @currentUser() admin: currentUserType,
+    @Body() dto: AdminActionOptionalReasonDto,
+  ) {
+    return this.adminService.forceRefund(admin.id, id, dto);
   }
 
   // ── Audit Logs ────────────────────────────────────────────────────

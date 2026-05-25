@@ -60,6 +60,8 @@ model User {
   products           Product[]
   transactions       Transaction[]    @relation("BuyerTransactions")
   sales              Transaction[]    @relation("SellerTransactions")
+  buyerOrders        Order[]          @relation("BuyerOrders")
+  sellerOrders       Order[]          @relation("SellerOrders")
   reports            Report[]         @relation("Reporter")
   noroChats          NoroChat[]
   sellerApplication  SellerApplication?
@@ -694,6 +696,24 @@ enum TransactionStatus {
   CANCELLED
 }
 
+enum OrderStatus {
+  PLACED
+  SELLER_CONFIRMED
+  SHIPPED
+  DELIVERED
+  RELEASE_PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  REFUNDED
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+}
+
 enum ReportTargetType {
   USER
   POST
@@ -716,6 +736,7 @@ model Product {
   seller      User          @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
   transactions Transaction[]
+  orders       Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -739,12 +760,69 @@ model Transaction {
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
+  orderId   String? @unique
+  order     Order?  @relation(fields: [orderId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([buyerId])
   @@index([sellerId])
+  @@index([productId])
+  @@index([orderId])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  status      OrderStatus @default(PLACED)
+
+  buyerId String
+  buyer   User @relation("BuyerOrders", fields: [buyerId], references: [id])
+
+  sellerId String
+  seller   User @relation("SellerOrders", fields: [sellerId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity    Int    @default(1)
+  unitPrice   Float
+  currency    String @default("USD")
+  totalAmount Float
+
+  escrowAmount Float
+  escrowStatus EscrowStatus @default(HELD)
+
+  shipmentTrackingNumber String?
+  shipmentCarrier        String?
+  shipmentProofImageUrl  String?
+  shippedAt              DateTime?
+
+  deliveryProofImageUrl String?
+  deliveredAt           DateTime?
+  buyerConfirmedAt      DateTime?
+
+  releaseScheduledAt DateTime?
+  releasedAt         DateTime?
+
+  disputeReason       String? @db.Text
+  disputeOpenedAt     DateTime?
+  disputeResolvedAt   DateTime?
+  disputeResolution   String? @db.Text
+  disputeResolvedById String?
+
+  cancelledAt DateTime?
+  cancelReason String? @db.Text
+
+  transaction Transaction?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId, status])
+  @@index([sellerId, status])
+  @@index([status, releaseScheduledAt])
   @@index([productId])
 }
 
@@ -1040,6 +1118,7 @@ enum ApplicationStatus {
 enum DealLogTargetType {
   SELLER
   TRANSACTION
+  ORDER
 }
 
 enum DealLogAction {
@@ -1050,6 +1129,12 @@ enum DealLogAction {
   CANCEL_DEAL
   APPROVE_APPLICATION
   DECLINE_APPLICATION
+  CONFIRM_SHIPMENT
+  CONFIRM_DELIVERY
+  RELEASE_FUNDS
+  AUTO_RELEASE_FUNDS
+  OPEN_DISPUTE
+  RESOLVE_DISPUTE
 }
 
 enum NoroTrigger {

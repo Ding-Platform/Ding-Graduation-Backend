@@ -143,6 +143,45 @@ export class CloudinaryService {
     }
   }
 
+  /**
+   * Upload marketplace order proof images (shipment or delivery receipt).
+   */
+  async uploadOrderProof(
+    file: Express.Multer.File,
+    orderId: string,
+    userId: string,
+    proofType: 'shipment' | 'delivery',
+  ): Promise<string> {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Invalid ${proofType} proof type. Only JPEG, PNG, and WebP are allowed.`,
+      );
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        `${proofType} proof image must be under 10MB.`,
+      );
+    }
+
+    try {
+      const result = await this.uploadStream(file, {
+        folder: `marketplace/orders/${orderId}`,
+        public_id: `${proofType}_${userId}_${Date.now()}`,
+        transformation: [
+          { width: 1600, height: 1600, crop: 'limit' },
+          { quality: 'auto', fetch_format: 'auto' },
+        ],
+      });
+      return result.secure_url;
+    } catch (error) {
+      console.error(`Cloudinary order proof upload error (${proofType}):`, error);
+      throw new BadRequestException(`Failed to upload ${proofType} proof image.`);
+    }
+  }
+
   private uploadStream(
     file: Express.Multer.File,
     options: any,

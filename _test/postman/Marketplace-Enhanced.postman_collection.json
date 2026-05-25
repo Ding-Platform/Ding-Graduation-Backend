@@ -11,6 +11,7 @@
     { "key": "sellerToken", "value": "" },
     { "key": "adminToken", "value": "" },
     { "key": "productId", "value": "" },
+    { "key": "orderId", "value": "" },
     { "key": "applicationId", "value": "" },
     { "key": "transactionId", "value": "" },
     { "key": "sellerUserId", "value": "" }
@@ -117,6 +118,83 @@
             "method": "GET",
             "url": "{{baseUrl}}/marketplace/seller/deals/history?page=1&limit=20"
           }
+        },
+        {
+          "name": "Get My Seller Orders",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/orders?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Confirm Shipment (Seller)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{sellerToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "shipmentTrackingNumber", "value": "TRACK-12345", "type": "text" },
+                { "key": "shipmentCarrier", "value": "DingExpress", "type": "text" },
+                { "key": "shipmentProofImage", "type": "file", "src": "" }
+              ]
+            },
+            "url": "{{baseUrl}}/marketplace/seller/orders/{{orderId}}/confirm-shipment"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer Orders",
+      "item": [
+        {
+          "name": "List Buyer Orders",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Get Buyer Order Detail",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}"
+          }
+        },
+        {
+          "name": "Confirm Delivery (Buyer)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "deliveryProofImage", "type": "file", "src": "" }]
+            },
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/confirm-delivery"
+          }
+        },
+        {
+          "name": "Open Dispute (Buyer)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"disputeReason\": \"Item condition does not match description\"\n}" },
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/dispute"
+          }
+        },
+        {
+          "name": "Cancel Order (Buyer)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"cancelReason\": \"Changed my mind\"\n}" },
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/cancel"
+          }
         }
       ]
     },
@@ -190,7 +268,8 @@
                 "exec": [
                   "if (pm.response.code === 201) {",
                   "  const data = pm.response.json().data;",
-                  "  pm.collectionVariables.set('transactionId', data.id);",
+                  "  pm.collectionVariables.set('orderId', data.id);",
+                  "  pm.collectionVariables.set('transactionId', data.transaction.id);",
                   "}"
                 ]
               }
@@ -304,6 +383,44 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"cause\": \"Payment dispute\"\n}" },
             "url": "{{baseUrl}}/marketplace/admin/deals/{{transactionId}}/cancel"
+          }
+        },
+        {
+          "name": "List Orders (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/orders?page=1&limit=20"
+          }
+        },
+        {
+          "name": "Resolve Dispute (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"resolution\": \"REFUND\",\n  \"adminNote\": \"Buyer proof verified\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/resolve-dispute"
+          }
+        },
+        {
+          "name": "Force Release (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Manual release\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/force-release"
+          }
+        },
+        {
+          "name": "Force Refund (Admin)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Manual refund\"\n}" },
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/force-refund"
           }
         },
         {

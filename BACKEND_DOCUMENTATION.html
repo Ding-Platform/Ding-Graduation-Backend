@@ -259,7 +259,7 @@
     <h1>Ding Platform Backend</h1>
     <p class="header-meta">
       <strong>Comprehensive Technical Documentation</strong><br />
-      Version: 0.0.1 | Last Updated: February 2026 | Status: Production Ready
+      Version: 0.0.1 | Last Updated: May 2026 | Status: Production Ready
     </p>
 
     <div class="toc">
@@ -307,7 +307,7 @@
         <div class="stat-label">WebSocket Gateways</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">13</div>
+        <div class="stat-value">21</div>
         <div class="stat-label">Sprints Completed</div>
       </div>
     </div>
@@ -1085,7 +1085,48 @@ erDiagram
       </tr>
       <tr>
         <td>Marketplace</td>
-        <td>POST GET /api/marketplace/products</td>
+        <td>POST GET /api/marketplace/products and escrow orders under /api/marketplace/orders</td>
+      </tr>
+    </table>
+
+    <h3>6.5 Marketplace Escrow Orders (Sprint 21)</h3>
+
+    <table>
+      <tr>
+        <th>Area</th>
+        <th>Endpoint</th>
+        <th>Auth</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Buyer</td>
+        <td>GET /api/marketplace/orders</td>
+        <td>Yes</td>
+        <td>List buyer orders with status filters</td>
+      </tr>
+      <tr>
+        <td>Buyer</td>
+        <td>POST /api/marketplace/orders/:id/confirm-delivery</td>
+        <td>Yes</td>
+        <td>Upload delivery proof and start 3-day escrow hold</td>
+      </tr>
+      <tr>
+        <td>Seller</td>
+        <td>POST /api/marketplace/seller/orders/:id/confirm-shipment</td>
+        <td>Seller</td>
+        <td>Upload shipment proof and tracking details</td>
+      </tr>
+      <tr>
+        <td>Admin</td>
+        <td>POST /api/marketplace/admin/orders/:id/resolve-dispute</td>
+        <td>Admin</td>
+        <td>Resolve disputed order as full refund or full release</td>
+      </tr>
+      <tr>
+        <td>Compatibility</td>
+        <td>POST /api/marketplace/admin/deals/:transactionId/cancel</td>
+        <td>Admin</td>
+        <td>Legacy alias retained for Sprint 21 compatibility window</td>
       </tr>
     </table>
 
