@@ -49,18 +49,8 @@ export class FeedService {
       }
     }
 
-    if (type === 'EXPLORE') {
-      return this.getExploreFeed(userId, page, limit);
-    }
-
-    // HOME: Personalized feed backed by Neo4j; falls back to chronological feed.
-    const scoredPostIds = await this.getScoredPostsFromGraph(userId, limit * 2);
-
-    if (!scoredPostIds.length) {
-      return this.getChronologicalFeed(userId, page, limit, false);
-    }
-
-    return this.mapPosts(scoredPostIds, page, limit, userId);
+    await this.redisService.set(cacheKey, response, 60);
+    return response;
   }
 
   private async mapPosts(
@@ -69,6 +59,15 @@ export class FeedService {
     limit: number,
     userId: string,
   ) {
+    const moodProfile = await this.prisma.userSentimentProfile.findUnique({
+      where: { userId },
+    });
+    const feedBoostActive = Boolean(
+      moodProfile?.feedBoostPositive &&
+        moodProfile.feedBoostUntil &&
+        moodProfile.feedBoostUntil.getTime() > Date.now(),
+    );
+
     const posts = await this.prisma.post.findMany({
       where: {
         id: { in: scoredPostIds.map((p) => p.postId) },
@@ -93,6 +92,22 @@ export class FeedService {
       },
     });
 
+    const sentiments = await this.prisma.contentSentiment.findMany({
+      where: {
+        contentType: 'POST',
+        contentId: { in: posts.map((p) => p.id) },
+      },
+      select: {
+        contentId: true,
+        positiveScore: true,
+        negativeScore: true,
+      },
+    });
+
+    const sentimentMap = new Map(
+      sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
+    );
+
     const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
 
     const items = posts.map((p) => ({
@@ -104,7 +119,7 @@ export class FeedService {
       comments: p._count?.Comments ?? 0,
       image: p.mediaUrls?.[0] ?? null,
       liked: p.Likes && p.Likes.length > 0,
-      score: scoreMap.get(p.id),
+      score: (scoreMap.get(p.id) ?? 0) + this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)),
     }));
 
     items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
@@ -221,7 +236,41 @@ export class FeedService {
         },
       });
 
-      const data: FeedItemDto[] = posts.map((p) => ({
+      const moodProfile = await this.prisma.userSentimentProfile.findUnique({
+        where: { userId },
+      });
+      const feedBoostActive = Boolean(
+        moodProfile?.feedBoostPositive &&
+          moodProfile.feedBoostUntil &&
+          moodProfile.feedBoostUntil.getTime() > Date.now(),
+      );
+
+      const postIds = posts.map((p) => p.id);
+      const sentiments = await this.prisma.contentSentiment.findMany({
+        where: {
+          contentType: 'POST',
+          contentId: { in: postIds },
+        },
+        select: {
+          contentId: true,
+          positiveScore: true,
+          negativeScore: true,
+        },
+      });
+      const sentimentMap = new Map(
+        sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
+      );
+
+      const ranked = posts
+        .map((p) => ({
+          post: p,
+          score:
+            p.createdAt.getTime() / 1_000_000_000_000 +
+            this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)),
+        }))
+        .sort((a, b) => b.score - a.score);
+
+      const data: FeedItemDto[] = ranked.map(({ post: p }) => ({
         id: p.id,
         author: p.author?.name ?? '',
         time: p.createdAt.toISOString(),
@@ -291,5 +340,15 @@ export class FeedService {
     } finally {
       await session.close();
     }
+  }
+
+  private getMoodBoostScore(
+    enabled: boolean,
+    sentiment?: { pos: number; neg: number },
+  ) {
+    if (!enabled || !sentiment) return 0;
+    if (sentiment.pos > 65) return 0.35;
+    if (sentiment.neg > 65) return -0.35;
+    return 0;
   }
 }

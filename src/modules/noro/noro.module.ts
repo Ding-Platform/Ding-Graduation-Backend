@@ -7,5 +7,6 @@ import { DatabaseModule } from '../../configs/database/database.module';
   imports: [DatabaseModule],
   providers: [NoroService],
   controllers: [NoroController],
+  exports: [NoroService],
 })
 export class NoroModule {}

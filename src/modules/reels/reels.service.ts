@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ShareType } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
+import { SentimentContentType, SentimentEventType, ShareType } from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
 
@@ -13,6 +15,8 @@ export class ReelsService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly redisService: RedisService,
+    @InjectQueue('sentiment-analysis')
+    private readonly sentimentQueue: Queue,
   ) {}
 
   async createUploadUrl(userId: string) {
@@ -68,7 +72,7 @@ export class ReelsService {
 
     const processingBase =
       process.env.REELS_CDN_BASE_URL || 'https://cdn.ding.local';
-    return this.prisma.reel.update({
+    const finalized = await this.prisma.reel.update({
       where: { id: reelId },
       data: {
         status: 'READY',
@@ -88,6 +92,23 @@ export class ReelsService {
         failReason: null,
       },
     });
+
+    await this.sentimentQueue.add(
+      'analyze-content',
+      {
+        text: payload.caption || '',
+        contentType: 'REEL' as SentimentContentType,
+        contentId: reelId,
+        userId,
+      },
+      {
+        jobId: `sentiment:REEL:${reelId}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
+
+    return finalized;
   }
 
   async getReelStatus(reelId: string) {
@@ -181,6 +202,14 @@ export class ReelsService {
     const moodProfile = await this.prisma.userMoodProfile.findUnique({
       where: { userId },
     });
+    const sentimentProfile = await this.prisma.userSentimentProfile.findUnique({
+      where: { userId },
+    });
+    const feedBoostActive = Boolean(
+      sentimentProfile?.feedBoostPositive &&
+        sentimentProfile.feedBoostUntil &&
+        sentimentProfile.feedBoostUntil.getTime() > Date.now(),
+    );
 
     const candidates = await this.prisma.reel.findMany({
       where: {
@@ -203,6 +232,24 @@ export class ReelsService {
       take: safeLimit * 3,
     });
 
+    const reelSentiments = await this.prisma.contentSentiment.findMany({
+      where: {
+        contentType: 'REEL',
+        contentId: { in: candidates.map((r) => r.id) },
+      },
+      select: {
+        contentId: true,
+        positiveScore: true,
+        negativeScore: true,
+      },
+    });
+    const sentimentMap = new Map(
+      reelSentiments.map((s) => [
+        s.contentId,
+        { positiveScore: s.positiveScore, negativeScore: s.negativeScore },
+      ]),
+    );
+
     const scored = candidates
       .map((reel) => {
         const hoursAgo = Math.max(
@@ -221,12 +268,17 @@ export class ReelsService {
           moodProfile?.dominantMood || null,
           reel,
         );
+        const sentimentBoost = this.calculateSentimentFeedBoost(
+          feedBoostActive,
+          sentimentMap.get(reel.id),
+        );
         const score =
           0.2 * recencyScore +
           0.35 * this.normalizeScore(engagementScore) +
           0.25 * this.normalizeScore(reel._count.views) +
           0.15 * completionScore +
-          0.05 * moodBoost;
+          0.05 * moodBoost +
+          sentimentBoost;
 
         return { reel, score };
       })
@@ -279,6 +331,22 @@ export class ReelsService {
       },
     });
 
+    if (payload.viewerId) {
+      await this.sentimentQueue.add(
+        'apply-reaction',
+        {
+          reactorUserId: payload.viewerId,
+          contentId: reelId,
+          contentType: 'REEL' as SentimentContentType,
+          eventType: 'VIEWED_REEL' as SentimentEventType,
+        },
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      );
+    }
+
     return { counted: true };
   }
 
@@ -324,6 +392,21 @@ export class ReelsService {
         },
       }),
     ]);
+
+    await this.sentimentQueue.add(
+      'apply-reaction',
+      {
+        reactorUserId: userId,
+        contentId: reelId,
+        contentType: 'REEL' as SentimentContentType,
+        eventType: 'LIKED_REEL' as SentimentEventType,
+      },
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
+
     const updated = await this.prisma.reel.findUnique({
       where: { id: reelId },
       select: { likesCount: true },
@@ -397,6 +480,22 @@ export class ReelsService {
       where: { id: reelId },
       data: { commentsCount: { increment: 1 } },
     });
+
+    await this.sentimentQueue.add(
+      'analyze-comment',
+      {
+        commenterId: userId,
+        parentContentId: reelId,
+        parentContentType: 'REEL' as SentimentContentType,
+        commentText: payload.content,
+        commentId: comment.id,
+      },
+      {
+        jobId: `sentiment:REEL_COMMENT:${comment.id}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    );
 
     return comment;
   }
@@ -529,6 +628,16 @@ export class ReelsService {
     }
 
     return 0.4;
+  }
+
+  private calculateSentimentFeedBoost(
+    enabled: boolean,
+    sentiment?: { positiveScore: number; negativeScore: number },
+  ) {
+    if (!enabled || !sentiment) return 0;
+    if (sentiment.positiveScore > 65) return 0.2;
+    if (sentiment.negativeScore > 65) return -0.2;
+    return 0;
   }
 
   private encodeCursor(date: Date) {

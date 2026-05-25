@@ -42,6 +42,7 @@ import { SearchModule } from './modules/search/search.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { EventsModule } from './modules/events/events.module';
+import { SentimentModule } from './modules/sentiment/sentiment.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -119,6 +120,7 @@ try {
     StreamingModule,
     AnalyticsModule,
     EventsModule,
+    SentimentModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

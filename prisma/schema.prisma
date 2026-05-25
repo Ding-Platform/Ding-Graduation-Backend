@@ -72,6 +72,10 @@ model User {
   noroConversations  NoroConversation[]
   noroMessages       NoroMessage[]
   userMoodProfile    UserMoodProfile?
+  contentSentiments  ContentSentiment[]   @relation("UserContentSentiments")
+  sentimentProfile   UserSentimentProfile?
+  sentimentEvents    SentimentEvent[]     @relation("UserSentimentEvents")
+  noroInterventions  NoroIntervention[]   @relation("NoroInterventions")
   crisisEvents       CrisisEvent[]
   emergencyContacts  UserEmergencyContact[]
   reels              Reel[]
@@ -714,6 +718,29 @@ enum EscrowStatus {
   REFUNDED
 }
 
+enum SentimentContentType {
+  POST
+  COMMENT
+  REEL
+}
+
+enum SentimentEventType {
+  AUTHORED_POST
+  AUTHORED_COMMENT
+  AUTHORED_REEL
+  LIKED_POST
+  LIKED_REEL
+  COMMENTED_ON_POST
+  VIEWED_REEL
+  REACTED_TO_COMMENT
+}
+
+enum InterventionMethod {
+  CONVERSATION
+  FEED_BOOST
+  FRIEND_SUGGESTION
+}
+
 enum ReportTargetType {
   USER
   POST
@@ -856,6 +883,92 @@ model NoroChat {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+model ContentSentiment {
+  id String @id @default(uuid())
+
+  contentType SentimentContentType
+  contentId   String
+
+  userId String
+  user   User   @relation("UserContentSentiments", fields: [userId], references: [id], onDelete: Cascade)
+
+  positiveScore Int
+  negativeScore Int
+
+  wordTokens     Json
+  sentenceTokens Json
+  rawText        String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@unique([contentType, contentId])
+  @@index([userId, createdAt])
+  @@index([contentType, contentId])
+}
+
+model UserSentimentProfile {
+  userId String @id
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  positivePoints Float @default(50)
+  negativePoints Float @default(50)
+
+  totalEventsProcessed Int @default(0)
+
+  noroActive         Boolean  @default(false)
+  lastInterventionAt DateTime?
+  interventionCount  Int      @default(0)
+
+  feedBoostPositive Boolean  @default(false)
+  feedBoostUntil    DateTime?
+
+  lastUpdated DateTime @default(now())
+
+  @@index([negativePoints])
+  @@index([noroActive])
+}
+
+model SentimentEvent {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation("UserSentimentEvents", fields: [userId], references: [id], onDelete: Cascade)
+
+  eventType       SentimentEventType
+  sourceContentId String?
+  sourceUserId    String?
+
+  positiveImpact Float
+  negativeImpact Float
+
+  resultPositive Float
+  resultNegative Float
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([eventType, createdAt])
+}
+
+model NoroIntervention {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation("NoroInterventions", fields: [userId], references: [id], onDelete: Cascade)
+
+  method       InterventionMethod
+  triggerScore Float
+  resolved     Boolean @default(false)
+  resolvedAt   DateTime?
+
+  conversationId    String?
+  suggestedFriendIds String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resolved])
 }
 
 model CallRoom {

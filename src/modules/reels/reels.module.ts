@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from '../../configs/database/database.module';
 import { RedisModule } from '../../configs/redis/redis.module';
 import { ReelsController } from './reels.controller';
@@ -6,7 +7,13 @@ import { AudioTracksController } from './audio-tracks.controller';
 import { ReelsService } from './reels.service';
 
 @Module({
-  imports: [DatabaseModule, RedisModule],
+  imports: [
+    DatabaseModule,
+    RedisModule,
+    BullModule.registerQueue({
+      name: 'sentiment-analysis',
+    }),
+  ],
   controllers: [ReelsController, AudioTracksController],
   providers: [ReelsService],
   exports: [ReelsService],

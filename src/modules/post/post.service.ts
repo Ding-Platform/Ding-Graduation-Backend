@@ -12,7 +12,13 @@ import {
 import { UpdatePostDto } from './dtos/update_post.dto';
 import { NotificationService } from '../notification/notification.service';
 import { CreateCommentDto } from './dtos/create_comment.dto';
-import { Post, PostPrivacy, Prisma } from '@prisma/client';
+import {
+  Post,
+  PostPrivacy,
+  Prisma,
+  SentimentContentType,
+  SentimentEventType,
+} from '@prisma/client';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 
@@ -35,6 +41,8 @@ export class PostService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly notificationService: NotificationService,
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
+    @InjectQueue('sentiment-analysis')
+    private readonly sentimentQueue: Queue,
   ) {}
 
   async getAllPosts(
@@ -225,6 +233,22 @@ export class PostService {
         mediaUrls,
         data.privacy ?? 'PUBLIC',
         'CREATED',
+      );
+
+      // Async sentiment analysis (non-blocking for API response).
+      await this.sentimentQueue.add(
+        'analyze-content',
+        {
+          text: data.content,
+          contentType: 'POST' as SentimentContentType,
+          contentId: newPost.id,
+          userId: data.authorId,
+        },
+        {
+          jobId: `sentiment:POST:${newPost.id}`,
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
       );
 
       return this.getPostById(newPost.id, userId);
@@ -541,6 +565,20 @@ export class PostService {
         postId,
       );
 
+      await this.sentimentQueue.add(
+        'apply-reaction',
+        {
+          reactorUserId: userId,
+          contentId: postId,
+          contentType: 'POST' as SentimentContentType,
+          eventType: 'LIKED_POST' as SentimentEventType,
+        },
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
+      );
+
       return { liked: true };
     }
   }
@@ -660,6 +698,22 @@ export class PostService {
       post.authorId,
       postId,
       comment.content,
+    );
+
+    await this.sentimentQueue.add(
+      'analyze-comment',
+      {
+        commenterId: userId,
+        parentContentId: postId,
+        parentContentType: 'POST' as SentimentContentType,
+        commentText: dto.content,
+        commentId: comment.id,
+      },
+      {
+        jobId: `sentiment:COMMENT:${comment.id}`,
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     );
 
     return comment;

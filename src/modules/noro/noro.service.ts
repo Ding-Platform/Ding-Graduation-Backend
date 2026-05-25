@@ -3,6 +3,7 @@ import { DatabaseService } from '../../configs/database/database.service';
 import {
   CrisisIntervention,
   CrisisSeverity,
+  InterventionMethod,
   NoroMessageRole,
   NoroTrigger,
 } from '@prisma/client';
@@ -280,6 +281,64 @@ export class NoroService {
   async speak(text: string) {
     // Mock TTS
     return { audioUrl: 'https://example.com/noro-speech.mp3' };
+  }
+
+  async handleSentimentIntervention(userId: string, negativePoints: number) {
+    let method: InterventionMethod;
+    if (negativePoints >= 85) {
+      method = 'CONVERSATION';
+    } else if (negativePoints >= 78) {
+      method = 'FRIEND_SUGGESTION';
+    } else {
+      method = 'FEED_BOOST';
+    }
+
+    if (method === 'CONVERSATION') {
+      const conversation = await this.createConversation(
+        userId,
+        'PERIODIC_CHECKIN',
+      );
+
+      await this.addMessage({
+        conversationId: conversation.id,
+        userId,
+        role: 'ASSISTANT',
+        content:
+          "Hey, I noticed you might be going through a tough time. I'm here if you want to talk. How are you feeling?",
+      });
+
+      return {
+        method,
+        conversationId: conversation.id,
+        suggestedFriendIds: [] as string[],
+      };
+    }
+
+    if (method === 'FRIEND_SUGGESTION') {
+      // Lightweight fallback suggestion using accepted friendships.
+      const friends = await this.prisma.friendship.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [{ requesterId: userId }, { recipientId: userId }],
+        },
+        take: 3,
+        orderBy: { updatedAt: 'desc' },
+      });
+
+      const suggestedFriendIds = friends.map((f) =>
+        f.requesterId === userId ? f.recipientId : f.requesterId,
+      );
+
+      return {
+        method,
+        suggestedFriendIds,
+      };
+    }
+
+    return {
+      method,
+      suggestedFriendIds: [] as string[],
+    };
   }
 
   private encodeCursor(date: Date) {

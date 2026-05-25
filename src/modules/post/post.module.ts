@@ -14,6 +14,9 @@ import { HelperModule } from '../../common/utils/helper/helper.module';
     BullModule.registerQueue({
       name: 'graph-sync',
     }),
+    BullModule.registerQueue({
+      name: 'sentiment-analysis',
+    }),
   ],
   controllers: [PostController],
   providers: [PostService],
