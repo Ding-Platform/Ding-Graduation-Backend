@@ -120,6 +120,7 @@ display_summary() {
     echo "  View logs:       ./scripts/logs.sh"
     echo "  Deploy frontend: ./scripts/deploy-frontend.sh"
     echo "  Backend + static: DEPLOY_FRONTEND=1 ./scripts/deploy.sh"
+    echo "  + Model-API:      DEPLOY_MODEL_API=1 ./scripts/deploy.sh"
     echo "  Stop services:   docker compose $COMPOSE_FILES down"
     echo "  Restart:         docker compose $COMPOSE_FILES restart"
     echo "  View status:     docker compose $COMPOSE_FILES ps"
@@ -153,6 +154,12 @@ main() {
     if [ "${DEPLOY_FRONTEND:-0}" = "1" ]; then
         print_info "DEPLOY_FRONTEND=1 — publishing static frontend..."
         "$(dirname "$0")/deploy-frontend.sh"
+        echo ""
+    fi
+
+    if [ "${DEPLOY_MODEL_API:-0}" = "1" ]; then
+        print_info "DEPLOY_MODEL_API=1 — deploying Model-API..."
+        "$(dirname "$0")/../../Model-API/scripts/deploy.sh"
         echo ""
     fi
 
