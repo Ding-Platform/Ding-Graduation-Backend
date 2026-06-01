@@ -48,8 +48,8 @@ export class PostService {
     private readonly interestService: InterestService,
     private readonly activityService: ActivityService,
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
-    @InjectQueue('sentiment-analysis')
-    private readonly sentimentQueue: Queue,
+    @InjectQueue('sentiment-analysis') private readonly sentimentQueue: Queue,
+    @InjectQueue('search-indexing') private readonly searchQueue: Queue,
   ) {}
 
   async getAllPosts(
@@ -299,6 +299,20 @@ export class PostService {
         );
       }
 
+      // Enqueue search indexing for post creation
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'create',
+          data: { id: newPost.id },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post creation for search indexing',
+          queueError,
+        );
+      }
+
       // Create post history
       await this.createPostHistory(
         newPost.id,
@@ -397,6 +411,20 @@ export class PostService {
         );
       }
 
+      // Enqueue search indexing for post update
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'update',
+          data: { id: postId },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post update for search indexing',
+          queueError,
+        );
+      }
+
       // Create history record
       await this.createPostHistory(
         postId,
@@ -450,6 +478,20 @@ export class PostService {
       } catch (queueError) {
         console.error(
           'Failed to enqueue post deletion for graph sync',
+          queueError,
+        );
+      }
+
+      // Enqueue search indexing for post deletion
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'delete',
+          data: { id: postId },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post deletion for search indexing',
           queueError,
         );
       }

@@ -17,6 +17,9 @@ import { RedisModule } from '../../configs/redis/redis.module';
       name: 'graph-sync',
     }),
     BullModule.registerQueue({
+      name: 'search-indexing',
+    }),
+    BullModule.registerQueue({
       name: 'sentiment-analysis',
     }),
   ],

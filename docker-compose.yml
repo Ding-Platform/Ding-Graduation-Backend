@@ -51,6 +51,7 @@ services:
       - mongodb
       - redis
       - neo4j
+      - meilisearch
     networks:
       - internal
       - public
@@ -65,11 +66,27 @@ services:
     networks:
       - public
 
+  # MeiliSearch
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: ding-meilisearch-dev
+    restart: always
+    ports:
+      - '7700:7700'
+    environment:
+      - MEILI_MASTER_KEY=${MEILISEARCH_API_KEY:-masterKey123}
+      - MEILI_ENV=development
+    volumes:
+      - meilisearch_data:/meili_data
+    networks:
+      - internal
+
 volumes:
   pgdata:
   mongodb_data:
   redis_data:
   neo4j_data:
+  meilisearch_data:
 
 networks:
   internal:
