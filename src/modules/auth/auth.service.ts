@@ -168,7 +168,9 @@ export class AuthService {
           // If the deleted session matches the client's sessionId cookie, clear it
           if (request && response) {
             const sessionIdFromCookie =
-              request.cookies?.[TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME];
+              (request.cookies as Record<string, string>)?.[
+                TOKEN_CONSTANTS.COOKIE.SESSION_ID_NAME
+              ];
             if (
               sessionIdFromCookie &&
               sessionIdFromCookie === oldestSession.id
@@ -215,7 +217,12 @@ export class AuthService {
   }
 
   async googleLogin(
-    googleUser: { email: string; firstName?: string; lastName?: string; picture?: string; },
+    googleUser: {
+      email: string;
+      firstName?: string;
+      lastName?: string;
+      picture?: string;
+    },
     ipAddress: string,
     userAgent: string,
     request: Request,
@@ -439,7 +446,7 @@ export class AuthService {
         success: true,
         message: 'Logged out successfully',
       };
-    } catch (error) {
+    } catch (_) {
       throw new GenericHttpException(
         ERROR_MESSAGES.LOGOUT_FAILED,
         HttpStatus.INTERNAL_SERVER_ERROR,

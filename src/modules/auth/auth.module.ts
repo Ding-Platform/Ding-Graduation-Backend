@@ -20,7 +20,7 @@ import { TOKEN_CONSTANTS } from '../../common/constants';
   imports: [
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const options: JwtModuleOptions = {
           secret: configService.get('JWT_SECRET'),
           signOptions: {
@@ -47,7 +47,13 @@ import { TOKEN_CONSTANTS } from '../../common/constants';
       name: 'search-indexing',
     }),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, SessionIdGuard],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    SessionIdGuard,
+  ],
   controllers: [AuthController],
 })
 export class AuthModule {}

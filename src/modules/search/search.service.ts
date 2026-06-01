@@ -209,7 +209,7 @@ export class SearchService {
       // Create users index if it doesn't exist
       try {
         await this.meilisearch.createIndex('users', { primaryKey: 'id' });
-      } catch (error) {
+      } catch (_) {
         // Index might already exist, that's okay
         console.log('Users index might already exist');
       }
@@ -234,7 +234,7 @@ export class SearchService {
       // Create posts index if it doesn't exist
       try {
         await this.meilisearch.createIndex('posts', { primaryKey: 'id' });
-      } catch (error) {
+      } catch (_) {
         // Index might already exist, that's okay
         console.log('Posts index might already exist');
       }

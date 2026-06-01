@@ -71,7 +71,7 @@ export class SentimentService {
             data: { categories },
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         this.logger.warn(
           `Failed to update categories for ${contentType} ${contentId}: ${err.message}`,
         );
@@ -139,9 +139,6 @@ export class SentimentService {
     const blendedPositive =
       SENTIMENT_WEIGHTS.eventWeight * positive +
       SENTIMENT_WEIGHTS.historyWeight * basePositive;
-    const blendedNegative =
-      SENTIMENT_WEIGHTS.eventWeight * negative +
-      SENTIMENT_WEIGHTS.historyWeight * baseNegative;
 
     const normalized = this.normalizeScore(blendedPositive);
 
