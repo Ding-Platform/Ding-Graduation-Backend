@@ -304,7 +304,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async zRangeWithScores(key: string, start: number, stop: number, options?: { REV?: boolean }): Promise<{ value: string; score: number }[]> {
+  async zRangeWithScores(key: string, start: number, stop: number, options?: any): Promise<{ value: string; score: number }[]> {
     if (!this.isConnected) return [];
 
     try {

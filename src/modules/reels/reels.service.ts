@@ -12,6 +12,7 @@ import { RedisService } from '../../configs/redis/redis.service';
 import { extractHashtags, mergeHashtags } from '../../common/utils/hashtag.util';
 import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ReelsService {
