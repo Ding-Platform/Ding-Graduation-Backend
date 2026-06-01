@@ -50,6 +50,16 @@ export class PostController {
     return this.postService.getSavedPosts(userId, page, limit);
   }
 
+  @Get('/hashtag/:tag')
+  async getPostsByHashtag(
+    @Param('tag') tag: string,
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+    @currentUser('id') userId?: string,
+  ) {
+    return this.postService.getPostsByHashtag(tag, userId, page, limit);
+  }
+
   @Get('/:id')
   async getPostById(
     @Param('id') postId: string,

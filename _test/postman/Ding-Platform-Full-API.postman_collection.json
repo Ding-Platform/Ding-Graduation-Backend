@@ -4436,6 +4436,45 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /posts/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "GET /posts/hashtag/{{tag}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/hashtag/{{tag}}",
+            "description": "Auto-synced from `post.controller.ts`.\n\n- Method: `GET`\n- Route: `/posts/hashtag/{{tag}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/posts/hashtag/{{tag}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "posts",
+                    "hashtag",
+                    "{{tag}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /posts/hashtag/{{tag}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
         }
       ]
     },
@@ -7895,6 +7934,203 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /marketplace/products/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "GET /marketplace/orders/{{id}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders/{{id}}",
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/orders/{{id}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/orders/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "orders",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/orders/{{id}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /marketplace/orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders",
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/orders`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/orders",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "orders"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/orders executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/orders/{{id}}/cancel",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{id}}/cancel",
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{id}}/cancel`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/orders/{{id}}/cancel",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "orders",
+                    "{{id}}",
+                    "cancel"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/orders/{{id}}/cancel executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/orders/{{id}}/dispute",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{id}}/dispute",
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{id}}/dispute`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/orders/{{id}}/dispute",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "orders",
+                    "{{id}}",
+                    "dispute"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/orders/{{id}}/dispute executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/orders/{{id}}/confirm-delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{id}}/confirm-delivery",
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{id}}/confirm-delivery`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/orders/{{id}}/confirm-delivery",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "orders",
+                    "{{id}}",
+                    "confirm-delivery"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/orders/{{id}}/confirm-delivery executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
         }
       ]
     },
@@ -8536,6 +8772,126 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/seller/deals/history executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /marketplace/seller/orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/orders",
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/seller/orders`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/seller/orders",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "seller",
+                    "orders"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/seller/orders executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /marketplace/seller/orders/{{id}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/orders/{{id}}",
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/seller/orders/{{id}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/seller/orders/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "seller",
+                    "orders",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/seller/orders/{{id}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/seller/orders/{{id}}/confirm-shipment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/seller/orders/{{id}}/confirm-shipment",
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/seller/orders/{{id}}/confirm-shipment`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/seller/orders/{{id}}/confirm-shipment",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "seller",
+                    "orders",
+                    "{{id}}",
+                    "confirm-shipment"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/seller/orders/{{id}}/confirm-shipment executed successfully\",\n  \"data\": {}\n}"
             }
           ]
         }
@@ -9531,6 +9887,208 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/admin/sellers/{{userId}}/unsuspend executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /marketplace/admin/orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/orders",
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/admin/orders`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/admin/orders",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "admin",
+                    "orders"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/admin/orders executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /marketplace/admin/orders/{{id}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{id}}",
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/admin/orders/{{id}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/admin/orders/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "admin",
+                    "orders",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/admin/orders/{{id}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/admin/orders/{{id}}/resolve-dispute",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{id}}/resolve-dispute",
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{id}}/resolve-dispute`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/admin/orders/{{id}}/resolve-dispute",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "admin",
+                    "orders",
+                    "{{id}}",
+                    "resolve-dispute"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/admin/orders/{{id}}/resolve-dispute executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/admin/orders/{{id}}/force-release",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{id}}/force-release",
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{id}}/force-release`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/admin/orders/{{id}}/force-release",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "admin",
+                    "orders",
+                    "{{id}}",
+                    "force-release"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/admin/orders/{{id}}/force-release executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /marketplace/admin/orders/{{id}}/force-refund",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{id}}/force-refund",
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{id}}/force-refund`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/marketplace/admin/orders/{{id}}/force-refund",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "marketplace",
+                    "admin",
+                    "orders",
+                    "{{id}}",
+                    "force-refund"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/admin/orders/{{id}}/force-refund executed successfully\",\n  \"data\": {}\n}"
             }
           ]
         }
@@ -11195,6 +11753,357 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /reels/{{id}}/comments/{{cid}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/trending",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/trending",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/trending`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/trending",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "trending"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/trending executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/hashtag/{{tag}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/hashtag/{{tag}}",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/hashtag/{{tag}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/hashtag/{{tag}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "hashtag",
+                    "{{tag}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/hashtag/{{tag}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/saved",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/saved",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/saved`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/saved",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "saved"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/saved executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/my",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/my",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/my`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/my",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "my"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/my executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/user/{{userId}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/user/{{userId}}",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/user/{{userId}}`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/user/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "user",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/user/{{userId}} executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /reels/{{id}}/analytics",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/{{id}}/analytics",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/{{id}}/analytics`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/{{id}}/analytics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "{{id}}",
+                    "analytics"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /reels/{{id}}/analytics executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /reels/{{id}}/bookmark",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reels/{{id}}/bookmark",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `POST`\n- Route: `/reels/{{id}}/bookmark`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/{{id}}/bookmark",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "{{id}}",
+                    "bookmark"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /reels/{{id}}/bookmark executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /reels/{{id}}/comments/{{cid}}/like",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/reels/{{id}}/comments/{{cid}}/like",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `POST`\n- Route: `/reels/{{id}}/comments/{{cid}}/like`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/{{id}}/comments/{{cid}}/like",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "{{id}}",
+                    "comments",
+                    "{{cid}}",
+                    "like"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /reels/{{id}}/comments/{{cid}}/like executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH /reels/{{id}}/comments/{{cid}}",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/reels/{{id}}/comments/{{cid}}",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `PATCH`\n- Route: `/reels/{{id}}/comments/{{cid}}`\n- Purpose: Executes `PATCH` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/reels/{{id}}/comments/{{cid}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "reels",
+                    "{{id}}",
+                    "comments",
+                    "{{cid}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"PATCH /reels/{{id}}/comments/{{cid}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
         }
@@ -15096,6 +16005,162 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /events/{{id}}/rsvp executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Misc",
+      "item": [
+        {
+          "name": "POST /interest/dwell",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/interest/dwell",
+            "description": "Auto-synced from `interest.controller.ts`.\n\n- Method: `POST`\n- Route: `/interest/dwell`\n- Purpose: Executes `POST` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/interest/dwell",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "interest",
+                    "dwell"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"POST /interest/dwell executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /activity",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/activity",
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `GET`\n- Route: `/activity`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/activity",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "activity"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /activity executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "DELETE /activity/clear",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/activity/clear",
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `DELETE`\n- Route: `/activity/clear`\n- Purpose: Executes `DELETE` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/activity/clear",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "activity",
+                    "clear"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /activity/clear executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "DELETE /activity/{{id}}",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/activity/{{id}}",
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `DELETE`\n- Route: `/activity/{{id}}`\n- Purpose: Executes `DELETE` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/activity/{{id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "activity",
+                    "{{id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /activity/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
         }

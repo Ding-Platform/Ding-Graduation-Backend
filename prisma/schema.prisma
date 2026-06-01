@@ -75,6 +75,8 @@ model User {
   contentSentiments  ContentSentiment[]   @relation("UserContentSentiments")
   sentimentProfile   UserSentimentProfile?
   sentimentEvents    SentimentEvent[]     @relation("UserSentimentEvents")
+  interests          UserInterest[]
+  activityLogs       ActivityLog[]
   noroInterventions  NoroIntervention[]   @relation("NoroInterventions")
   crisisEvents       CrisisEvent[]
   emergencyContacts  UserEmergencyContact[]
@@ -83,6 +85,8 @@ model User {
   reelLikes          ReelLike[]
   reelComments       ReelComment[]
   reelShares         ReelShare[]
+  reelBookmarks      ReelBookmark[]
+  reelCommentLikes   ReelCommentLike[]
 
   // Sprint 12 — Stories
   stories            Story[]
@@ -227,12 +231,22 @@ enum NotificationType {
   GROUP_JOIN
   GROUP_JOIN_REQUEST
   GROUP_JOIN_APPROVED
+  // Sprint 17 — Reels
+  REEL_LIKE
+  REEL_COMMENT
+  REEL_SHARE
   // Sprint 18
   LIVE_STARTED
   // Sprint 20
   EVENT_INVITE
   EVENT_REMINDER
   EVENT_RSVP
+  // Facebook Parity
+  NEW_MESSAGE
+  NEW_LOGIN
+  ACCOUNT_UPDATE
+  MARKETPLACE_ORDER
+  MARKETPLACE_REVIEW
 }
 
 model Notification {
@@ -265,6 +279,8 @@ model Post {
 
   mediaUrls String[]    @default([])
   privacy   PostPrivacy @default(PUBLIC)
+  hashtags  String[]    @default([])
+  categories String[]   @default([])
 
   // Soft delete fields
   isDeleted Boolean   @default(false)
@@ -745,6 +761,8 @@ enum ReportTargetType {
   USER
   POST
   COMMENT
+  REEL
+  REEL_COMMENT
 }
 
 // New Models
@@ -1119,8 +1137,12 @@ model Reel {
   likesCount    BigInt      @default(0)
   commentsCount BigInt      @default(0)
   sharesCount   BigInt      @default(0)
+  savesCount    BigInt      @default(0)
   hashtags      String[]    @default([])
+  categories    String[]    @default([])
   isPublic      Boolean     @default(true)
+  commentsEnabled Boolean   @default(true)
+  downloadsEnabled Boolean  @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   deletedAt     DateTime?
@@ -1128,6 +1150,7 @@ model Reel {
   likes         ReelLike[]
   comments      ReelComment[]
   shares        ReelShare[]
+  bookmarks     ReelBookmark[]
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
@@ -1191,7 +1214,9 @@ model ReelComment {
   content    String        @db.Text
   likesCount Int           @default(0)
   createdAt  DateTime      @default(now())
+  updatedAt  DateTime?     @updatedAt
   deletedAt  DateTime?
+  commentLikes ReelCommentLike[]
 
   @@index([reelId, createdAt])
   @@index([parentId, createdAt])
@@ -1210,6 +1235,28 @@ model ReelShare {
 
   @@index([reelId, createdAt])
   @@index([sharerId, createdAt])
+}
+
+model ReelBookmark {
+  reelId    String
+  reel      Reel     @relation(fields: [reelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([reelId, userId])
+  @@index([userId, createdAt])
+}
+
+model ReelCommentLike {
+  commentId String
+  comment   ReelComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@id([commentId, userId])
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────────────────────
@@ -1814,4 +1861,29 @@ model GroupEvent {
   @@unique([groupId, eventId])
   @@index([groupId, linkedAt])
   @@index([eventId])
+}
+
+model UserInterest {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic       String   // e.g., "Sports" or "coding"
+  score       Float    @default(1.0)
+  lastUpdated DateTime @default(now())
+
+  @@unique([userId, topic])
+  @@index([userId, score(sort: Desc)])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actionType  String   // e.g., "SEARCHED", "LIKED", "COMMENTED", "FOLLOWED"
+  entityId    String?  // The ID of the Post, Reel, or User interacted with
+  entityType  String?  // e.g., "POST", "REEL", "USER", "SEARCH_QUERY"
+  metadata    Json?    // Extra context (e.g., the actual text they searched for)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
 }

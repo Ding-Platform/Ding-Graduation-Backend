@@ -15,6 +15,7 @@ import {
   tokenizeSentences,
   tokenizeWords,
 } from './tokenizer';
+import { extractCategories } from './categorizer';
 
 @Injectable()
 export class SentimentService {
@@ -53,6 +54,19 @@ export class SentimentService {
     const wordTokens = tokenizeWords(normalizedText);
     const sentenceTokens = tokenizeSentences(normalizedText);
     const aggregate = computeAggregateScore(wordTokens, sentenceTokens);
+
+    const categories = extractCategories(normalizedText);
+    if (categories.length > 0) {
+      try {
+        if (contentType === 'POST') {
+          await this.db.post.update({ where: { id: contentId }, data: { categories } });
+        } else if (contentType === 'REEL') {
+          await this.db.reel.update({ where: { id: contentId }, data: { categories } });
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to update categories for ${contentType} ${contentId}: ${err.message}`);
+      }
+    }
 
     await this.db.contentSentiment.upsert({
       where: {

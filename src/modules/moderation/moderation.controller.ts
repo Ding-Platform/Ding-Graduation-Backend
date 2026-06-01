@@ -23,7 +23,7 @@ export class ModerationController {
     @Body()
     dto: {
       targetId: string;
-      targetType: 'USER' | 'POST' | 'COMMENT';
+      targetType: 'USER' | 'POST' | 'COMMENT' | 'REEL' | 'REEL_COMMENT';
       reason: ReportReason;
       description?: string;
     },

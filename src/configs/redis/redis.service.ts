@@ -293,6 +293,28 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async zIncrBy(key: string, increment: number, member: string): Promise<number | null> {
+    if (!this.isConnected) return null;
+
+    try {
+      return await this.client.zIncrBy(key, increment, member);
+    } catch (error) {
+      console.error('Redis zIncrBy error:', error);
+      return null;
+    }
+  }
+
+  async zRangeWithScores(key: string, start: number, stop: number, options?: { REV?: boolean }): Promise<{ value: string; score: number }[]> {
+    if (!this.isConnected) return [];
+
+    try {
+      return await this.client.zRangeWithScores(key, start, stop, options);
+    } catch (error) {
+      console.error('Redis zRangeWithScores error:', error);
+      return [];
+    }
+  }
+
   /**
    * Flush all keys (use with caution!)
    */

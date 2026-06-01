@@ -180,4 +180,107 @@ export class NotificationService {
       actorId,
     );
   }
+
+  // ─── Reel Notifications ───────────────────────
+
+  async notifyReelLike(
+    actorId: string,
+    targetUserId: string,
+    reelId: string,
+  ) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.REEL_LIKE,
+      'New Like',
+      'liked your reel',
+      actorId,
+      { reelId },
+    );
+  }
+
+  async notifyReelComment(
+    actorId: string,
+    targetUserId: string,
+    reelId: string,
+    content: string,
+  ) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.REEL_COMMENT,
+      'New Comment',
+      `commented on your reel: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+      actorId,
+      { reelId, content },
+    );
+  }
+
+  async notifyReelShare(
+    actorId: string,
+    targetUserId: string,
+    reelId: string,
+  ) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.REEL_SHARE,
+      'Reel Shared',
+      'shared your reel',
+      actorId,
+      { reelId },
+    );
+  }
+
+  // ─── Facebook Parity Additions ─────────────────
+
+  async notifyNewMessage(actorId: string, targetUserId: string, roomId: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.NEW_MESSAGE,
+      'New Message',
+      'sent you a message',
+      actorId,
+      { roomId },
+    );
+  }
+
+  async notifyNewLogin(targetUserId: string, deviceName: string, ipAddress: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.NEW_LOGIN,
+      'Security Alert: New Login',
+      `A new login was detected from ${deviceName} (${ipAddress})`,
+      undefined,
+      { deviceName, ipAddress },
+    );
+  }
+
+  async notifyAccountUpdate(targetUserId: string, updateType: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.ACCOUNT_UPDATE,
+      'Account Updated',
+      `Your account ${updateType} was updated successfully`,
+    );
+  }
+
+  async notifyMarketplaceOrder(actorId: string, sellerId: string, orderId: string, productName: string) {
+    return this.createNotification(
+      sellerId,
+      NotificationType.MARKETPLACE_ORDER,
+      'New Marketplace Order',
+      `placed an order for: ${productName}`,
+      actorId,
+      { orderId },
+    );
+  }
+
+  async notifyMarketplaceReview(actorId: string, targetUserId: string, reviewId: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.MARKETPLACE_REVIEW,
+      'New Review',
+      'left a review on your marketplace profile',
+      actorId,
+      { reviewId },
+    );
+  }
 }

@@ -9,12 +9,18 @@ import { Queue } from 'bull';
 import { SentimentContentType, SentimentEventType, ShareType } from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
+import { extractHashtags, mergeHashtags } from '../../common/utils/hashtag.util';
+import { InterestService } from '../interest/interest.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class ReelsService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly notificationService: NotificationService,
+    private readonly interestService: InterestService,
+    private readonly activityService: ActivityService,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
   ) {}
@@ -72,13 +78,21 @@ export class ReelsService {
 
     const processingBase =
       process.env.REELS_CDN_BASE_URL || 'https://cdn.ding.local';
+    const mergedHashtags = mergeHashtags(extractHashtags(payload.caption), payload.hashtags);
+
+    if (mergedHashtags.length > 0) {
+      Promise.all(
+        mergedHashtags.map((tag) => this.redisService.zIncrBy('trending_hashtags', 1, tag)),
+      ).catch((err) => console.error('Failed to update trending hashtags', err));
+    }
+
     const finalized = await this.prisma.reel.update({
       where: { id: reelId },
       data: {
         status: 'READY',
         rawVideoKey: payload.rawVideoKey,
         caption: payload.caption,
-        hashtags: payload.hashtags || [],
+        hashtags: mergedHashtags,
         audioTrackId: payload.audioTrackId,
         audioOffsetMs: payload.audioOffsetMs ?? 0,
         durationSec: payload.durationSec ?? 30,
@@ -108,7 +122,12 @@ export class ReelsService {
       },
     );
 
-    return finalized;
+    this.activityService.logActivity(userId, 'CREATED_REEL', reelId, 'REEL');
+
+    return {
+      reelId,
+      status: 'READY',
+    };
   }
 
   async getReelStatus(reelId: string) {
@@ -129,7 +148,7 @@ export class ReelsService {
     return reel;
   }
 
-  async getReelById(reelId: string) {
+  async getReelById(reelId: string, viewerId?: string) {
     const reel = await this.prisma.reel.findFirst({
       where: {
         id: reelId,
@@ -142,6 +161,10 @@ export class ReelsService {
       },
     });
     if (!reel) {
+      throw new NotFoundException('Reel not found');
+    }
+    // Privacy guard: non-public reels are only visible to their owner
+    if (!reel.isPublic && reel.userId !== viewerId) {
       throw new NotFoundException('Reel not found');
     }
 
@@ -157,6 +180,8 @@ export class ReelsService {
       audioTrackId?: string | null;
       audioOffsetMs?: number;
       isPublic?: boolean;
+      commentsEnabled?: boolean;
+      downloadsEnabled?: boolean;
     },
   ) {
     const reel = await this.prisma.reel.findUnique({ where: { id: reelId } });
@@ -167,15 +192,23 @@ export class ReelsService {
       throw new ForbiddenException('You do not own this reel');
     }
 
+    const updatedCaption = payload.caption !== undefined ? payload.caption : reel.caption;
+    const providedHashtags = payload.hashtags !== undefined ? payload.hashtags : reel.hashtags;
+    const finalHashtags = (payload.caption !== undefined || payload.hashtags !== undefined)
+      ? mergeHashtags(extractHashtags(updatedCaption), providedHashtags)
+      : undefined;
+
     return this.prisma.reel.update({
       where: { id: reelId },
       data: {
         caption: payload.caption,
-        hashtags: payload.hashtags,
+        hashtags: finalHashtags,
         audioTrackId:
           payload.audioTrackId === null ? null : payload.audioTrackId,
         audioOffsetMs: payload.audioOffsetMs,
         isPublic: payload.isPublic,
+        commentsEnabled: payload.commentsEnabled,
+        downloadsEnabled: payload.downloadsEnabled,
       },
     });
   }
@@ -216,6 +249,7 @@ export class ReelsService {
         isPublic: true,
         status: 'READY',
         deletedAt: null,
+        userId: { not: userId },
         ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
       },
       include: {
@@ -250,6 +284,9 @@ export class ReelsService {
       ]),
     );
 
+    const userInterests = await this.interestService.getTopInterests(userId, 20);
+    const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+
     const scored = candidates
       .map((reel) => {
         const hoursAgo = Math.max(
@@ -272,13 +309,22 @@ export class ReelsService {
           feedBoostActive,
           sentimentMap.get(reel.id),
         );
+
+        let affinityBoost = 0;
+        const tags = [...(reel.hashtags || []), ...(reel.categories || [])];
+        for (const tag of tags) {
+          affinityBoost += interestMap.get(tag.toLowerCase()) || 0;
+        }
+        const finalAffinityBoost = Math.min(affinityBoost * 0.1, 2.0);
+
         const score =
           0.2 * recencyScore +
           0.35 * this.normalizeScore(engagementScore) +
           0.25 * this.normalizeScore(reel._count.views) +
           0.15 * completionScore +
           0.05 * moodBoost +
-          sentimentBoost;
+          sentimentBoost +
+          finalAffinityBoost;
 
         return { reel, score };
       })
@@ -345,6 +391,10 @@ export class ReelsService {
           removeOnFail: true,
         },
       );
+
+      if (payload.watchPct && payload.watchPct >= 70) {
+        this.interestService.recordInterest(payload.viewerId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.0);
+      }
     }
 
     return { counted: true };
@@ -407,10 +457,19 @@ export class ReelsService {
       },
     );
 
+    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 2.0);
+    this.activityService.logActivity(userId, 'LIKED_REEL', reelId, 'REEL');
+
     const updated = await this.prisma.reel.findUnique({
       where: { id: reelId },
-      select: { likesCount: true },
+      select: { likesCount: true, userId: true },
     });
+
+    // Notify the reel owner
+    if (updated) {
+      await this.notificationService.notifyReelLike(userId, updated.userId, reelId);
+    }
+
     return { liked: true, count: Number(updated?.likesCount || 0) };
   }
 
@@ -419,6 +478,7 @@ export class ReelsService {
     cursor?: string,
     limit = 20,
     parentId?: string,
+    viewerId?: string,
   ) {
     const safeLimit = Math.min(Math.max(limit, 1), 50);
     const cursorDate = this.decodeCursor(cursor);
@@ -432,13 +492,33 @@ export class ReelsService {
       },
       include: {
         user: { select: { id: true, name: true, image: true } },
+        _count: { select: { replies: true } },
       },
       orderBy: [{ likesCount: 'desc' }, { createdAt: 'asc' }],
       take: safeLimit + 1,
     });
 
     const hasMore = rows.length > safeLimit;
-    const data = hasMore ? rows.slice(0, safeLimit) : rows;
+    const items = hasMore ? rows.slice(0, safeLimit) : rows;
+
+    // Enrich with isLikedByMe when a viewer is authenticated
+    let likedSet = new Set<string>();
+    if (viewerId && items.length > 0) {
+      const liked = await this.prisma.reelCommentLike.findMany({
+        where: {
+          userId: viewerId,
+          commentId: { in: items.map((c) => c.id) },
+        },
+        select: { commentId: true },
+      });
+      likedSet = new Set(liked.map((l) => l.commentId));
+    }
+
+    const data = items.map((c) => ({
+      ...c,
+      isLikedByMe: likedSet.has(c.id),
+    }));
+
     const nextCursor =
       hasMore && data.length > 0
         ? this.encodeCursor(data[data.length - 1].createdAt)
@@ -462,6 +542,9 @@ export class ReelsService {
     const reel = await this.prisma.reel.findUnique({ where: { id: reelId } });
     if (!reel || reel.deletedAt) {
       throw new NotFoundException('Reel not found');
+    }
+    if (!reel.commentsEnabled) {
+      throw new BadRequestException('Comments are disabled on this reel');
     }
 
     const comment = await this.prisma.reelComment.create({
@@ -495,6 +578,17 @@ export class ReelsService {
         removeOnComplete: true,
         removeOnFail: true,
       },
+    );
+
+    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.5);
+    this.activityService.logActivity(userId, 'COMMENTED_ON_REEL', reelId, 'REEL');
+
+    // Notify the reel owner
+    await this.notificationService.notifyReelComment(
+      userId,
+      reel.userId,
+      reelId,
+      payload.content,
     );
 
     return comment;
@@ -551,11 +645,325 @@ export class ReelsService {
       data: { sharesCount: { increment: 1 } },
     });
 
+    // Notify the reel owner
+    await this.notificationService.notifyReelShare(userId, reel.userId, reelId);
+
     return {
       shareId: share.id,
       shareUrl: `${process.env.APP_BASE_URL || 'https://ding.local'}/reels/${reelId}`,
     };
   }
+
+  // ─────────────────────────────────────────────
+  // Bookmark / Save
+  // ─────────────────────────────────────────────
+
+  async toggleBookmark(userId: string, reelId: string) {
+    const reel = await this.prisma.reel.findUnique({ where: { id: reelId } });
+    if (!reel || reel.deletedAt) {
+      throw new NotFoundException('Reel not found');
+    }
+
+    const existing = await this.prisma.reelBookmark.findUnique({
+      where: { reelId_userId: { reelId, userId } },
+    });
+
+    if (existing) {
+      await this.prisma.$transaction([
+        this.prisma.reelBookmark.delete({
+          where: { reelId_userId: { reelId, userId } },
+        }),
+        this.prisma.reel.update({
+          where: { id: reelId },
+          data: { savesCount: { decrement: 1 } },
+        }),
+      ]);
+      return { saved: false };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.reelBookmark.create({
+        data: { reelId, userId },
+      }),
+      this.prisma.reel.update({
+        where: { id: reelId },
+        data: { savesCount: { increment: 1 } },
+      }),
+    ]);
+
+    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 2.0);
+    this.activityService.logActivity(userId, 'BOOKMARKED_REEL', reelId, 'REEL');
+
+    return { saved: true };
+  }
+
+  async getSavedReels(userId: string, cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+
+    const bookmarks = await this.prisma.reelBookmark.findMany({
+      where: {
+        userId,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      include: {
+        reel: {
+          include: {
+            user: { select: { id: true, name: true, image: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = bookmarks.length > safeLimit;
+    const items = hasMore ? bookmarks.slice(0, safeLimit) : bookmarks;
+    const reels = items
+      .filter((b) => b.reel.deletedAt === null)
+      .map((b) => b.reel);
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels, nextCursor, hasMore };
+  }
+
+  // ─────────────────────────────────────────────
+  // User Profile Reels
+  // ─────────────────────────────────────────────
+
+  async getUserReels(
+    targetUserId: string,
+    viewerId?: string,
+    cursor?: string,
+    limit = 10,
+  ) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+    const isOwner = viewerId === targetUserId;
+
+    const reels = await this.prisma.reel.findMany({
+      where: {
+        userId: targetUserId,
+        deletedAt: null,
+        status: 'READY',
+        // Non-owners only see public reels
+        ...(!isOwner ? { isPublic: true } : {}),
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = reels.length > safeLimit;
+    const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: items, nextCursor, hasMore };
+  }
+
+  async getMyReels(userId: string, cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+
+    const reels = await this.prisma.reel.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = reels.length > safeLimit;
+    const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: items, nextCursor, hasMore };
+  }
+
+  // ─────────────────────────────────────────────
+  // Comment Likes & Editing
+  // ─────────────────────────────────────────────
+
+  async toggleCommentLike(userId: string, reelId: string, commentId: string) {
+    const comment = await this.prisma.reelComment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment || comment.reelId !== reelId || comment.deletedAt) {
+      throw new NotFoundException('Comment not found');
+    }
+
+    const existing = await this.prisma.reelCommentLike.findUnique({
+      where: { commentId_userId: { commentId, userId } },
+    });
+
+    if (existing) {
+      await this.prisma.$transaction([
+        this.prisma.reelCommentLike.delete({
+          where: { commentId_userId: { commentId, userId } },
+        }),
+        this.prisma.reelComment.update({
+          where: { id: commentId },
+          data: { likesCount: { decrement: 1 } },
+        }),
+      ]);
+      return { liked: false };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.reelCommentLike.create({
+        data: { commentId, userId },
+      }),
+      this.prisma.reelComment.update({
+        where: { id: commentId },
+        data: { likesCount: { increment: 1 } },
+      }),
+    ]);
+    return { liked: true };
+  }
+
+  async editComment(
+    userId: string,
+    reelId: string,
+    commentId: string,
+    content: string,
+  ) {
+    const comment = await this.prisma.reelComment.findUnique({
+      where: { id: commentId },
+    });
+    if (!comment || comment.reelId !== reelId || comment.deletedAt) {
+      throw new NotFoundException('Comment not found');
+    }
+    if (comment.userId !== userId) {
+      throw new ForbiddenException('You can only edit your own comments');
+    }
+
+    return this.prisma.reelComment.update({
+      where: { id: commentId },
+      data: { content },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+      },
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // Discovery: Hashtags & Trending
+  // ─────────────────────────────────────────────
+
+  async getReelsByHashtag(hashtag: string, cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+    const normalizedTag = hashtag.toLowerCase().replace(/^#/, '');
+
+    const reels = await this.prisma.reel.findMany({
+      where: {
+        isPublic: true,
+        status: 'READY',
+        deletedAt: null,
+        hashtags: { has: normalizedTag },
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+    });
+
+    const hasMore = reels.length > safeLimit;
+    const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: items, nextCursor, hasMore };
+  }
+
+  async getTrendingReels(cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+    // Trending = public + READY reels from last 7 days, ranked by engagement
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const reels = await this.prisma.reel.findMany({
+      where: {
+        isPublic: true,
+        status: 'READY',
+        deletedAt: null,
+        createdAt: { gte: sevenDaysAgo },
+        ...(cursorDate ? { createdAt: { lt: cursorDate, gte: sevenDaysAgo } } : {}),
+      },
+      include: {
+        user: { select: { id: true, name: true, image: true } },
+      },
+      orderBy: [
+        { likesCount: 'desc' },
+        { viewsCount: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: safeLimit + 1,
+    });
+
+    const hasMore = reels.length > safeLimit;
+    const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: items, nextCursor, hasMore };
+  }
+
+  // ─────────────────────────────────────────────
+  // Creator Analytics
+  // ─────────────────────────────────────────────
+
+  async getReelAnalytics(userId: string, reelId: string) {
+    const reel = await this.prisma.reel.findUnique({ where: { id: reelId } });
+    if (!reel || reel.deletedAt) {
+      throw new NotFoundException('Reel not found');
+    }
+    if (reel.userId !== userId) {
+      throw new ForbiddenException('You can only view analytics for your own reels');
+    }
+
+    const avgWatch = await this.prisma.reelView.aggregate({
+      where: { reelId, watchPct: { not: null } },
+      _avg: { watchPct: true },
+      _count: true,
+    });
+
+    return {
+      reelId,
+      viewsCount: Number(reel.viewsCount),
+      likesCount: Number(reel.likesCount),
+      commentsCount: Number(reel.commentsCount),
+      sharesCount: Number(reel.sharesCount),
+      savesCount: Number(reel.savesCount),
+      avgWatchPct: Math.round(avgWatch._avg.watchPct ?? 0),
+      totalViewsWithWatchData: avgWatch._count,
+      createdAt: reel.createdAt,
+    };
+  }
+
+  // ─────────────────────────────────────────────
+  // Audio Tracks
+  // ─────────────────────────────────────────────
 
   async listAudioTracks(genre?: string, search?: string) {
     return this.prisma.audioTrack.findMany({

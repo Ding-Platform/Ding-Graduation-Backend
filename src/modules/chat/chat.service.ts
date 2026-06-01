@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class ChatService {
@@ -9,6 +10,7 @@ export class ChatService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createRoom(
@@ -162,6 +164,20 @@ export class ChatService {
     this.logger.log(
       `Message sent: ${message.id} with ${mediaAttachments.length} attachments`,
     );
+
+    // Get room members to notify
+    const room = await this.prisma.room.findUnique({
+      where: { id: roomId },
+      include: { members: true },
+    });
+
+    if (room) {
+      for (const member of room.members) {
+        if (member.userId !== userId) {
+          await this.notificationService.notifyNewMessage(userId, member.userId, roomId);
+        }
+      }
+    }
 
     return { ...message, media: mediaAttachments };
   }

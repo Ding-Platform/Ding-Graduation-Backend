@@ -1,0 +1,80 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TOKEN_CONSTANTS = void 0;
+/**
+ * Token Configuration Constants
+ * Centralized configuration for JWT tokens and authentication
+ */
+exports.TOKEN_CONSTANTS = {
+    // Access Token Configuration
+    ACCESS_TOKEN: {
+        EXPIRES_IN: '15m', // 15 minutes
+        ALGORITHM: 'HS256',
+        TYPE: 'access',
+    },
+    // Refresh Token Configuration
+    REFRESH_TOKEN: {
+        EXPIRES_IN: '7d', // 7 days
+        ALGORITHM: 'HS256',
+        TYPE: 'refresh',
+    },
+    // Cookie Configuration
+    COOKIE: {
+        SESSION_ID_NAME: 'sessionId',
+        // No MAX_AGE - persistent cookie (no expiration)
+        PATH: '/',
+        HTTP_ONLY: true,
+        // Secure must be true when SameSite is 'none' (browser requirement)
+        // Also required for HTTPS in production
+        SECURE: process.env.NODE_ENV === 'production',
+        // Use 'none' for cross-origin cookies (different top-level domains)
+        // Required when frontend and backend are on different domains (e.g., frontend.com and backend.com)
+        // Secure flag must be true when SameSite is 'none'
+        // In production, use 'none' to allow cookies across different domains
+        // In development, use 'lax' for localhost
+        SAME_SITE: process.env.NODE_ENV === 'production'
+            ? 'none'
+            : 'lax',
+    },
+    // Session Configuration
+    SESSION: {
+        MAX_ACTIVE_SESSIONS: 5, // Maximum active sessions per user
+        // Session refresh TTL (matches old refresh token lifetime)
+        REFRESH_TTL_MS: 7 * 24 * 60 * 60 * 1000,
+        CLEANUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    },
+    // Password Configuration
+    PASSWORD: {
+        MIN_LENGTH: 8,
+        MAX_LENGTH: 128,
+        REQUIRE_SPECIAL_CHARS: true,
+        REQUIRE_NUMBERS: true,
+        REQUIRE_UPPERCASE: true,
+        REQUIRE_LOWERCASE: true,
+    },
+    // Rate Limiting Configuration
+    RATE_LIMIT: {
+        LOGIN_ATTEMPTS: {
+            MAX_ATTEMPTS: 5,
+            WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+        },
+        REFRESH_ATTEMPTS: {
+            MAX_ATTEMPTS: 10,
+            WINDOW_MS: 60 * 1000, // 1 minute
+        },
+    },
+    // OTP Configuration
+    OTP: {
+        LENGTH: 6,
+        MIN_VALUE: 100000,
+        MAX_VALUE: 999999,
+        EXPIRES_IN_MS: 1 * 60 * 1000, // 1 minute in milliseconds
+        EXPIRES_IN_MINUTES: 1,
+    },
+    // Security Configuration
+    SECURITY: {
+        BCRYPT_ROUNDS: 12,
+        JWT_ISSUER: 'ding-platform',
+        JWT_AUDIENCE: 'ding-platform-users',
+    },
+};

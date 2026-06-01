@@ -9,7 +9,7 @@ export class ModerationService {
   async createReport(
     reporterId: string,
     targetId: string,
-    targetType: 'USER' | 'POST' | 'COMMENT',
+    targetType: 'USER' | 'POST' | 'COMMENT' | 'REEL' | 'REEL_COMMENT',
     reason: ReportReason,
     description?: string,
   ) {

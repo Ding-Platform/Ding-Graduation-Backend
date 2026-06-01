@@ -2,8 +2,10 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 import { Prisma } from '@prisma/client';
+import { RedisService } from '../../configs/redis/redis.service';
+import { ActivityService } from '../activity/activity.service';
 
-type SearchKind = 'ALL' | 'PEOPLE' | 'POSTS' | 'GROUPS' | 'PAGES';
+type SearchKind = 'ALL' | 'PEOPLE' | 'POSTS' | 'GROUPS' | 'PAGES' | 'REELS';
 
 interface PersonResult {
   id: string;
@@ -39,24 +41,45 @@ interface PageResult {
   isVerified: boolean;
 }
 
+interface ReelResult {
+  id: string;
+  caption: string | null;
+  thumbnailUrl: string | null;
+  viewsCount: number;
+  user: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+}
+
 export interface SearchBuckets {
   people?: PersonResult[];
   posts?: PostResult[];
   groups?: GroupResult[];
   pages?: PageResult[];
+  reels?: ReelResult[];
 }
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly redisService: RedisService,
+    private readonly activityService: ActivityService,
+  ) {}
 
-  async globalSearch(query: string, type?: string, page = 1, limit = 20) {
+  async globalSearch(query: string, type?: string, page = 1, limit = 20, userId?: string) {
     const normalizedQuery = query?.trim();
     if (!normalizedQuery) {
       throw new BadRequestException(ERROR_MESSAGES.SEARCH_QUERY_REQUIRED);
     }
     if (normalizedQuery.length < 2) {
       throw new BadRequestException(ERROR_MESSAGES.SEARCH_QUERY_TOO_SHORT);
+    }
+
+    if (userId) {
+      this.activityService.logActivity(userId, 'SEARCHED', undefined, 'SEARCH_QUERY', { query: normalizedQuery });
     }
 
     const skip = (page - 1) * limit;
@@ -67,6 +90,7 @@ export class SearchService {
       'POSTS',
       'GROUPS',
       'PAGES',
+      'REELS',
     ];
     if (!allowedTypes.includes(normalizedType)) {
       throw new BadRequestException('Invalid search type');
@@ -113,9 +137,9 @@ export class SearchService {
         WHERE
           p."isDeleted" = false
           AND p.privacy = 'PUBLIC'
-          AND to_tsvector(${tsConfig}, COALESCE(p.content, '')) @@ plainto_tsquery(${tsConfig}, ${normalizedQuery})
+          AND to_tsvector(${tsConfig}, COALESCE(p.content, '') || ' ' || array_to_string(p.hashtags, ' ')) @@ plainto_tsquery(${tsConfig}, ${normalizedQuery})
         ORDER BY
-          ts_rank_cd(to_tsvector(${tsConfig}, COALESCE(p.content, '')), plainto_tsquery(${tsConfig}, ${normalizedQuery})) DESC,
+          ts_rank_cd(to_tsvector(${tsConfig}, COALESCE(p.content, '') || ' ' || array_to_string(p.hashtags, ' ')), plainto_tsquery(${tsConfig}, ${normalizedQuery})) DESC,
           p."createdAt" DESC
         LIMIT ${effectiveLimit}
         OFFSET ${effectiveSkip}
@@ -173,6 +197,38 @@ export class SearchService {
       results.pages = pages;
     }
 
+    if (isGlobal || normalizedType === 'REELS') {
+      const reels = await this.prisma.$queryRaw<ReelResult[]>(Prisma.sql`
+        SELECT
+          r.id,
+          r.caption,
+          r."thumbnailUrl",
+          r."viewsCount"::int AS "viewsCount",
+          json_build_object(
+            'id', u.id,
+            'name', u.name,
+            'image', u.image
+          ) AS user
+        FROM "Reel" r
+        INNER JOIN "User" u ON u.id = r."userId"
+        WHERE
+          r."deletedAt" IS NULL
+          AND r."isPublic" = true
+          AND r.status = 'READY'
+          AND to_tsvector(${tsConfig}, COALESCE(r.caption, '') || ' ' || array_to_string(r.hashtags, ' '))
+              @@ plainto_tsquery(${tsConfig}, ${normalizedQuery})
+        ORDER BY
+          ts_rank_cd(
+            to_tsvector(${tsConfig}, COALESCE(r.caption, '') || ' ' || array_to_string(r.hashtags, ' ')),
+            plainto_tsquery(${tsConfig}, ${normalizedQuery})
+          ) DESC,
+          r."viewsCount" DESC
+        LIMIT ${effectiveLimit}
+        OFFSET ${effectiveSkip}
+      `);
+      results.reels = reels;
+    }
+
     return {
       query: normalizedQuery,
       type: normalizedType,
@@ -181,15 +237,16 @@ export class SearchService {
     };
   }
 
-  trendingHashtags() {
-    // A real implementation might use a view or Redis counter.
-    // For now, this is a placeholder or could use a raw query counting hashtags in recent posts.
-    return [
-      { tag: '#DingPlatform', count: 1240 },
-      { tag: '#Technology', count: 980 },
-      { tag: '#Social', count: 540 },
-      { tag: '#News', count: 430 },
-      { tag: '#Innovation', count: 210 },
-    ];
+  async trendingHashtags() {
+    const rawData = await this.redisService.zRangeWithScores('trending_hashtags', 0, 9, { REV: true });
+
+    if (!rawData || rawData.length === 0) {
+      return [];
+    }
+
+    return rawData.map((item) => ({
+      tag: item.value,
+      count: item.score,
+    }));
   }
 }

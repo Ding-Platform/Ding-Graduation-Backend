@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from '../../configs/database/database.module';
 import { RedisModule } from '../../configs/redis/redis.module';
+import { NotificationModule } from '../notification/notification.module';
 import { ReelsController } from './reels.controller';
 import { AudioTracksController } from './audio-tracks.controller';
 import { ReelsService } from './reels.service';
@@ -10,6 +11,7 @@ import { ReelsService } from './reels.service';
   imports: [
     DatabaseModule,
     RedisModule,
+    NotificationModule,
     BullModule.registerQueue({
       name: 'sentiment-analysis',
     }),

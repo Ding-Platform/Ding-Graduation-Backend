@@ -1,345 +1,111 @@
 # Ding Platform Backend
 
-A social networking platform backend built with NestJS, featuring a hybrid database architecture with PostgreSQL and Neo4j.
-
-## 🏗️ Architecture
-
-- **Framework**: NestJS (Node.js)
-- **Databases**:
-  - PostgreSQL (User data, posts, profiles)
-  - Neo4j (Social graph, relationships)
-  - Redis (Caching)
-- **Authentication**: JWT + OAuth2 (Google)
-- **File Storage**: Cloudinary
-- **API Documentation**: Swagger/OpenAPI
-
-## 📋 Features
-
-### Sprint 1: Authentication & Security
-
-- ✅ JWT-based authentication
-- ✅ Google OAuth2 integration
-- ✅ Password reset flow
-- ✅ Rate limiting
-- ✅ Session management
-
-### Sprint 2: Post Management
-
-- ✅ Create, read, update, delete posts
-- ✅ Image uploads via Cloudinary
-- ✅ Post reactions
-- ✅ Comments system
-
-### Sprint 3: Social Graph
-
-- ✅ Follow/unfollow users
-- ✅ Friend requests
-- ✅ Connection management
-- ✅ Neo4j-powered social graph
-
-### Sprint 4: Feed & Privacy
-
-- ✅ Personalized feed
-- ✅ Privacy settings
-- ✅ Content visibility control
-- ✅ Social graph-based filtering
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm
-- Docker & Docker Compose (for local development)
-- PostgreSQL 15+
-- Neo4j 5+
-- Redis 7+
-
-### Local Development with Docker (Recommended)
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd Ding-Platform-Backend
-
-# Copy environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Start all services
-./_run_Scripts/docker-dev.sh start
-
-# Or use docker-compose directly
-docker-compose up -d
-
-# View logs
-./_run_Scripts/docker-dev.sh logs
-
-# Access services:
-# Backend: http://localhost:3000
-# API Docs: http://localhost:3000/api/docs
-# Prisma Studio: http://localhost:5555
-# Neo4j Browser: http://localhost:7474
-```
-
-### Manual Setup (Without Docker)
-
-```bash
-# Install dependencies
-pnpm install
-
-# Setup databases (PostgreSQL, Neo4j, Redis must be running)
-
-# Generate Prisma Client
-pnpm prisma generate
-
-# Run migrations
-pnpm prisma migrate dev
-
-# Seed database (optional)
-pnpm run prisma:seed
-
-# Start development server
-pnpm run start:dev
-```
-
-## 📚 Documentation
-
-### Deployment Guides
-
-- **Render**: See [\_run_Scripts/RENDER_DEPLOYMENT.md](./_run_Scripts/RENDER_DEPLOYMENT.md) for detailed Render deployment guide
-- **Quick Start**: See [\_run_Scripts/RENDER_QUICK_START.md](./_run_Scripts/RENDER_QUICK_START.md) for fast deployment
-- **Docker**: See [\_run_Scripts/DOCKER_SETUP.md](./_run_Scripts/DOCKER_SETUP.md) for Docker configuration
-
-### API Documentation
-
-- **Development**: http://localhost:3000/api/docs
-- **Production**: https://your-app.onrender.com/api/docs
-
-### Comments API Quick Reference
-- `POST /comments/posts/:postId` — create a top-level comment (auth required, supports `parentCommentId` to reply)
-- `GET /comments/posts/:postId` — list top-level comments with pagination and `sort=top|recent`
-- `GET /comments/:commentId/replies` — list replies for a specific comment
-- `PATCH /comments/:commentId` — update own comment content (auth required)
-- `DELETE /comments/:commentId` — soft-delete own comment and update graph sync (auth required)
-
-### Project Documentation
-
-- [docs/README.md](./docs/README.md) - Active sprint plans and implementation reports
-- [docs/sprints/sprint21.md](./docs/sprints/sprint21.md) - Sprint 21 escrow orders summary
-- [\_run_Scripts/ENV_GUIDE.md](./_run_Scripts/ENV_GUIDE.md) - Environment variables
-- [\_documentations/FEED_DOCUMENTATION.md](./_documentations/FEED_DOCUMENTATION.md) - Feed system
-- [\_documentations/PROGRESS.md](./_documentations/PROGRESS.md) - Project progress
-- [\_documentations/CHAT_API_DOCUMENTATION.md](./_documentations/CHAT_API_DOCUMENTATION.md) - Chat Frontend Guide
-- Sprint summaries in `_documentations/` directory
-
-## 📂 Folder Structure
-
-- `src/` - Application source code
-- `docs/` - Active sprint plans and implementation reports
-- `_deploy/` - Infrastructure definitions (Docker, Nginx)
-- `_documentations/` - Project documentation and guides
-- `_run_Scripts/` - Helper scripts for development and deployment
-- `_test/` - E2E tests and manual testing artifacts
-
-## 🛠️ Available Scripts
-
-```bash
-# Development
-pnpm run start:dev          # Start with hot-reload
-pnpm run start:debug        # Start in debug mode
-
-# Production
-pnpm run build              # Build application
-pnpm run start:prod         # Start production server
-
-# Database
-pnpm prisma generate        # Generate Prisma Client
-pnpm prisma migrate dev     # Run migrations (dev)
-pnpm prisma migrate deploy  # Run migrations (prod)
-pnpm prisma studio          # Open Prisma Studio
-pnpm run prisma:seed        # Seed database
-
-# Testing
-pnpm run test               # Unit tests
-pnpm run test:e2e           # E2E tests
-pnpm run test:cov           # Test coverage
-
-# Code Quality
-pnpm run lint               # Lint code
-pnpm run format             # Format code
-
-# Docker
-./_run_Scripts/docker-dev.sh start       # Start dev environment
-./_run_Scripts/docker-dev.sh stop        # Stop dev environment
-./_run_Scripts/docker-dev.sh logs        # View logs
-./_run_Scripts/docker-dev.sh migrate     # Run migrations
-./_run_Scripts/docker-dev.sh shell       # Access backend shell
-
-./_run_Scripts/docker-prod.sh deploy     # Deploy production
-./_run_Scripts/docker-prod.sh health     # Check health
-./_run_Scripts/docker-prod.sh backup     # Backup databases
-```
-
-## 🌍 Deployment
-
-### Render (Recommended)
-
-The easiest way to deploy is using Render with the included blueprint:
-
-1. **Setup Neo4j Aura** (free tier available)
-   - Create instance at [console.neo4j.io](https://console.neo4j.io)
-
-2. **Deploy via Blueprint**
-
-   ```bash
-   # Push to GitHub
-   git push origin main
-
-   # In Render dashboard:
-   # - New + → Blueprint
-   # - Connect repository
-   # - Configure environment variables
-   # - Deploy
-   ```
-
-3. **Complete guide**: See [\_run_Scripts/RENDER_DEPLOYMENT.md](./_run_Scripts/RENDER_DEPLOYMENT.md)
-
-### Docker Production
-
-```bash
-# Build and deploy
-./_run_Scripts/docker-prod.sh deploy
-
-# Or manually
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-```
-
-## 🔧 Environment Variables
-
-Key environment variables (see `.env.example` for complete list):
-
-```env
-# Server
-NODE_ENV=development
-PORT=3000
-
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/ding_db
-NEO4J_URI=bolt://localhost:7687
-NEO4J_AUTH=neo4j/password
-REDIS_URL=redis://localhost:6379
-
-# Authentication
-JWT_SECRET=your-secret-key
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# Services
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
-
-SMTP_HOST=smtp.gmail.com
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-```
-
-## 🏛️ Project Structure
-
-```
-src/
-├── common/              # Shared utilities, decorators, guards
-├── configs/             # Database, Neo4j, Redis configurations
-├── modules/
-│   ├── auth/           # Authentication & authorization
-│   ├── user/           # User management
-│   ├── profile/        # User profiles
-│   ├── post/           # Post management
-│   ├── social/         # Social graph (follow/friend)
-│   ├── feed/           # Personalized feed
-│   └── privacy/        # Privacy settings
-├── app.module.ts       # Root module
-└── main.ts             # Application entry point
-
-prisma/
-├── schema.prisma        # Database schema
-├── migrations/          # Database migrations
-└── seed.ts             # Database seeding
-
-scripts/
-└── (Moved to _run_Scripts/scripts/)
-```
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pnpm run test
-
-# Run e2e tests
-pnpm run test:e2e
-
-# Test coverage
-pnpm run test:cov
-```
-
-## 🔒 Security
-
-- JWT-based authentication
-- Bcrypt password hashing
-- Rate limiting (100 req/min)
-- Helmet.js security headers
-- CORS configuration
-- Input validation with class-validator
-- SQL injection protection via Prisma
-- XSS protection
-
-## 📊 Monitoring
-
-### Health Check
-
-- Endpoint: `/health`
-- Returns: Service status, uptime, environment
-
-### Logging
-
-- Development: Pretty-printed console logs
-- Production: JSON logs with Pino
-- Optional: Sentry integration
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the UNLICENSED License.
-
-## 👥 Team
-
-Built with ❤️ by the Ding Platform team
-
-## 📞 Support
-
-- Documentation: Check files in `documentations/` and `_run_Scripts/`
-- Issues: Open a GitHub issue
-- Email: [Your support email]
-
-## 🗺️ Roadmap
-
-- [ ] Real-time notifications (WebSocket)
-- [ ] Direct messaging
-- [ ] Advanced search
-- [ ] Analytics dashboard
-- [ ] Mobile app API optimization
-- [ ] GraphQL API
-- [ ] Microservices architecture
+A comprehensive, microservice-ready social networking backend built with **NestJS**. The platform utilizes a highly scalable **Hybrid Database Architecture** (PostgreSQL + Neo4j) to deliver personalized feeds, massive scale social networking features, and AI-driven user health monitoring.
 
 ---
 
-**Ready to deploy?** Check out [\_run_Scripts/RENDER_QUICK_START.md](./_run_Scripts/RENDER_QUICK_START.md) for a 5-minute deployment guide!
+## 🏗️ Core Architecture & Data Flow
+
+### The Hybrid Database System
+To guarantee both data integrity and ultra-fast social graph traversals, we utilize a dual-database approach:
+1. **PostgreSQL (via Prisma)**: The absolute source of truth. Handles structured data, financial records (marketplace), content storage, and user identities.
+2. **Neo4j**: Handles recursive queries. Computing mutual friends, degrees of separation, and friend-of-friend post visibility is impossible to scale on SQL. Neo4j acts as our dedicated Social Graph.
+3. **Graph Synchronization**: To prevent latency during API requests, Postgres and Neo4j are synced **asynchronously**. When a user creates a Post or adds a Friend, the Postgres transaction completes immediately. A BullMQ worker (`graph-sync`) picks up the job and silently mirrors the update to Neo4j in the background.
+
+### Real-Time Infrastructure
+- **Redis**: The backbone for real-time state. Handles Session invalidations, WebSocket pub/sub, WebRTC signaling state (Call Offer/Answers), and live Trending Hashtag leaderboards via Redis Sorted Sets.
+- **WebSockets (Socket.io)**: Powers Live Chat, Notifications, WebRTC Calling, and Live Streaming chat rooms.
+
+---
+
+## 📦 System Modules & Flows
+
+The backend is modularized into 27 specific domains.
+
+### 1. Core Identity & Accounts
+- **`AuthModule`**: Handles JWT issuance, Google OAuth2 integration, password reset tokens, and Route Guards.
+- **`UserModule`**: Manages account lifecycles, global roles (User, Admin, Seller), and emergency contacts.
+- **`ProfileModule`**: Handles Cloudinary avatar uploads, bios, and public-facing user metadata.
+- **`SessionModule`**: Active device tracking. Allows users to remotely revoke access to specific logged-in devices via Redis token blacklisting.
+- **`PrivacyModule`**: Enforces audience controls. Every post/reel is guarded by `Public`, `Friends Only`, or `Private` flags, which are checked before serving content to a requester.
+
+### 2. Social Graph & Discovery
+- **`SocialModule`**: Core friend/follow logic. Handles "Follow", "Unfollow", "Friend Request", "Accept", and "Block" actions.
+- **`GraphModule`**: Houses the BullMQ workers that listen to the `SocialModule` and `PostModule` to mirror edges (e.g., `(User)-[:FRIENDS_WITH]->(User)`) into Neo4j.
+- **`SearchModule`**: Global search across all entities. Actively maintains a **Trending Hashtags** leaderboard by querying Redis `ZSET`s that are incremented on every post/reel interaction.
+- **`FeedModule` (The Brain)**: Aggregates content for the user. Uses Neo4j to find highly relevant content from friends/follows, falls back to chronological queries, and applies heavy scoring multipliers using the Sentiment and Interest engines (see below).
+
+### 3. Core Content
+- **`PostModule`**: Standard text and media updates. Supports pagination, saving, and interaction tracking.
+- **`ReelsModule`**: Short-form video architecture. Tracks deep metrics including "Dwell Time" and "Watch Percentage".
+- **`StoriesModule`**: Ephemeral 24-hour content. Automatically filters out expired stories during queries.
+- **`CommentModule` & `LikeModule`**: Generic, polymorphic reaction systems that attach to Posts, Reels, and Stories. Supports nested hierarchical comment threads.
+
+### 4. Advanced Ecosystem
+- **`MarketplaceModule`**: A full e-commerce flow. Users apply to be "Verified Sellers". The `Admin` role approves applications. Sellers can list products, manage inventory, and process order life-cycles.
+- **`GroupsModule` & `PagesModule`**: Community hubs and Business profiles with their own localized feeds, member roles (Admin/Moderator/Member), and privacy gates.
+- **`EventsModule`**: Social gatherings, ticketing, RSVPs, and integration with Groups.
+
+### 5. Real-Time & Communication
+- **`ChatModule`**: 1-on-1 and Group messaging. Features Read Receipts, typing indicators, and online status tracked via Redis.
+- **`CallModule`**: A complete WebRTC signaling server. Uses WebSockets to exchange Session Description Protocols (SDP) and ICE candidates for peer-to-peer Audio/Video calls.
+- **`StreamingModule`**: Live video broadcasting rooms.
+- **`NotificationModule`**: Dispatches real-time alerts for interactions, and pushes background emails via SMTP.
+
+### 6. AI Intelligence & User Well-being
+- **`SentimentModule`**: An NLP engine running in background queues. Every post, comment, and reel caption is tokenized against a dictionary to calculate a **0 to 100 positive/negative score**. It updates the creator's `UserMoodProfile`.
+- **`InterestModule`**: The Affinity tracker. Logs what a user Likes, Comments on, and how long they *Dwell* (>10 seconds) on content. Builds a `UserInterest` profile based on extracted Hashtags and Categories.
+- **`NoroModule`**: The automated AI Intervention system. If a user's Negative Sentiment Score crosses a `70 point threshold`, Noro automatically dispatches a wellness check-in message and activates a `feedBoost` flag.
+- **The Feed Engine Result**: When `feedBoost` is active, the `FeedModule` actively penalizes negatively-scored content and boosts positively-scored content to help improve the user's mood. Concurrently, it multiplies the score of posts that match the user's `InterestModule` affinity tags.
+- **`ModerationModule`**: Automated blocking of NSFW/banned keywords and reporting flows for human admins.
+
+### 7. Analytics
+- **`AnalyticsModule`**: Aggregates platform usage, reel views, post interactions, and demographic data for the Admin dashboard.
+
+---
+
+## 🚀 Quick Start & Deployment
+
+### Prerequisites
+- Node.js 20+
+- pnpm
+- Docker & Docker Compose (for local development)
+
+### Local Development with Docker (Recommended)
+```bash
+git clone <repository-url>
+cd Ding-Platform-Backend
+
+cp .env.example .env
+
+# Start Postgres, Neo4j, Redis, and BullMQ Dashboard
+./_run_Scripts/docker-dev.sh start
+
+# Start the NestJS Backend
+pnpm install
+pnpm prisma generate
+pnpm prisma migrate dev
+pnpm run start:dev
+```
+
+### Accessing Services Locally
+- **Backend API**: `http://localhost:3000`
+- **Swagger Docs**: `http://localhost:3000/api/docs`
+- **Prisma Studio**: `npx prisma studio`
+- **Neo4j Browser**: `http://localhost:7474` (neo4j / password)
+
+---
+
+## 📚 Documentation & Postman
+
+- **Postman Collection**: The repository includes an auto-generated Postman collection `_test/postman/Ding-Platform-Full-API.postman_collection.json`. It is synchronized directly from the controllers using `python3 _test/postman/update_postman.py`. It contains all 250+ routes, perfectly formatted.
+- **Deployment**: See `_run_Scripts/RENDER_DEPLOYMENT.md` for our Render.com Blueprint setup.
+
+## 🔒 Security Posture
+- **Auth**: JWT-based authentication + Bcrypt hashing.
+- **Throttling**: Redis-backed rate limiting (100 req/min).
+- **Guards**: Class-validator DTOs strictly sanitize all inputs to prevent NoSQL/SQL injection and XSS.
+- **Helmet**: Secures HTTP headers.
+
+---
+*Built by the Ding Platform Engineering Team.*

@@ -7,6 +7,7 @@ import { ERROR_MESSAGES } from 'src/common/constants/error-messages.constant';
 import neo4j from 'neo4j-driver';
 import { Profile, User } from '@prisma/client';
 import { NotificationService } from '../notification/notification.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class SocialService {
@@ -14,6 +15,7 @@ export class SocialService {
     private readonly neo4jservice: Neo4jService,
     private readonly prisma: DatabaseService,
     private readonly notificationService: NotificationService,
+    private readonly activityService: ActivityService,
   ) {}
 
   isGraphConnected(): boolean {
@@ -192,6 +194,7 @@ export class SocialService {
           fromUserId,
           toUserId,
         );
+        this.activityService.logActivity(fromUserId, 'SENT_FRIEND_REQUEST', toUserId, 'USER');
       }
     } catch (error) {
       if (error instanceof GenericHttpException) {
@@ -275,6 +278,7 @@ export class SocialService {
         toUserId,
         fromUserId,
       );
+      this.activityService.logActivity(fromUserId, 'ACCEPTED_FRIEND_REQUEST', toUserId, 'USER');
       await session.close();
     }
   }
@@ -699,6 +703,7 @@ export class SocialService {
       );
     } finally {
       await this.notificationService.notifyNewFollower(followerId, followeeId);
+      this.activityService.logActivity(followerId, 'FOLLOWED_USER', followeeId, 'USER');
       await session.close();
     }
   }

@@ -14,6 +14,7 @@ import { UpdateProfileRequest } from './dtos/request/update-profile.request';
 import { UpdatePrivacyRequest } from './dtos/request/update-privacy.request';
 import { SearchProfileRequest } from './dtos/request/search-profile.request';
 import { SocialService } from '../social/social.service';
+import { NotificationService } from '../notification/notification.service';
 
 type ProfileWithUserAndPrivacy = Prisma.ProfileGetPayload<{
   include: {
@@ -41,6 +42,7 @@ export class ProfileService {
     private readonly prisma: DatabaseService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly socialService: SocialService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   /**
@@ -123,6 +125,11 @@ export class ProfileService {
             },
           },
         });
+        
+        // Trigger notification
+        await this.notificationService.notifyAccountUpdate(userId, 'profile information');
+        
+        return updated;
       }
 
       // Create new profile with default privacy settings

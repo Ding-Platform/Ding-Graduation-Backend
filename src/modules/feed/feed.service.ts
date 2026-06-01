@@ -7,6 +7,7 @@ import {
   PaginationDto,
   PaginatedResponse,
 } from '../../common/dtos/pagination.dto';
+import { InterestService } from '../interest/interest.service';
 
 @Injectable()
 export class FeedService {
@@ -14,6 +15,7 @@ export class FeedService {
     private readonly prisma: DatabaseService,
     private readonly neo4jService: Neo4jService,
     private readonly redisService: RedisService,
+    private readonly interestService: InterestService,
   ) {}
 
   async getFeed(
@@ -110,17 +112,32 @@ export class FeedService {
 
     const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
 
-    const items = posts.map((p) => ({
-      id: p.id,
-      author: p.author?.name ?? '',
-      time: p.createdAt.toISOString(),
-      content: p.content,
-      likes: p._count?.Likes ?? 0,
-      comments: p._count?.Comments ?? 0,
-      image: p.mediaUrls?.[0] ?? null,
-      liked: p.Likes && p.Likes.length > 0,
-      score: (scoreMap.get(p.id) ?? 0) + this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)),
-    }));
+    const userInterests = await this.interestService.getTopInterests(userId, 20);
+    const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+
+    const items = posts.map((p) => {
+      let affinityBoost = 0;
+      const tags = [...(p.hashtags || []), ...(p.categories || [])];
+      for (const tag of tags) {
+        affinityBoost += interestMap.get(tag.toLowerCase()) || 0;
+      }
+      const finalAffinityBoost = Math.min(affinityBoost * 0.5, 10.0);
+
+      return {
+        id: p.id,
+        author: p.author?.name ?? '',
+        time: p.createdAt.toISOString(),
+        content: p.content,
+        likes: p._count?.Likes ?? 0,
+        comments: p._count?.Comments ?? 0,
+        image: p.mediaUrls?.[0] ?? null,
+        liked: p.Likes && p.Likes.length > 0,
+        score:
+          (scoreMap.get(p.id) ?? 0) +
+          this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)) +
+          finalAffinityBoost,
+      };
+    });
 
     items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
@@ -261,13 +278,26 @@ export class FeedService {
         sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
       );
 
+      const userInterests = await this.interestService.getTopInterests(userId, 20);
+      const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+
       const ranked = posts
-        .map((p) => ({
-          post: p,
-          score:
-            p.createdAt.getTime() / 1_000_000_000_000 +
-            this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)),
-        }))
+        .map((p) => {
+          let affinityBoost = 0;
+          const tags = [...(p.hashtags || []), ...(p.categories || [])];
+          for (const tag of tags) {
+            affinityBoost += interestMap.get(tag.toLowerCase()) || 0;
+          }
+          const finalAffinityBoost = Math.min(affinityBoost * 0.5, 10.0);
+
+          return {
+            post: p,
+            score:
+              p.createdAt.getTime() / 1_000_000_000_000 +
+              this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)) +
+              finalAffinityBoost,
+          };
+        })
         .sort((a, b) => b.score - a.score);
 
       const data: FeedItemDto[] = ranked.map(({ post: p }) => ({

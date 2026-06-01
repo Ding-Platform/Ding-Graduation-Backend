@@ -10,6 +10,7 @@ import { GenericHttpException } from '../../common/application/exceptions/generi
 import { ERROR_MESSAGES, TOKEN_CONSTANTS } from '../../common/constants';
 import { SessionService } from '../session/session.service';
 import { EmailService } from '../../common/services/email.service';
+import { NotificationService } from '../notification/notification.service';
 import { ForgotPasswordRequest } from './dtos/request/forgot-password.request';
 import { VerifyForgotPasswordRequest } from './dtos/request/verify-forgot-password.request';
 import { ResetPasswordRequest } from './dtos/request/reset-password.request';
@@ -25,6 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly emailService: EmailService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async signup(request: SignupRequest) {
@@ -182,6 +184,11 @@ export class AuthService {
       session.id,
       encryptedRefreshToken,
     );
+
+    // Trigger NEW_LOGIN notification for Facebook parity
+    if (ipAddress && userAgent) {
+      await this.notificationService.notifyNewLogin(user.id, userAgent.substring(0, 50), ipAddress);
+    }
 
     return this.appendAuthTokenToResponse(user, session);
   }

@@ -43,6 +43,8 @@ import { StreamingModule } from './modules/streaming/streaming.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { EventsModule } from './modules/events/events.module';
 import { SentimentModule } from './modules/sentiment/sentiment.module';
+import { InterestModule } from './modules/interest/interest.module';
+import { ActivityModule } from './modules/activity/activity.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -121,6 +123,8 @@ try {
     AnalyticsModule,
     EventsModule,
     SentimentModule,
+    InterestModule,
+    ActivityModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

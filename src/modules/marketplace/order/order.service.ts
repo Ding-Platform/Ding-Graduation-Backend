@@ -9,6 +9,7 @@ import { Queue } from 'bull';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { DatabaseService } from 'src/configs/database/database.service';
 import { CloudinaryService } from 'src/common/services/cloudinary/cloudinary.service';
+import { NotificationService } from 'src/modules/notification/notification.service';
 import {
   CancelOrderDto,
   ConfirmShipmentDto,
@@ -25,6 +26,7 @@ export class OrderService {
     private readonly db: DatabaseService,
     private readonly cloudinary: CloudinaryService,
     @InjectQueue('order-release') private readonly orderReleaseQueue: Queue,
+    private readonly notificationService: NotificationService,
   ) {}
 
   private buildOrderNumber(): string {
@@ -68,7 +70,7 @@ export class OrderService {
       currency: string;
     },
   ) {
-    return tx.order.create({
+    const order = await tx.order.create({
       data: {
         orderNumber: this.buildOrderNumber(),
         buyerId,
@@ -83,6 +85,13 @@ export class OrderService {
         status: 'PLACED',
       },
     });
+
+    // Trigger marketplace order notification
+    // Note: because this runs inside a tx, we should ideally trigger it after tx commits
+    // but Prisma doesn't have an afterCommit hook easily, so we trigger it here asynchronously.
+    this.notificationService.notifyMarketplaceOrder(buyerId, product.sellerId, order.id, product.id).catch(err => console.error(err));
+
+    return order;
   }
 
   async listBuyerOrders(buyerId: string, query: GetOrdersQueryDto) {

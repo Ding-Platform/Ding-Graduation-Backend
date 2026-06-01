@@ -12,6 +12,10 @@ import {
 import { UpdatePostDto } from './dtos/update_post.dto';
 import { NotificationService } from '../notification/notification.service';
 import { CreateCommentDto } from './dtos/create_comment.dto';
+import { extractHashtags } from '../../common/utils/hashtag.util';
+import { RedisService } from '../../configs/redis/redis.service';
+import { InterestService } from '../interest/interest.service';
+import { ActivityService } from '../activity/activity.service';
 import {
   Post,
   PostPrivacy,
@@ -40,6 +44,9 @@ export class PostService {
     private readonly helperService: HelperService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly notificationService: NotificationService,
+    private readonly redisService: RedisService,
+    private readonly interestService: InterestService,
+    private readonly activityService: ActivityService,
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
@@ -106,6 +113,63 @@ export class PostService {
     return this.mapPostToSimple(post, userId);
   }
 
+  async getPostsByHashtag(
+    hashtag: string,
+    userId?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<SimplePostResponse[]> {
+    const skip = (page - 1) * limit;
+    const normalizedTag = hashtag.toLowerCase().replace(/^#/, '');
+
+    const posts = await this.prisma.post.findMany({
+      where: {
+        isDeleted: false,
+        hashtags: { has: normalizedTag },
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        PostMedia: true,
+        _count: {
+          select: {
+            Likes: true,
+            Comments: true,
+          },
+        },
+        Likes: userId
+          ? {
+              where: {
+                userId: userId,
+              },
+              select: {
+                userId: true,
+              },
+            }
+          : false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    });
+
+    if (!posts || posts.length === 0) {
+      throw GenericHttpException.createLocalized(
+        ERROR_MESSAGES.POSTS_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return posts.map((post) => this.mapPostToSimple(post, userId));
+  }
+
   async createPost(
     data: CreatePostDto,
     files?: Record<string, Express.Multer.File[]>,
@@ -120,12 +184,21 @@ export class PostService {
         this.validateMediaCount(files);
       }
 
+      const hashtags = extractHashtags(data.content);
+
+      if (hashtags.length > 0) {
+        Promise.all(
+          hashtags.map((tag) => this.redisService.zIncrBy('trending_hashtags', 1, tag)),
+        ).catch((err) => console.error('Failed to update trending hashtags', err));
+      }
+
       // Create post first to get the ID
       const newPost = await this.prisma.post.create({
         data: {
           content: data.content,
           authorId: data.authorId,
           privacy: data.privacy,
+          hashtags,
         },
       });
 
@@ -251,6 +324,7 @@ export class PostService {
         },
       );
 
+      this.activityService.logActivity(userId, 'CREATED_POST', newPost.id, 'POST');
       return this.getPostById(newPost.id, userId);
     } catch (error) {
       console.error('Post creation error:', error);
@@ -279,7 +353,10 @@ export class PostService {
       }
 
       const updateData: any = {};
-      if (data.content !== undefined) updateData.content = data.content;
+      if (data.content !== undefined) {
+        updateData.content = data.content;
+        updateData.hashtags = extractHashtags(data.content);
+      }
       if (data.privacy !== undefined) updateData.privacy = data.privacy;
 
       const updatedPost = await this.prisma.post.update({
@@ -558,6 +635,9 @@ export class PostService {
         },
       });
 
+      this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 2.0);
+      this.activityService.logActivity(userId, 'LIKED_POST', postId, 'POST');
+
       // Notify post author
       await this.notificationService.notifyPostLike(
         userId,
@@ -599,6 +679,16 @@ export class PostService {
       await this.prisma.savedPost.create({
         data: { userId, postId },
       });
+
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { hashtags: true, categories: true },
+      });
+      if (post) {
+        this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 2.0);
+      }
+      this.activityService.logActivity(userId, 'SAVED_POST', postId, 'POST');
+
       return { saved: true };
     }
   }
@@ -666,6 +756,14 @@ export class PostService {
         authorId: userId,
         parentId: dto.parentId,
       },
+    });
+
+    this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 1.5);
+    this.activityService.logActivity(userId, 'COMMENTED_ON_POST', postId, 'POST');
+    
+    const commentWithAuthor = await this.prisma.comment.update({
+      where: { id: comment.id },
+      data: {},
       include: {
         author: {
           select: {
