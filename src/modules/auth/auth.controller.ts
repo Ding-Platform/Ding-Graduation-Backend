@@ -76,20 +76,25 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  @Serialize(AuthResponse)
   async googleAuthRedirect(
     @currentUser() user: any,
     @clientIp() ipAddress: string,
     @userAgent() userAgent: string,
     @Req() request: Request,
-    @Res({ passthrough: true }) response: Response,
+    @Res() response: Response,
   ) {
-    return await this.authService.googleLogin(
+    const loginResult = await this.authService.googleLogin(
       user,
       ipAddress,
       userAgent,
       request,
-      response,
+      response, // This still calls cookie() since it's an express Response
+    );
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Redirect to frontend with access token in query string
+    return response.redirect(
+      `${frontendUrl}/auth/success?token=${loginResult.accessToken}`,
     );
   }
 
