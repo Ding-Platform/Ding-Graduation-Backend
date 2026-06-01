@@ -15,8 +15,18 @@ export class SearchService {
     private readonly redisService: RedisService,
   ) {}
 
-  async search(query: SearchQueryDto, userId?: string): Promise<SearchResultDto> {
-    const { q, type = SearchType.ALL, page = 1, limit = 10, sortBy, excludeBlocked } = query;
+  async search(
+    query: SearchQueryDto,
+    userId?: string,
+  ): Promise<SearchResultDto> {
+    const {
+      q,
+      type = SearchType.ALL,
+      page = 1,
+      limit = 10,
+      sortBy,
+      excludeBlocked,
+    } = query;
 
     if (!q || q.trim().length === 0) {
       return {
@@ -29,7 +39,13 @@ export class SearchService {
     }
 
     if (userId) {
-      this.activityService.logActivity(userId, 'SEARCHED', undefined, 'SEARCH_QUERY', { query: q });
+      this.activityService.logActivity(
+        userId,
+        'SEARCHED',
+        undefined,
+        'SEARCH_QUERY',
+        { query: q },
+      );
     }
 
     const offset = (page - 1) * limit;
@@ -43,7 +59,13 @@ export class SearchService {
 
     // Search users
     if (type === SearchType.ALL || type === SearchType.USERS) {
-      const userResults = await this.searchUsers(q, offset, limit, userId, excludeBlocked);
+      const userResults = await this.searchUsers(
+        q,
+        offset,
+        limit,
+        userId,
+        excludeBlocked,
+      );
       results.users = userResults.hits;
       results.total += userResults.estimatedTotalHits || 0;
     }
@@ -51,9 +73,16 @@ export class SearchService {
     // Search posts
     if (type === SearchType.ALL || type === SearchType.POSTS) {
       const postLimit = type === SearchType.ALL ? Math.ceil(limit / 2) : limit;
-      const postOffset = type === SearchType.ALL ? Math.ceil(offset / 2) : offset;
-      
-      const postResults = await this.searchPosts(q, postOffset, postLimit, userId, sortBy);
+      const postOffset =
+        type === SearchType.ALL ? Math.ceil(offset / 2) : offset;
+
+      const postResults = await this.searchPosts(
+        q,
+        postOffset,
+        postLimit,
+        userId,
+        sortBy,
+      );
       results.posts = postResults.hits;
       results.total += postResults.estimatedTotalHits || 0;
     }
@@ -80,7 +109,7 @@ export class SearchService {
     if (excludeBlocked && userId) {
       const blockedUsers = await this.getBlockedUsers(userId);
       if (blockedUsers.length > 0) {
-        searchParams.filter = `id NOT IN [${blockedUsers.map(id => `'${id}'`).join(',')}]`;
+        searchParams.filter = `id NOT IN [${blockedUsers.map((id) => `'${id}'`).join(',')}]`;
       }
     }
 
@@ -109,12 +138,12 @@ export class SearchService {
     if (userId) {
       const blockedUsers = await this.getBlockedUsers(userId);
       if (blockedUsers.length > 0) {
-        searchParams.filter = `authorId NOT IN [${blockedUsers.map(id => `'${id}'`).join(',')}] AND privacy = 'PUBLIC'`;
+        searchParams.filter = `authorId NOT IN [${blockedUsers.map((id) => `'${id}'`).join(',')}] AND privacy = 'PUBLIC'`;
       } else {
-        searchParams.filter = 'privacy = \'PUBLIC\'';
+        searchParams.filter = "privacy = 'PUBLIC'";
       }
     } else {
-      searchParams.filter = 'privacy = \'PUBLIC\'';
+      searchParams.filter = "privacy = 'PUBLIC'";
     }
 
     return await this.meilisearch.index('posts').search(query, searchParams);
@@ -130,7 +159,7 @@ export class SearchService {
       },
     });
 
-    return blocks.map(block => block.blockedId);
+    return blocks.map((block) => block.blockedId);
   }
 
   async indexUser(userData: any) {
@@ -232,7 +261,12 @@ export class SearchService {
   }
 
   async trendingHashtags() {
-    const rawData = await this.redisService.zRangeWithScores('trending_hashtags', 0, 9, { REV: true });
+    const rawData = await this.redisService.zRangeWithScores(
+      'trending_hashtags',
+      0,
+      9,
+      { REV: true },
+    );
 
     if (!rawData || rawData.length === 0) {
       return [];

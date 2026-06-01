@@ -84,7 +84,10 @@ export class AuthService {
         data: { id: user.id },
       });
     } catch (queueError) {
-      console.error('Failed to enqueue user creation for search indexing', queueError);
+      console.error(
+        'Failed to enqueue user creation for search indexing',
+        queueError,
+      );
     }
 
     return user;
@@ -201,14 +204,18 @@ export class AuthService {
 
     // Trigger NEW_LOGIN notification for Facebook parity
     if (ipAddress && userAgent) {
-      await this.notificationService.notifyNewLogin(user.id, userAgent.substring(0, 50), ipAddress);
+      await this.notificationService.notifyNewLogin(
+        user.id,
+        userAgent.substring(0, 50),
+        ipAddress,
+      );
     }
 
     return this.appendAuthTokenToResponse(user, session);
   }
 
   async googleLogin(
-    googleUser: any,
+    googleUser: { email: string; firstName?: string; lastName?: string; picture?: string; },
     ipAddress: string,
     userAgent: string,
     request: Request,
@@ -242,7 +249,10 @@ export class AuthService {
             data: { id: user.id },
           });
         } catch (queueError) {
-          console.error('Failed to enqueue user creation for search indexing', queueError);
+          console.error(
+            'Failed to enqueue user creation for search indexing',
+            queueError,
+          );
         }
       }
 
@@ -294,7 +304,7 @@ export class AuthService {
     return result;
   }
 
-  async appendAuthTokenToResponse(user: User, session: Session) {
+  appendAuthTokenToResponse(user: User, session: Session) {
     const accessToken = this.generateAccessToken({
       userId: user.id,
       sessionId: session.id,

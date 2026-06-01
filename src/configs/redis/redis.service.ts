@@ -293,7 +293,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async zIncrBy(key: string, increment: number, member: string): Promise<number | null> {
+  async zIncrBy(
+    key: string,
+    increment: number,
+    member: string,
+  ): Promise<number | null> {
     if (!this.isConnected) return null;
 
     try {
@@ -304,7 +308,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async zRangeWithScores(key: string, start: number, stop: number, options?: any): Promise<{ value: string; score: number }[]> {
+  async zRangeWithScores(
+    key: string,
+    start: number,
+    stop: number,
+    options?: any,
+  ): Promise<{ value: string; score: number }[]> {
     if (!this.isConnected) return [];
 
     try {
