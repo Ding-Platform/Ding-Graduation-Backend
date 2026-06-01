@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
 import { ReelsService } from './reels.service';
 import { DatabaseService } from '../../configs/database/database.service';
@@ -24,7 +28,9 @@ describe('ReelsService', () => {
       },
       reelView: {
         create: jest.fn().mockResolvedValue({}),
-        aggregate: jest.fn().mockResolvedValue({ _avg: { watchPct: 75 }, _count: 10 }),
+        aggregate: jest
+          .fn()
+          .mockResolvedValue({ _avg: { watchPct: 75 }, _count: 10 }),
       },
       reelLike: {
         findUnique: jest.fn(),
@@ -90,7 +96,10 @@ describe('ReelsService', () => {
         { provide: DatabaseService, useValue: prismaMock },
         { provide: RedisService, useValue: redisMock },
         { provide: NotificationService, useValue: notificationMock },
-        { provide: getQueueToken('sentiment-analysis'), useValue: sentimentQueueMock },
+        {
+          provide: getQueueToken('sentiment-analysis'),
+          useValue: sentimentQueueMock,
+        },
       ],
     }).compile();
 
@@ -169,7 +178,11 @@ describe('ReelsService', () => {
 
   it('toggles like on and sends notification', async () => {
     prismaMock.reel.findUnique
-      .mockResolvedValueOnce({ id: 'reel-1', deletedAt: null, userId: 'owner-1' })
+      .mockResolvedValueOnce({
+        id: 'reel-1',
+        deletedAt: null,
+        userId: 'owner-1',
+      })
       .mockResolvedValueOnce({ likesCount: BigInt(5), userId: 'owner-1' });
     prismaMock.reelLike.findUnique.mockResolvedValue(null);
 
@@ -218,7 +231,10 @@ describe('ReelsService', () => {
   // ─── Bookmark Toggle ─────────────────────────
 
   it('bookmarks a reel', async () => {
-    prismaMock.reel.findUnique.mockResolvedValue({ id: 'reel-1', deletedAt: null });
+    prismaMock.reel.findUnique.mockResolvedValue({
+      id: 'reel-1',
+      deletedAt: null,
+    });
     prismaMock.reelBookmark.findUnique.mockResolvedValue(null);
 
     const result = await service.toggleBookmark('user-1', 'reel-1');
@@ -227,7 +243,10 @@ describe('ReelsService', () => {
   });
 
   it('unbookmarks a reel', async () => {
-    prismaMock.reel.findUnique.mockResolvedValue({ id: 'reel-1', deletedAt: null });
+    prismaMock.reel.findUnique.mockResolvedValue({
+      id: 'reel-1',
+      deletedAt: null,
+    });
     prismaMock.reelBookmark.findUnique.mockResolvedValue({
       reelId: 'reel-1',
       userId: 'user-1',
@@ -247,7 +266,11 @@ describe('ReelsService', () => {
     });
     prismaMock.reelCommentLike.findUnique.mockResolvedValue(null);
 
-    const result = await service.toggleCommentLike('user-1', 'reel-1', 'comment-1');
+    const result = await service.toggleCommentLike(
+      'user-1',
+      'reel-1',
+      'comment-1',
+    );
     expect(result.liked).toBe(true);
   });
 
@@ -265,7 +288,12 @@ describe('ReelsService', () => {
       content: 'edited',
     });
 
-    const result = await service.editComment('user-1', 'reel-1', 'comment-1', 'edited');
+    const result = await service.editComment(
+      'user-1',
+      'reel-1',
+      'comment-1',
+      'edited',
+    );
     expect(result.content).toBe('edited');
   });
 

@@ -233,8 +233,13 @@ export class AdminMarketplaceService {
       where: { userId: sellerUserId },
     });
 
-    const [currentTxDeals, historyTxDeals, currentOrders, historyOrders, productCount] =
-      await Promise.all([
+    const [
+      currentTxDeals,
+      historyTxDeals,
+      currentOrders,
+      historyOrders,
+      productCount,
+    ] = await Promise.all([
       this.db.transaction.findMany({
         where: {
           sellerId: sellerUserId,
@@ -264,7 +269,9 @@ export class AdminMarketplaceService {
       this.db.order.findMany({
         where: {
           sellerId: sellerUserId,
-          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+          status: {
+            in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'],
+          },
         },
         include: {
           product: {
@@ -328,12 +335,24 @@ export class AdminMarketplaceService {
           historyOrders.length,
       },
       currentDeals: [
-        ...currentTxDeals.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
-        ...currentOrders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+        ...currentTxDeals.map((item) => ({
+          ...item,
+          flowType: 'TRANSACTION' as const,
+        })),
+        ...currentOrders.map((item) => ({
+          ...item,
+          flowType: 'ORDER' as const,
+        })),
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
       dealHistory: [
-        ...historyTxDeals.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
-        ...historyOrders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
+        ...historyTxDeals.map((item) => ({
+          ...item,
+          flowType: 'TRANSACTION' as const,
+        })),
+        ...historyOrders.map((item) => ({
+          ...item,
+          flowType: 'ORDER' as const,
+        })),
       ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
     };
   }

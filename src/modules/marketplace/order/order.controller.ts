@@ -65,7 +65,9 @@ export class OrderController {
 
   @Post(':id/confirm-delivery')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('deliveryProofImage', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('deliveryProofImage', { storage: memoryStorage() }),
+  )
   confirmDelivery(
     @currentUser() user: currentUserType,
     @Param('id') id: string,

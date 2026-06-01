@@ -160,10 +160,7 @@ export class ReelsController {
   // ─────────────────────────────────────────────
 
   @Post(':id/view')
-  async recordView(
-    @Param('id') id: string,
-    @Body() body: RecordViewDto,
-  ) {
+  async recordView(@Param('id') id: string, @Body() body: RecordViewDto) {
     return this.reelsService.recordView(id, body);
   }
 
@@ -273,10 +270,7 @@ export class ReelsController {
 
   @Get(':id/analytics')
   @UseGuards(JwtAuthGuard)
-  async getAnalytics(
-    @User() user: currentUserType,
-    @Param('id') id: string,
-  ) {
+  async getAnalytics(@User() user: currentUserType, @Param('id') id: string) {
     return this.reelsService.getReelAnalytics(user.id, id);
   }
 }

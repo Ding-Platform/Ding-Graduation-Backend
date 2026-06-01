@@ -177,8 +177,13 @@ export class CloudinaryService {
       });
       return result.secure_url;
     } catch (error) {
-      console.error(`Cloudinary order proof upload error (${proofType}):`, error);
-      throw new BadRequestException(`Failed to upload ${proofType} proof image.`);
+      console.error(
+        `Cloudinary order proof upload error (${proofType}):`,
+        error,
+      );
+      throw new BadRequestException(
+        `Failed to upload ${proofType} proof image.`,
+      );
     }
   }
 

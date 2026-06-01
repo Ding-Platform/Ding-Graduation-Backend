@@ -23,7 +23,7 @@ export const TOKEN_CONSTANTS = {
     // No MAX_AGE - persistent cookie (no expiration)
     PATH: '/',
     HTTP_ONLY: true,
-SECURE: false,
+    SECURE: false,
     // Use 'lax' for same-origin cookies (frontend and backend on same domain)
     // Use 'none' only when frontend and backend are on different domains with HTTPS
     SAME_SITE: 'lax' as const,

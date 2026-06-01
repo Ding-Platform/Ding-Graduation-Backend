@@ -39,7 +39,9 @@ export class OrderService {
   }
 
   private async removeReleaseJob(orderId: string) {
-    const job = await this.orderReleaseQueue.getJob(this.buildReleaseJobId(orderId));
+    const job = await this.orderReleaseQueue.getJob(
+      this.buildReleaseJobId(orderId),
+    );
     if (job) {
       await job.remove();
     }
@@ -89,7 +91,9 @@ export class OrderService {
     // Trigger marketplace order notification
     // Note: because this runs inside a tx, we should ideally trigger it after tx commits
     // but Prisma doesn't have an afterCommit hook easily, so we trigger it here asynchronously.
-    this.notificationService.notifyMarketplaceOrder(buyerId, product.sellerId, order.id, product.id).catch(err => console.error(err));
+    this.notificationService
+      .notifyMarketplaceOrder(buyerId, product.sellerId, order.id, product.id)
+      .catch((err) => console.error(err));
 
     return order;
   }
@@ -200,7 +204,9 @@ export class OrderService {
         where,
         include: {
           product: true,
-          seller: { select: { id: true, name: true, email: true, image: true } },
+          seller: {
+            select: { id: true, name: true, email: true, image: true },
+          },
           buyer: { select: { id: true, name: true, email: true, image: true } },
           transaction: true,
         },
@@ -298,7 +304,9 @@ export class OrderService {
       throw new ForbiddenException('You can only confirm your own orders');
     }
     if (order.status !== 'SHIPPED') {
-      throw new BadRequestException('Only shipped orders can be confirmed as delivered');
+      throw new BadRequestException(
+        'Only shipped orders can be confirmed as delivered',
+      );
     }
 
     const proofUrl = await this.cloudinary.uploadOrderProof(
@@ -401,7 +409,9 @@ export class OrderService {
       'RELEASE_PENDING',
     ];
     if (!allowed.includes(order.status)) {
-      throw new BadRequestException('This order cannot be disputed in its current state');
+      throw new BadRequestException(
+        'This order cannot be disputed in its current state',
+      );
     }
 
     await this.removeReleaseJob(orderId);
@@ -432,7 +442,11 @@ export class OrderService {
     return updated;
   }
 
-  async resolveDispute(adminId: string, orderId: string, dto: ResolveDisputeDto) {
+  async resolveDispute(
+    adminId: string,
+    orderId: string,
+    dto: ResolveDisputeDto,
+  ) {
     const order = await this.db.order.findUnique({
       where: { id: orderId },
       include: { transaction: true },
@@ -521,7 +535,9 @@ export class OrderService {
     });
     if (!order) throw new NotFoundException('Order not found');
     if (['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.status)) {
-      throw new BadRequestException('Order is already final and cannot be force released');
+      throw new BadRequestException(
+        'Order is already final and cannot be force released',
+      );
     }
 
     await this.removeReleaseJob(orderId);
@@ -534,9 +550,14 @@ export class OrderService {
           status: 'COMPLETED',
           escrowStatus: 'RELEASED',
           releasedAt: now,
-          disputeResolvedAt: order.status === 'DISPUTED' ? now : order.disputeResolvedAt,
-          disputeResolution: order.status === 'DISPUTED' ? (note ?? 'Force release by admin') : order.disputeResolution,
-          disputeResolvedById: order.status === 'DISPUTED' ? adminId : order.disputeResolvedById,
+          disputeResolvedAt:
+            order.status === 'DISPUTED' ? now : order.disputeResolvedAt,
+          disputeResolution:
+            order.status === 'DISPUTED'
+              ? (note ?? 'Force release by admin')
+              : order.disputeResolution,
+          disputeResolvedById:
+            order.status === 'DISPUTED' ? adminId : order.disputeResolvedById,
         },
       });
 
@@ -568,7 +589,9 @@ export class OrderService {
     });
     if (!order) throw new NotFoundException('Order not found');
     if (['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.status)) {
-      throw new BadRequestException('Order is already final and cannot be force refunded');
+      throw new BadRequestException(
+        'Order is already final and cannot be force refunded',
+      );
     }
 
     await this.removeReleaseJob(orderId);
@@ -580,9 +603,14 @@ export class OrderService {
         data: {
           status: 'REFUNDED',
           escrowStatus: 'REFUNDED',
-          disputeResolvedAt: order.status === 'DISPUTED' ? now : order.disputeResolvedAt,
-          disputeResolution: order.status === 'DISPUTED' ? (note ?? 'Force refund by admin') : order.disputeResolution,
-          disputeResolvedById: order.status === 'DISPUTED' ? adminId : order.disputeResolvedById,
+          disputeResolvedAt:
+            order.status === 'DISPUTED' ? now : order.disputeResolvedAt,
+          disputeResolution:
+            order.status === 'DISPUTED'
+              ? (note ?? 'Force refund by admin')
+              : order.disputeResolution,
+          disputeResolvedById:
+            order.status === 'DISPUTED' ? adminId : order.disputeResolvedById,
         },
       });
 

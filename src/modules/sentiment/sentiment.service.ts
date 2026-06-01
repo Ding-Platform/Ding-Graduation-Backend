@@ -6,10 +6,7 @@ import {
 } from '@prisma/client';
 import { DatabaseService } from 'src/configs/database/database.service';
 import { NoroService } from '../noro/noro.service';
-import {
-  SENTIMENT_THRESHOLDS,
-  SENTIMENT_WEIGHTS,
-} from './sentiment.constants';
+import { SENTIMENT_THRESHOLDS, SENTIMENT_WEIGHTS } from './sentiment.constants';
 import {
   computeAggregateScore,
   tokenizeSentences,
@@ -26,14 +23,19 @@ export class SentimentService {
     private readonly noroService: NoroService,
   ) {}
 
-  private getAuthorEventType(contentType: SentimentContentType): SentimentEventType {
+  private getAuthorEventType(
+    contentType: SentimentContentType,
+  ): SentimentEventType {
     if (contentType === 'POST') return 'AUTHORED_POST';
     if (contentType === 'COMMENT') return 'AUTHORED_COMMENT';
     return 'AUTHORED_REEL';
   }
 
   private normalizeScore(positive: number) {
-    const safePositive = Math.max(0, Math.min(100, Number(positive.toFixed(2))));
+    const safePositive = Math.max(
+      0,
+      Math.min(100, Number(positive.toFixed(2))),
+    );
     return {
       positive: safePositive,
       negative: Number((100 - safePositive).toFixed(2)),
@@ -59,12 +61,20 @@ export class SentimentService {
     if (categories.length > 0) {
       try {
         if (contentType === 'POST') {
-          await this.db.post.update({ where: { id: contentId }, data: { categories } });
+          await this.db.post.update({
+            where: { id: contentId },
+            data: { categories },
+          });
         } else if (contentType === 'REEL') {
-          await this.db.reel.update({ where: { id: contentId }, data: { categories } });
+          await this.db.reel.update({
+            where: { id: contentId },
+            data: { categories },
+          });
         }
       } catch (err) {
-        this.logger.warn(`Failed to update categories for ${contentType} ${contentId}: ${err.message}`);
+        this.logger.warn(
+          `Failed to update categories for ${contentType} ${contentId}: ${err.message}`,
+        );
       }
     }
 
@@ -265,7 +275,9 @@ export class SentimentService {
     });
 
     if (!profile) return { skipped: true, reason: 'No sentiment profile' };
-    if (profile.negativePoints < SENTIMENT_THRESHOLDS.interventionNegativeScore) {
+    if (
+      profile.negativePoints < SENTIMENT_THRESHOLDS.interventionNegativeScore
+    ) {
       return { skipped: true, reason: 'Below threshold' };
     }
 

@@ -107,7 +107,9 @@ export class SellerService {
       this.db.order.findMany({
         where: {
           sellerId: userId,
-          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+          status: {
+            in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'],
+          },
         },
         include: {
           product: {
@@ -123,12 +125,17 @@ export class SellerService {
       this.db.order.count({
         where: {
           sellerId: userId,
-          status: { in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'] },
+          status: {
+            in: ['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'],
+          },
         },
       }),
     ]);
     const data = [
-      ...transactions.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+      ...transactions.map((item) => ({
+        ...item,
+        flowType: 'TRANSACTION' as const,
+      })),
       ...orders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
     ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return { data, total: txTotal + orderTotal, page, limit };
@@ -179,7 +186,10 @@ export class SellerService {
       }),
     ]);
     const data = [
-      ...transactions.map((item) => ({ ...item, flowType: 'TRANSACTION' as const })),
+      ...transactions.map((item) => ({
+        ...item,
+        flowType: 'TRANSACTION' as const,
+      })),
       ...orders.map((item) => ({ ...item, flowType: 'ORDER' as const })),
     ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return { data, total: txTotal + orderTotal, page, limit };

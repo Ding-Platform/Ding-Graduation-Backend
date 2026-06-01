@@ -125,10 +125,13 @@ export class ProfileService {
             },
           },
         });
-        
+
         // Trigger notification
-        await this.notificationService.notifyAccountUpdate(userId, 'profile information');
-        
+        await this.notificationService.notifyAccountUpdate(
+          userId,
+          'profile information',
+        );
+
         return updated;
       }
 

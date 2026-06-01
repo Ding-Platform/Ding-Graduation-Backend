@@ -66,8 +66,8 @@ export class FeedService {
     });
     const feedBoostActive = Boolean(
       moodProfile?.feedBoostPositive &&
-        moodProfile.feedBoostUntil &&
-        moodProfile.feedBoostUntil.getTime() > Date.now(),
+      moodProfile.feedBoostUntil &&
+      moodProfile.feedBoostUntil.getTime() > Date.now(),
     );
 
     const posts = await this.prisma.post.findMany({
@@ -107,13 +107,21 @@ export class FeedService {
     });
 
     const sentimentMap = new Map(
-      sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
+      sentiments.map((s) => [
+        s.contentId,
+        { pos: s.positiveScore, neg: s.negativeScore },
+      ]),
     );
 
     const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
 
-    const userInterests = await this.interestService.getTopInterests(userId, 20);
-    const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+    const userInterests = await this.interestService.getTopInterests(
+      userId,
+      20,
+    );
+    const interestMap = new Map(
+      userInterests.map((i) => [i.topic.toLowerCase(), i.score]),
+    );
 
     const items = posts.map((p) => {
       let affinityBoost = 0;
@@ -258,8 +266,8 @@ export class FeedService {
       });
       const feedBoostActive = Boolean(
         moodProfile?.feedBoostPositive &&
-          moodProfile.feedBoostUntil &&
-          moodProfile.feedBoostUntil.getTime() > Date.now(),
+        moodProfile.feedBoostUntil &&
+        moodProfile.feedBoostUntil.getTime() > Date.now(),
       );
 
       const postIds = posts.map((p) => p.id);
@@ -275,11 +283,19 @@ export class FeedService {
         },
       });
       const sentimentMap = new Map(
-        sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
+        sentiments.map((s) => [
+          s.contentId,
+          { pos: s.positiveScore, neg: s.negativeScore },
+        ]),
       );
 
-      const userInterests = await this.interestService.getTopInterests(userId, 20);
-      const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+      const userInterests = await this.interestService.getTopInterests(
+        userId,
+        20,
+      );
+      const interestMap = new Map(
+        userInterests.map((i) => [i.topic.toLowerCase(), i.score]),
+      );
 
       const ranked = posts
         .map((p) => {

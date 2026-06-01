@@ -19,7 +19,7 @@ export class ActivityService {
     metadata?: Prisma.JsonValue,
   ) {
     if (!userId) return;
-    
+
     // Fire and forget
     this.prisma.activityLog
       .create({

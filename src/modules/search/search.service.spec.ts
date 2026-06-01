@@ -68,7 +68,7 @@ describe('SearchService', () => {
   describe('search', () => {
     it('should return empty results for empty query', async () => {
       const result = await service.search({ q: '' });
-      
+
       expect(result).toEqual({
         users: [],
         posts: [],
@@ -103,8 +103,14 @@ describe('SearchService', () => {
         page: 1,
       });
 
-      expect(mockUserIndex.search).toHaveBeenCalledWith('test', expect.any(Object));
-      expect(mockPostIndex.search).toHaveBeenCalledWith('test', expect.any(Object));
+      expect(mockUserIndex.search).toHaveBeenCalledWith(
+        'test',
+        expect.any(Object),
+      );
+      expect(mockPostIndex.search).toHaveBeenCalledWith(
+        'test',
+        expect.any(Object),
+      );
     });
 
     it('should exclude blocked users when requested', async () => {
@@ -113,15 +119,21 @@ describe('SearchService', () => {
         { blockedId: 'blocked-user-2' },
       ]);
 
-      await service.search({ 
-        q: 'test', 
-        excludeBlocked: 'true',
-        type: 'users' 
-      }, 'current-user-id');
+      await service.search(
+        {
+          q: 'test',
+          excludeBlocked: 'true',
+          type: 'users',
+        },
+        'current-user-id',
+      );
 
-      expect(mockUserIndex.search).toHaveBeenCalledWith('test', expect.objectContaining({
-        filter: expect.stringContaining('NOT IN'),
-      }));
+      expect(mockUserIndex.search).toHaveBeenCalledWith(
+        'test',
+        expect.objectContaining({
+          filter: expect.stringContaining('NOT IN'),
+        }),
+      );
     });
   });
 
@@ -139,14 +151,16 @@ describe('SearchService', () => {
 
       await service.indexUser(userData);
 
-      expect(mockUserIndex.addDocuments).toHaveBeenCalledWith([{
-        id: '1',
-        name: 'John Doe',
-        username: '',
-        bio: 'Software developer',
-        avatar: 'avatar.jpg',
-        isActive: true,
-      }]);
+      expect(mockUserIndex.addDocuments).toHaveBeenCalledWith([
+        {
+          id: '1',
+          name: 'John Doe',
+          username: '',
+          bio: 'Software developer',
+          avatar: 'avatar.jpg',
+          isActive: true,
+        },
+      ]);
     });
   });
 
@@ -163,15 +177,17 @@ describe('SearchService', () => {
 
       await service.indexPost(postData);
 
-      expect(mockPostIndex.addDocuments).toHaveBeenCalledWith([{
-        id: '1',
-        content: 'Hello world',
-        authorId: '1',
-        authorName: 'John Doe',
-        createdAt: postData.createdAt.toISOString(),
-        privacy: 'PUBLIC',
-        isDeleted: false,
-      }]);
+      expect(mockPostIndex.addDocuments).toHaveBeenCalledWith([
+        {
+          id: '1',
+          content: 'Hello world',
+          authorId: '1',
+          authorName: 'John Doe',
+          createdAt: postData.createdAt.toISOString(),
+          privacy: 'PUBLIC',
+          isDeleted: false,
+        },
+      ]);
     });
   });
 
@@ -179,17 +195,21 @@ describe('SearchService', () => {
     it('should configure user and post indexes', async () => {
       await service.createIndexes();
 
-      expect(mockUserIndex.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
-        searchableAttributes: ['name', 'username', 'bio'],
-        filterableAttributes: ['id', 'isActive'],
-        sortableAttributes: ['name'],
-      }));
+      expect(mockUserIndex.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          searchableAttributes: ['name', 'username', 'bio'],
+          filterableAttributes: ['id', 'isActive'],
+          sortableAttributes: ['name'],
+        }),
+      );
 
-      expect(mockPostIndex.updateSettings).toHaveBeenCalledWith(expect.objectContaining({
-        searchableAttributes: ['content', 'authorName'],
-        filterableAttributes: ['authorId', 'privacy', 'isDeleted'],
-        sortableAttributes: ['createdAt'],
-      }));
+      expect(mockPostIndex.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          searchableAttributes: ['content', 'authorName'],
+          filterableAttributes: ['authorId', 'privacy', 'isDeleted'],
+          sortableAttributes: ['createdAt'],
+        }),
+      );
     });
   });
 });

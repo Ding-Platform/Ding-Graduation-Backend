@@ -100,14 +100,19 @@ export class SellerController {
   /** GET /marketplace/seller/orders/:id */
   @Get('orders/:id')
   @HttpCode(HttpStatus.OK)
-  getOrderDetail(@currentUser() user: currentUserType, @Param('id') id: string) {
+  getOrderDetail(
+    @currentUser() user: currentUserType,
+    @Param('id') id: string,
+  ) {
     return this.sellerService.getOrderDetail(user.id, id);
   }
 
   /** POST /marketplace/seller/orders/:id/confirm-shipment */
   @Post('orders/:id/confirm-shipment')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('shipmentProofImage', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('shipmentProofImage', { storage: memoryStorage() }),
+  )
   confirmShipment(
     @currentUser() user: currentUserType,
     @Param('id') id: string,

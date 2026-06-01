@@ -174,7 +174,11 @@ export class ChatService {
     if (room) {
       for (const member of room.members) {
         if (member.userId !== userId) {
-          await this.notificationService.notifyNewMessage(userId, member.userId, roomId);
+          await this.notificationService.notifyNewMessage(
+            userId,
+            member.userId,
+            roomId,
+          );
         }
       }
     }

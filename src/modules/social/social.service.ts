@@ -194,7 +194,12 @@ export class SocialService {
           fromUserId,
           toUserId,
         );
-        this.activityService.logActivity(fromUserId, 'SENT_FRIEND_REQUEST', toUserId, 'USER');
+        this.activityService.logActivity(
+          fromUserId,
+          'SENT_FRIEND_REQUEST',
+          toUserId,
+          'USER',
+        );
       }
     } catch (error) {
       if (error instanceof GenericHttpException) {
@@ -278,7 +283,12 @@ export class SocialService {
         toUserId,
         fromUserId,
       );
-      this.activityService.logActivity(fromUserId, 'ACCEPTED_FRIEND_REQUEST', toUserId, 'USER');
+      this.activityService.logActivity(
+        fromUserId,
+        'ACCEPTED_FRIEND_REQUEST',
+        toUserId,
+        'USER',
+      );
       await session.close();
     }
   }
@@ -703,7 +713,12 @@ export class SocialService {
       );
     } finally {
       await this.notificationService.notifyNewFollower(followerId, followeeId);
-      this.activityService.logActivity(followerId, 'FOLLOWED_USER', followeeId, 'USER');
+      this.activityService.logActivity(
+        followerId,
+        'FOLLOWED_USER',
+        followeeId,
+        'USER',
+      );
       await session.close();
     }
   }
@@ -1476,7 +1491,9 @@ export class SocialService {
            RETURN count(u) as total`,
           { userId },
         );
-        finalTotal = this.toNumber(fallbackCountResult.records[0]?.get('total') || 0);
+        finalTotal = this.toNumber(
+          fallbackCountResult.records[0]?.get('total') || 0,
+        );
       }
 
       // Get current user's location from PostgreSQL for location boost calculation

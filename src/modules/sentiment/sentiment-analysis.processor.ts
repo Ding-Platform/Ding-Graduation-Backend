@@ -17,7 +17,12 @@ export class SentimentAnalysisProcessor {
     }>,
   ) {
     const { text, contentType, contentId, userId } = job.data;
-    return this.sentimentService.analyzeContent(text, contentType, contentId, userId);
+    return this.sentimentService.analyzeContent(
+      text,
+      contentType,
+      contentId,
+      userId,
+    );
   }
 
   @Process('apply-reaction')

@@ -5743,6 +5743,7 @@ Contains all endpoints and functionalities related to Reels (Sprint 17).
 **Expected Input (Body Schema: `ShareReelDto`):**
 ```json
 {
+  "message": "'shareType must be STORY, FEED, EXTERNAL, or DM',",
   "shareType": "ShareType",
   "targetUserId": "string"
 }
@@ -7566,7 +7567,7 @@ Contains all endpoints and functionalities related to Global Search (Sprint 14).
 
 ### Global Search
 **Endpoint:** `GET {{baseUrl}}/search/?q=backend&type=posts&page=1&limit=20`
-**Authentication Required:** Yes (Bearer Token)
+**Authentication Required:** No
 **Description:** Auto-synced from `search.controller.ts`.
 
 - Method: `GET`
@@ -7589,7 +7590,7 @@ Contains all endpoints and functionalities related to Global Search (Sprint 14).
 
 ### Trending Hashtags
 **Endpoint:** `GET {{baseUrl}}/search/trending`
-**Authentication Required:** Yes (Bearer Token)
+**Authentication Required:** Unknown
 **Description:** Auto-synced from `search.controller.ts`.
 
 - Method: `GET`
@@ -7604,6 +7605,52 @@ Contains all endpoints and functionalities related to Global Search (Sprint 14).
 {
   "success": true,
   "message": "GET /search/trending executed successfully",
+  "data": {}
+}
+```
+
+---
+
+### GET /search/public
+**Endpoint:** `GET {{baseUrl}}/search/public`
+**Authentication Required:** No
+**Description:** Auto-synced from `search.controller.ts`.
+
+- Method: `GET`
+- Route: `/search/public`
+- Purpose: Executes `GET` on this backend endpoint.
+- Notes: Update request body/params for your test scenario.
+
+**Expected Input:** Query or path parameters (see URL).
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "GET /search/public executed successfully",
+  "data": {}
+}
+```
+
+---
+
+### GET /search/indexes
+**Endpoint:** `GET {{baseUrl}}/search/indexes`
+**Authentication Required:** No
+**Description:** Auto-synced from `search.controller.ts`.
+
+- Method: `GET`
+- Route: `/search/indexes`
+- Purpose: Executes `GET` on this backend endpoint.
+- Notes: Update request body/params for your test scenario.
+
+**Expected Input:** Query or path parameters (see URL).
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "GET /search/indexes executed successfully",
   "data": {}
 }
 ```
@@ -8586,6 +8633,7 @@ Below are the detailed structures of the database models and request/response pa
   "sellerId": "sellerUserId,",
   "product": "{ select: { id: true, title: true, price: true } },",
   "buyer": "{ select: { id: true, name: true, email: true } },",
+  "in": "['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'],",
   "transaction": "true,",
   "bankCardNumberMasked": "'\u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 \u2022\u2022\u2022\u2022 ' + profile.bankCardLast4,",
   "profile": "{",
@@ -8594,6 +8642,7 @@ Below are the detailed structures of the database models and request/response pa
   "bankCardNumber": "sensitiveProfile.bankCardNumberMasked,",
   "stats": "{",
   "currentDeals": "[",
+  "flowType": "'ORDER' as const,",
   "dealHistory": "[",
   "sellerUserId": "string,",
   "isSuspended": "true,",
@@ -8681,6 +8730,7 @@ Below are the detailed structures of the database models and request/response pa
   "userId": "user.id,",
   "otpVerified": "false, // Ensure OTP hasn't been used already",
   "type": "'EMAIL_VERIFICATION',",
+  "action": "'create',",
   "where": "{ id: otpRecord.id },",
   "user": "updatedUser,",
   "ipAddress": "string,",
@@ -8691,7 +8741,7 @@ Below are the detailed structures of the database models and request/response pa
   "orderBy": "{ createdAt: 'desc' },",
   "createdAt": "'asc', // Get the oldest session with this IP/userAgent combo",
   "sessionId": "string | undefined,",
-  "googleUser": "any,",
+  "googleUser": "{ email: string",
   "email": "googleUser.email,",
   "image": "googleUser.picture,",
   "password": "hashedNewPassword,",
@@ -9686,10 +9736,10 @@ Below are the detailed structures of the database models and request/response pa
   "refreshToken": "string,",
   "profile": "any,",
   "done": "VerifyCallback,",
-  "email": "emails[0].value,",
-  "firstName": "name.givenName,",
-  "lastName": "name.familyName,",
-  "picture": "photos[0].value,"
+  "email": "profile.emails?.[0]?.value,",
+  "firstName": "profile.name?.givenName || '',",
+  "lastName": "profile.name?.familyName || '',",
+  "picture": "profile.photos?.[0]?.value || '',"
 }
 ```
 
@@ -10459,7 +10509,14 @@ Below are the detailed structures of the database models and request/response pa
   "commentId": "string,",
   "postId": "string,",
   "content": "string,",
-  "reelId": "string,"
+  "reelId": "string,",
+  "roomId": "string,",
+  "deviceName": "string,",
+  "ipAddress": "string,",
+  "sellerId": "string,",
+  "orderId": "string,",
+  "productName": "string,",
+  "reviewId": "string,"
 }
 ```
 
@@ -10545,8 +10602,9 @@ Below are the detailed structures of the database models and request/response pa
   "take": "limit,",
   "where": "{ id: order.transaction.id },",
   "buyer": "{ select: { id: true, name: true, email: true, image: true } },",
+  "select": "{ id: true, name: true, email: true, image: true },",
   "orderId": "string,",
-  "dto": "ConfirmShipmentDto,",
+  "dto": "ResolveDisputeDto,",
   "proofFile": "Express.Multer.File,",
   "shipmentTrackingNumber": "dto.shipmentTrackingNumber,",
   "shipmentCarrier": "dto.shipmentCarrier,",
@@ -10562,9 +10620,9 @@ Below are the detailed structures of the database models and request/response pa
   "releaseScheduledAt": "releaseAt,",
   "cancelReason": "dto.cancelReason ?? 'Cancelled by buyer',",
   "disputeReason": "dto.disputeReason,",
-  "disputeResolvedAt": "order.status === 'DISPUTED' ? now : order.disputeResolvedAt,",
+  "disputeResolvedAt": "now,",
   "disputeResolution": "dto.adminNote ?? 'Release approved by admin',",
-  "disputeResolvedById": "order.status === 'DISPUTED' ? adminId : order.disputeResolvedById,",
+  "disputeResolvedById": "adminId,",
   "releasedAt": "now,"
 }
 ```
@@ -10819,7 +10877,7 @@ Below are the detailed structures of the database models and request/response pa
   "authorId": "profileId,",
   "privacy": "PostPrivacy,",
   "url": "vid.url,",
-  "type": "'VIDEO',",
+  "type": "'post',",
   "publicId": "vid.publicId,",
   "size": "number",
   "width": "vid.width,",
@@ -11184,7 +11242,13 @@ Below are the detailed structures of the database models and request/response pa
 {
   "url": "redisUrl,",
   "NX": "true,",
-  "EX": "seconds,"
+  "EX": "seconds,",
+  "key": "string,",
+  "increment": "number,",
+  "member": "string,",
+  "start": "number,",
+  "stop": "number,",
+  "options": "any,"
 }
 ```
 
@@ -11640,17 +11704,6 @@ Below are the detailed structures of the database models and request/response pa
 }
 ```
 
-### `SearchBuckets`
-```json
-{
-  "people": "PersonResult[]",
-  "posts": "PostResult[]",
-  "groups": "GroupResult[]",
-  "pages": "PageResult[]",
-  "reels": "ReelResult[]"
-}
-```
-
 ### `SearchMessagesDto`
 ```json
 {
@@ -11680,15 +11733,86 @@ Below are the detailed structures of the database models and request/response pa
 }
 ```
 
+### `SearchQueryDto`
+```json
+{
+  "q": "string",
+  "type": "SearchType = SearchType.ALL",
+  "page": "number = 1",
+  "limit": "number = 10",
+  "sortBy": "'relevance' | 'latest' = 'relevance'",
+  "excludeBlocked": "string"
+}
+```
+
+### `SearchResultDto`
+```json
+{
+  "users": "any[]",
+  "posts": "any[]",
+  "total": "number",
+  "hasMore": "boolean",
+  "page": "number"
+}
+```
+
 ### `SearchService`
 ```json
 {
-  "query": "normalizedQuery,",
-  "type": "normalizedType,",
-  "data": "results,",
-  "meta": "{ page, limit },",
+  "query": "string,",
+  "userId": "string,",
+  "users": "[],",
+  "posts": "[],",
+  "total": "0,",
+  "hasMore": "false,",
+  "page": "1,",
+  "offset": "number,",
+  "limit": "number,",
+  "excludeBlocked": "string,",
+  "attributesToHighlight": "['content'],",
+  "sortBy": "string,",
+  "where": "{",
+  "blockerId": "userId,",
+  "select": "{",
+  "blockedId": "true,",
+  "id": "postData.id,",
+  "name": "userData.name || '',",
+  "bio": "userData.bio || '',",
+  "avatar": "userData.image || '',",
+  "isActive": "userData.active && !userData.isBanned,",
+  "content": "postData.content,",
+  "authorId": "postData.authorId,",
+  "authorName": "postData.author?.name || 'Unknown',",
+  "privacy": "postData.privacy || 'PUBLIC',",
+  "isDeleted": "false,",
+  "searchableAttributes": "['content', 'authorName'],",
+  "filterableAttributes": "['authorId', 'privacy', 'isDeleted'],",
+  "sortableAttributes": "['createdAt'],",
+  "rankingRules": "[",
+  "stopWords": "['the', 'a', 'an', 'and', 'or', 'but'],",
   "tag": "item.value,",
   "count": "item.score,"
+}
+```
+
+### `SearchWorker`
+```json
+{
+  "where": "{ id: data.id },",
+  "select": "{",
+  "id": "true,",
+  "name": "true,",
+  "image": "true,",
+  "active": "true,",
+  "isBanned": "true,",
+  "Profile": "{",
+  "bio": "user.Profile?.bio || '',",
+  "content": "true,",
+  "authorId": "true,",
+  "createdAt": "true,",
+  "privacy": "true,",
+  "isDeleted": "true,",
+  "author": "{"
 }
 ```
 
@@ -11857,7 +11981,9 @@ Below are the detailed structures of the database models and request/response pa
   "status": "{ in: ['COMPLETED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] },",
   "product": "{ select: { id: true, title: true, price: true } },",
   "buyer": "{ select: { id: true, name: true, email: true } },",
+  "in": "['PLACED', 'SELLER_CONFIRMED', 'SHIPPED', 'RELEASE_PENDING'],",
   "transaction": "true,",
+  "flowType": "'TRANSACTION' as const,",
   "userId": "string,",
   "orderId": "string,",
   "dto": "ConfirmShipmentDto,",
@@ -11912,12 +12038,13 @@ Below are the detailed structures of the database models and request/response pa
 ### `SentimentService`
 ```json
 {
+  "contentType": "parentContentType,",
   "positive": "number,",
   "text": "string,",
-  "contentType": "parentContentType,",
   "contentId": "parentContentId,",
   "userId": "string,",
   "where": "{ userId },",
+  "data": "{",
   "contentType_contentId": "{",
   "create": "{",
   "positiveScore": "aggregate.positiveScore,",
@@ -11933,7 +12060,6 @@ Below are the detailed structures of the database models and request/response pa
   "positivePoints": "normalized.positive,",
   "negativePoints": "normalized.negative,",
   "totalEventsProcessed": "{ increment: 1 },",
-  "data": "{",
   "resultPositive": "profile.positivePoints,",
   "resultNegative": "profile.negativePoints,",
   "reactorUserId": "string,",
@@ -12038,6 +12164,7 @@ Below are the detailed structures of the database models and request/response pa
 ### `ShareReelDto`
 ```json
 {
+  "message": "'shareType must be STORY, FEED, EXTERNAL, or DM',",
   "shareType": "ShareType",
   "targetUserId": "string"
 }

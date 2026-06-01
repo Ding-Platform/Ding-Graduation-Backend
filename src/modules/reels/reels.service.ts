@@ -6,10 +6,17 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { SentimentContentType, SentimentEventType, ShareType } from '@prisma/client';
+import {
+  SentimentContentType,
+  SentimentEventType,
+  ShareType,
+} from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
-import { extractHashtags, mergeHashtags } from '../../common/utils/hashtag.util';
+import {
+  extractHashtags,
+  mergeHashtags,
+} from '../../common/utils/hashtag.util';
 import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
@@ -79,12 +86,19 @@ export class ReelsService {
 
     const processingBase =
       process.env.REELS_CDN_BASE_URL || 'https://cdn.ding.local';
-    const mergedHashtags = mergeHashtags(extractHashtags(payload.caption), payload.hashtags);
+    const mergedHashtags = mergeHashtags(
+      extractHashtags(payload.caption),
+      payload.hashtags,
+    );
 
     if (mergedHashtags.length > 0) {
       Promise.all(
-        mergedHashtags.map((tag) => this.redisService.zIncrBy('trending_hashtags', 1, tag)),
-      ).catch((err) => console.error('Failed to update trending hashtags', err));
+        mergedHashtags.map((tag) =>
+          this.redisService.zIncrBy('trending_hashtags', 1, tag),
+        ),
+      ).catch((err) =>
+        console.error('Failed to update trending hashtags', err),
+      );
     }
 
     const finalized = await this.prisma.reel.update({
@@ -193,11 +207,14 @@ export class ReelsService {
       throw new ForbiddenException('You do not own this reel');
     }
 
-    const updatedCaption = payload.caption !== undefined ? payload.caption : reel.caption;
-    const providedHashtags = payload.hashtags !== undefined ? payload.hashtags : reel.hashtags;
-    const finalHashtags = (payload.caption !== undefined || payload.hashtags !== undefined)
-      ? mergeHashtags(extractHashtags(updatedCaption), providedHashtags)
-      : undefined;
+    const updatedCaption =
+      payload.caption !== undefined ? payload.caption : reel.caption;
+    const providedHashtags =
+      payload.hashtags !== undefined ? payload.hashtags : reel.hashtags;
+    const finalHashtags =
+      payload.caption !== undefined || payload.hashtags !== undefined
+        ? mergeHashtags(extractHashtags(updatedCaption), providedHashtags)
+        : undefined;
 
     return this.prisma.reel.update({
       where: { id: reelId },
@@ -241,8 +258,8 @@ export class ReelsService {
     });
     const feedBoostActive = Boolean(
       sentimentProfile?.feedBoostPositive &&
-        sentimentProfile.feedBoostUntil &&
-        sentimentProfile.feedBoostUntil.getTime() > Date.now(),
+      sentimentProfile.feedBoostUntil &&
+      sentimentProfile.feedBoostUntil.getTime() > Date.now(),
     );
 
     const candidates = await this.prisma.reel.findMany({
@@ -285,8 +302,13 @@ export class ReelsService {
       ]),
     );
 
-    const userInterests = await this.interestService.getTopInterests(userId, 20);
-    const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
+    const userInterests = await this.interestService.getTopInterests(
+      userId,
+      20,
+    );
+    const interestMap = new Map(
+      userInterests.map((i) => [i.topic.toLowerCase(), i.score]),
+    );
 
     const scored = candidates
       .map((reel) => {
@@ -394,7 +416,11 @@ export class ReelsService {
       );
 
       if (payload.watchPct && payload.watchPct >= 70) {
-        this.interestService.recordInterest(payload.viewerId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.0);
+        this.interestService.recordInterest(
+          payload.viewerId,
+          [...(reel.hashtags || []), ...(reel.categories || [])],
+          1.0,
+        );
       }
     }
 
@@ -458,7 +484,11 @@ export class ReelsService {
       },
     );
 
-    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 2.0);
+    this.interestService.recordInterest(
+      userId,
+      [...(reel.hashtags || []), ...(reel.categories || [])],
+      2.0,
+    );
     this.activityService.logActivity(userId, 'LIKED_REEL', reelId, 'REEL');
 
     const updated = await this.prisma.reel.findUnique({
@@ -468,7 +498,11 @@ export class ReelsService {
 
     // Notify the reel owner
     if (updated) {
-      await this.notificationService.notifyReelLike(userId, updated.userId, reelId);
+      await this.notificationService.notifyReelLike(
+        userId,
+        updated.userId,
+        reelId,
+      );
     }
 
     return { liked: true, count: Number(updated?.likesCount || 0) };
@@ -581,8 +615,17 @@ export class ReelsService {
       },
     );
 
-    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.5);
-    this.activityService.logActivity(userId, 'COMMENTED_ON_REEL', reelId, 'REEL');
+    this.interestService.recordInterest(
+      userId,
+      [...(reel.hashtags || []), ...(reel.categories || [])],
+      1.5,
+    );
+    this.activityService.logActivity(
+      userId,
+      'COMMENTED_ON_REEL',
+      reelId,
+      'REEL',
+    );
 
     // Notify the reel owner
     await this.notificationService.notifyReelComment(
@@ -692,7 +735,11 @@ export class ReelsService {
       }),
     ]);
 
-    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 2.0);
+    this.interestService.recordInterest(
+      userId,
+      [...(reel.hashtags || []), ...(reel.categories || [])],
+      2.0,
+    );
     this.activityService.logActivity(userId, 'BOOKMARKED_REEL', reelId, 'REEL');
 
     return { saved: true };
@@ -907,7 +954,9 @@ export class ReelsService {
         status: 'READY',
         deletedAt: null,
         createdAt: { gte: sevenDaysAgo },
-        ...(cursorDate ? { createdAt: { lt: cursorDate, gte: sevenDaysAgo } } : {}),
+        ...(cursorDate
+          ? { createdAt: { lt: cursorDate, gte: sevenDaysAgo } }
+          : {}),
       },
       include: {
         user: { select: { id: true, name: true, image: true } },
@@ -940,7 +989,9 @@ export class ReelsService {
       throw new NotFoundException('Reel not found');
     }
     if (reel.userId !== userId) {
-      throw new ForbiddenException('You can only view analytics for your own reels');
+      throw new ForbiddenException(
+        'You can only view analytics for your own reels',
+      );
     }
 
     const avgWatch = await this.prisma.reelView.aggregate({

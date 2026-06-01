@@ -34,18 +34,28 @@ describe('ReelsController', () => {
       deleteReel: jest.fn(),
       recordView: jest.fn(),
       toggleLike: jest.fn(),
-      listComments: jest.fn().mockResolvedValue({ data: [], nextCursor: null, hasMore: false }),
+      listComments: jest
+        .fn()
+        .mockResolvedValue({ data: [], nextCursor: null, hasMore: false }),
       addComment: jest.fn(),
       editComment: jest.fn(),
       deleteComment: jest.fn(),
       shareReel: jest.fn(),
       toggleBookmark: jest.fn().mockResolvedValue({ saved: true }),
-      getSavedReels: jest.fn().mockResolvedValue({ reels: [], nextCursor: null }),
+      getSavedReels: jest
+        .fn()
+        .mockResolvedValue({ reels: [], nextCursor: null }),
       getMyReels: jest.fn().mockResolvedValue({ reels: [], nextCursor: null }),
-      getUserReels: jest.fn().mockResolvedValue({ reels: [], nextCursor: null }),
+      getUserReels: jest
+        .fn()
+        .mockResolvedValue({ reels: [], nextCursor: null }),
       toggleCommentLike: jest.fn().mockResolvedValue({ liked: true }),
-      getReelsByHashtag: jest.fn().mockResolvedValue({ reels: [], nextCursor: null }),
-      getTrendingReels: jest.fn().mockResolvedValue({ reels: [], nextCursor: null }),
+      getReelsByHashtag: jest
+        .fn()
+        .mockResolvedValue({ reels: [], nextCursor: null }),
+      getTrendingReels: jest
+        .fn()
+        .mockResolvedValue({ reels: [], nextCursor: null }),
       getReelAnalytics: jest.fn().mockResolvedValue({ viewsCount: 100 }),
     };
 
@@ -69,18 +79,29 @@ describe('ReelsController', () => {
 
   it('toggles bookmark', async () => {
     const result = await controller.toggleBookmark(mockUser, 'reel-1');
-    expect(reelsService.toggleBookmark).toHaveBeenCalledWith('user-1', 'reel-1');
+    expect(reelsService.toggleBookmark).toHaveBeenCalledWith(
+      'user-1',
+      'reel-1',
+    );
     expect(result.saved).toBe(true);
   });
 
   it('lists saved reels', async () => {
     await controller.getSaved(mockUser, {});
-    expect(reelsService.getSavedReels).toHaveBeenCalledWith('user-1', undefined, 10);
+    expect(reelsService.getSavedReels).toHaveBeenCalledWith(
+      'user-1',
+      undefined,
+      10,
+    );
   });
 
   it('lists own reels', async () => {
     await controller.getMyReels(mockUser, {});
-    expect(reelsService.getMyReels).toHaveBeenCalledWith('user-1', undefined, 10);
+    expect(reelsService.getMyReels).toHaveBeenCalledWith(
+      'user-1',
+      undefined,
+      10,
+    );
   });
 
   it('gets user reels with viewer context', async () => {
@@ -94,7 +115,11 @@ describe('ReelsController', () => {
   });
 
   it('toggles comment like', async () => {
-    const result = await controller.toggleCommentLike(mockUser, 'reel-1', 'comment-1');
+    const result = await controller.toggleCommentLike(
+      mockUser,
+      'reel-1',
+      'comment-1',
+    );
     expect(reelsService.toggleCommentLike).toHaveBeenCalledWith(
       'user-1',
       'reel-1',
@@ -110,19 +135,30 @@ describe('ReelsController', () => {
 
   it('gets reels by hashtag', async () => {
     await controller.getByHashtag('cooking', {});
-    expect(reelsService.getReelsByHashtag).toHaveBeenCalledWith('cooking', undefined, 10);
+    expect(reelsService.getReelsByHashtag).toHaveBeenCalledWith(
+      'cooking',
+      undefined,
+      10,
+    );
   });
 
   it('gets reel analytics', async () => {
     const result = await controller.getAnalytics(mockUser, 'reel-1');
-    expect(reelsService.getReelAnalytics).toHaveBeenCalledWith('user-1', 'reel-1');
+    expect(reelsService.getReelAnalytics).toHaveBeenCalledWith(
+      'user-1',
+      'reel-1',
+    );
     expect(result.viewsCount).toBe(100);
   });
 
   it('passes DTOs through to finalize', async () => {
     const dto = { rawVideoKey: 'key.mp4', caption: 'test', durationSec: 30 };
     await controller.finalizeReel(mockUser, 'reel-1', dto);
-    expect(reelsService.finalizeReel).toHaveBeenCalledWith('user-1', 'reel-1', dto);
+    expect(reelsService.finalizeReel).toHaveBeenCalledWith(
+      'user-1',
+      'reel-1',
+      dto,
+    );
   });
 
   it('passes viewer context to listComments', async () => {

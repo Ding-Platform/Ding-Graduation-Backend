@@ -183,11 +183,7 @@ export class NotificationService {
 
   // ─── Reel Notifications ───────────────────────
 
-  async notifyReelLike(
-    actorId: string,
-    targetUserId: string,
-    reelId: string,
-  ) {
+  async notifyReelLike(actorId: string, targetUserId: string, reelId: string) {
     return this.createNotification(
       targetUserId,
       NotificationType.REEL_LIKE,
@@ -214,11 +210,7 @@ export class NotificationService {
     );
   }
 
-  async notifyReelShare(
-    actorId: string,
-    targetUserId: string,
-    reelId: string,
-  ) {
+  async notifyReelShare(actorId: string, targetUserId: string, reelId: string) {
     return this.createNotification(
       targetUserId,
       NotificationType.REEL_SHARE,
@@ -231,7 +223,11 @@ export class NotificationService {
 
   // ─── Facebook Parity Additions ─────────────────
 
-  async notifyNewMessage(actorId: string, targetUserId: string, roomId: string) {
+  async notifyNewMessage(
+    actorId: string,
+    targetUserId: string,
+    roomId: string,
+  ) {
     return this.createNotification(
       targetUserId,
       NotificationType.NEW_MESSAGE,
@@ -242,7 +238,11 @@ export class NotificationService {
     );
   }
 
-  async notifyNewLogin(targetUserId: string, deviceName: string, ipAddress: string) {
+  async notifyNewLogin(
+    targetUserId: string,
+    deviceName: string,
+    ipAddress: string,
+  ) {
     return this.createNotification(
       targetUserId,
       NotificationType.NEW_LOGIN,
@@ -262,7 +262,12 @@ export class NotificationService {
     );
   }
 
-  async notifyMarketplaceOrder(actorId: string, sellerId: string, orderId: string, productName: string) {
+  async notifyMarketplaceOrder(
+    actorId: string,
+    sellerId: string,
+    orderId: string,
+    productName: string,
+  ) {
     return this.createNotification(
       sellerId,
       NotificationType.MARKETPLACE_ORDER,
@@ -273,7 +278,11 @@ export class NotificationService {
     );
   }
 
-  async notifyMarketplaceReview(actorId: string, targetUserId: string, reviewId: string) {
+  async notifyMarketplaceReview(
+    actorId: string,
+    targetUserId: string,
+    reviewId: string,
+  ) {
     return this.createNotification(
       targetUserId,
       NotificationType.MARKETPLACE_REVIEW,

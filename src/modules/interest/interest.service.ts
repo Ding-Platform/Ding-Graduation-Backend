@@ -11,7 +11,7 @@ export class InterestService {
     if (!topics || topics.length === 0) return;
 
     // Deduplicate and normalize
-    const uniqueTopics = [...new Set(topics.map(t => t.toLowerCase()))];
+    const uniqueTopics = [...new Set(topics.map((t) => t.toLowerCase()))];
 
     try {
       await Promise.all(
@@ -36,7 +36,9 @@ export class InterestService {
         ),
       );
     } catch (error) {
-      this.logger.error(`Failed to record interest for user ${userId}: ${error.message}`);
+      this.logger.error(
+        `Failed to record interest for user ${userId}: ${error.message}`,
+      );
     }
   }
 
@@ -56,7 +58,8 @@ export class InterestService {
     durationSec: number,
   ) {
     // Only track meaningful dwell time (e.g. > 5 seconds)
-    if (durationSec < 5) return { recorded: false, reason: 'Duration too short' };
+    if (durationSec < 5)
+      return { recorded: false, reason: 'Duration too short' };
 
     let tags: string[] = [];
     if (contentType === 'POST') {
@@ -73,7 +76,8 @@ export class InterestService {
       if (reel) tags = [...(reel.hashtags || []), ...(reel.categories || [])];
     }
 
-    if (tags.length === 0) return { recorded: false, reason: 'No tags on content' };
+    if (tags.length === 0)
+      return { recorded: false, reason: 'No tags on content' };
 
     // Calculate weight: 5-10s = 0.5 points, 10-20s = 1.0 points, >20s = 1.5 points
     let weight = 0.5;

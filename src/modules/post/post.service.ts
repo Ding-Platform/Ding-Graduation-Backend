@@ -188,8 +188,12 @@ export class PostService {
 
       if (hashtags.length > 0) {
         Promise.all(
-          hashtags.map((tag) => this.redisService.zIncrBy('trending_hashtags', 1, tag)),
-        ).catch((err) => console.error('Failed to update trending hashtags', err));
+          hashtags.map((tag) =>
+            this.redisService.zIncrBy('trending_hashtags', 1, tag),
+          ),
+        ).catch((err) =>
+          console.error('Failed to update trending hashtags', err),
+        );
       }
 
       // Create post first to get the ID
@@ -338,7 +342,12 @@ export class PostService {
         },
       );
 
-      this.activityService.logActivity(userId, 'CREATED_POST', newPost.id, 'POST');
+      this.activityService.logActivity(
+        userId,
+        'CREATED_POST',
+        newPost.id,
+        'POST',
+      );
       return this.getPostById(newPost.id, userId);
     } catch (error) {
       console.error('Post creation error:', error);
@@ -677,7 +686,11 @@ export class PostService {
         },
       });
 
-      this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 2.0);
+      this.interestService.recordInterest(
+        userId,
+        [...(post.hashtags || []), ...(post.categories || [])],
+        2.0,
+      );
       this.activityService.logActivity(userId, 'LIKED_POST', postId, 'POST');
 
       // Notify post author
@@ -727,7 +740,11 @@ export class PostService {
         select: { hashtags: true, categories: true },
       });
       if (post) {
-        this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 2.0);
+        this.interestService.recordInterest(
+          userId,
+          [...(post.hashtags || []), ...(post.categories || [])],
+          2.0,
+        );
       }
       this.activityService.logActivity(userId, 'SAVED_POST', postId, 'POST');
 
@@ -800,9 +817,18 @@ export class PostService {
       },
     });
 
-    this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 1.5);
-    this.activityService.logActivity(userId, 'COMMENTED_ON_POST', postId, 'POST');
-    
+    this.interestService.recordInterest(
+      userId,
+      [...(post.hashtags || []), ...(post.categories || [])],
+      1.5,
+    );
+    this.activityService.logActivity(
+      userId,
+      'COMMENTED_ON_POST',
+      postId,
+      'POST',
+    );
+
     const commentWithAuthor = await this.prisma.comment.update({
       where: { id: comment.id },
       data: {},

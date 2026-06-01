@@ -16,11 +16,7 @@ import { DatabaseModule } from '../../configs/database/database.module';
     DatabaseModule,
   ],
   controllers: [SearchController],
-  providers: [
-    SearchService,
-    SearchWorker,
-    MeilisearchProvider,
-  ],
+  providers: [SearchService, SearchWorker, MeilisearchProvider],
   exports: [SearchService],
 })
 export class SearchModule implements OnModuleInit {
