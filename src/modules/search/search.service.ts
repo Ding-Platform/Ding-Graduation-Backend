@@ -3,12 +3,15 @@ import { MEILISEARCH_CLIENT } from './meilisearch.provider';
 import { SearchQueryDto, SearchResultDto, SearchType } from './dto/search.dto';
 import { DatabaseService } from '../../configs/database/database.service';
 import { MeiliSearch } from 'meilisearch';
+import { AuditAction } from '@prisma/client';
+import { AuditLogService } from '../audit/audit-log.service';
 
 @Injectable()
 export class SearchService {
   constructor(
     @Inject(MEILISEARCH_CLIENT) private readonly meilisearch: MeiliSearch,
     private readonly prisma: DatabaseService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async search(query: SearchQueryDto, userId?: string): Promise<SearchResultDto> {
@@ -51,6 +54,22 @@ export class SearchService {
     }
 
     results.hasMore = results.total > offset + limit;
+
+    if (userId) {
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.SEARCH_QUERY,
+        targetType: 'SEARCH',
+        textSnapshot: q.trim(),
+        metadata: {
+          type,
+          page,
+          limit,
+          sortBy,
+          resultCount: results.total,
+        },
+      });
+    }
 
     return results;
   }

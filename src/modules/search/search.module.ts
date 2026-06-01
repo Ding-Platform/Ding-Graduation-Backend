@@ -5,6 +5,7 @@ import { SearchWorker } from './search.worker';
 import { MeilisearchProvider } from './meilisearch.provider';
 import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from '../../configs/database/database.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { DatabaseModule } from '../../configs/database/database.module';
       name: 'search-indexing',
     }),
     DatabaseModule,
+    AuditModule,
   ],
   controllers: [SearchController],
   providers: [

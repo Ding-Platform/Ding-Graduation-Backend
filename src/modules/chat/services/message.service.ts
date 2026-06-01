@@ -35,12 +35,15 @@ import {
   CHAT_ERROR_MESSAGES,
 } from 'src/common/constants/chat.constants';
 import { DatabaseService } from 'src/configs/database/database.service';
+import { AuditAction } from '@prisma/client';
+import { AuditLogService } from '../../audit/audit-log.service';
 
 @Injectable()
 export class MessageService {
   constructor(
     private readonly mongodbService: MongodbService,
     private readonly databaseService: DatabaseService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   /**
@@ -124,6 +127,17 @@ export class MessageService {
         },
       },
     );
+
+    if (dto.content) {
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.CHAT_MESSAGE_SEND,
+        targetType: 'ROOM',
+        targetId: dto.roomId,
+        textSnapshot: dto.content,
+        metadata: { messageId: result.insertedId.toHexString() },
+      });
+    }
 
     return newMessage;
   }
@@ -310,6 +324,15 @@ export class MessageService {
         },
       },
     );
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.CHAT_MESSAGE_EDIT,
+      targetType: 'ROOM',
+      targetId: message.roomId,
+      textSnapshot: dto.content,
+      metadata: { messageId },
+    });
 
     return {
       ...message,

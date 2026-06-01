@@ -14,9 +14,11 @@ import { ContextModule } from 'src/common/application/context/context.module';
 import { CloudinaryModule } from 'src/common/services/cloudinary/cloudinary.module';
 import { RoomMemberGuard } from 'src/common/guards/room-member.guard';
 import { RoomAdminGuard } from 'src/common/guards/room-admin.guard';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
+    AuditModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

@@ -42,6 +42,7 @@ import { PagesModule } from './modules/pages/pages.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { EventsModule } from './modules/events/events.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -119,6 +120,7 @@ try {
     StreamingModule,
     AnalyticsModule,
     EventsModule,
+    AuditModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

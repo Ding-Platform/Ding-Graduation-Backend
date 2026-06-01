@@ -4,16 +4,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ShareType } from '@prisma/client';
+import { AuditAction, ShareType } from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 @Injectable()
 export class ReelsService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly redisService: RedisService,
+    private readonly auditLogService: AuditLogService,
   ) {}
+
+  private reelTextSnapshot(caption: string | null, hashtags: string[]): string {
+    const parts = [caption?.trim(), hashtags.length > 0 ? hashtags.join(' ') : '']
+      .filter(Boolean);
+    return parts.join(' ').trim();
+  }
 
   async createUploadUrl(userId: string) {
     const reel = await this.prisma.reel.create({
@@ -279,6 +287,20 @@ export class ReelsService {
       },
     });
 
+    if (payload.viewerId) {
+      await this.auditLogService.record({
+        userId: payload.viewerId,
+        sessionId: payload.sessionId,
+        action: AuditAction.REEL_VIEW,
+        targetType: 'REEL',
+        targetId: reelId,
+        textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+        metadata: {
+          watchPct: payload.watchPct,
+        },
+      });
+    }
+
     return { counted: true };
   }
 
@@ -310,6 +332,13 @@ export class ReelsService {
         where: { id: reelId },
         select: { likesCount: true },
       });
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.REEL_UNLIKE,
+        targetType: 'REEL',
+        targetId: reelId,
+        textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+      });
       return { liked: false, count: Number(updated?.likesCount || 0) };
     }
 
@@ -327,6 +356,13 @@ export class ReelsService {
     const updated = await this.prisma.reel.findUnique({
       where: { id: reelId },
       select: { likesCount: true },
+    });
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_LIKE,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
     });
     return { liked: true, count: Number(updated?.likesCount || 0) };
   }
@@ -398,6 +434,15 @@ export class ReelsService {
       data: { commentsCount: { increment: 1 } },
     });
 
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_COMMENT,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: payload.content,
+      metadata: { commentId: comment.id },
+    });
+
     return comment;
   }
 
@@ -444,6 +489,19 @@ export class ReelsService {
         sharerId: userId,
         shareType: payload.shareType,
         targetId: payload.targetUserId,
+      },
+    });
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_SHARE,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+      metadata: {
+        shareType: payload.shareType,
+        targetUserId: payload.targetUserId,
+        shareId: share.id,
       },
     });
 

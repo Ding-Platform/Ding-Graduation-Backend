@@ -4,11 +4,13 @@ import { CommentService } from './comment.service';
 import { CommentController } from './comment.controller';
 import { DatabaseModule } from '../../configs/database/database.module';
 import { NotificationModule } from '../notification/notification.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     DatabaseModule,
     NotificationModule,
+    AuditModule,
     BullModule.registerQueue({
       name: 'graph-sync',
     }),
