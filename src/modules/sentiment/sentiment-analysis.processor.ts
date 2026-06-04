@@ -1,6 +1,6 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
-import { SentimentContentType, SentimentEventType } from '@prisma/client';
+import { AuditAction, SentimentContentType, SentimentEventType } from '@prisma/client';
 import { SentimentService } from './sentiment.service';
 
 @Processor('sentiment-analysis')
@@ -62,6 +62,27 @@ export class SentimentAnalysisProcessor {
       parentContentType,
       commentText,
       commentId,
+    );
+  }
+
+  @Process('analyze-audit-text')
+  async handleAnalyzeAuditText(
+    job: Job<{
+      auditLogId: string;
+      userId: string;
+      textSnapshot?: string;
+      action: AuditAction;
+    }>,
+  ) {
+    const { auditLogId, userId, textSnapshot, action } = job.data;
+    if (!textSnapshot?.trim()) {
+      return { skipped: true, reason: 'No text snapshot' };
+    }
+    return this.sentimentService.analyzeAuditText(
+      userId,
+      textSnapshot,
+      action,
+      auditLogId,
     );
   }
 }

@@ -17,6 +17,10 @@ class SerializationInterceptor<T> implements NestInterceptor {
   intercept(context: ExecutionContext, handler: CallHandler): Observable<any> {
     return handler.handle().pipe(
       map((data: any) => {
+        if (data == null) {
+          return data;
+        }
+
         // Handle wrapped responses from ResponseInterceptor
         if (
           data.code !== undefined &&

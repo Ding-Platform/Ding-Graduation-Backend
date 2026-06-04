@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, writeFile } from 'fs';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { APP_CONSTANTS } from './common/constants';
+import { enableBigIntJsonSerialization } from './common/utils/bigint-json.util';
 // Global filters and pipes are set up in AppModule
 import * as path from 'path';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
@@ -118,6 +119,8 @@ function setupSwagger(app: NestExpressApplication) {
 }
 
 async function bootstrap(): Promise<void> {
+  enableBigIntJsonSerialization();
+
   if (get('NODE_ENV').asString() === 'production') initializeLogging();
 
   const corsOrigin = getCorsOrigin();

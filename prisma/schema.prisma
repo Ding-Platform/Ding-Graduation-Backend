@@ -107,6 +107,10 @@ model User {
   // Sprint 19 — Analytics
   analyticsEvents    AnalyticsEvent[]
 
+  // User audit logs (server-side action capture)
+  auditLogs          UserAuditLog[]
+  emotionActions     UserEmotionAction[]
+
   // Sprint 20 — Events
   hostedEvents       Event[]       @relation("EventHost")
   eventRsvps         EventAttendee[]
@@ -1705,6 +1709,67 @@ model LiveStream {
   @@index([hostId, status])
   @@index([status, startedAt])
   @@index([streamKey])
+}
+
+// ─────────────────────────────────────────────
+// User Audit Logs (server-side action capture)
+// ─────────────────────────────────────────────
+
+enum AuditAction {
+  POST_CREATE
+  POST_UPDATE
+  POST_DELETE
+  POST_VIEW
+  POST_LIKE
+  POST_UNLIKE
+  POST_SAVE
+  POST_SHARE
+  COMMENT_CREATE
+  COMMENT_UPDATE
+  COMMENT_DELETE
+  COMMENT_LIKE
+  REEL_VIEW
+  REEL_LIKE
+  REEL_UNLIKE
+  REEL_COMMENT
+  REEL_SHARE
+  VIDEO_WATCH
+  SEARCH_QUERY
+  CHAT_MESSAGE_SEND
+  CHAT_MESSAGE_EDIT
+  CHAT_REACTION
+  FOLLOW_USER
+  UNFOLLOW_USER
+  PROFILE_VIEW
+  STORY_VIEW
+}
+
+model UserAuditLog {
+  id           String      @id @default(uuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId    String?
+  action       AuditAction
+  targetType   String?
+  targetId     String?
+  textSnapshot String?     @db.Text
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}
+
+model UserEmotionAction {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trigger   String
+  actions   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────────────────────

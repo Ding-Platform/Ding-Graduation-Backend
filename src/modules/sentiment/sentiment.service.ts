@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  AuditAction,
   InterventionMethod,
   SentimentContentType,
   SentimentEventType,
@@ -165,9 +166,60 @@ export class SentimentService {
       },
     });
 
-    await this.checkAndTriggerIntervention(userId);
+    await this.evaluateEmotionActions(userId);
 
     return profile;
+  }
+
+  private mapAuditActionToEventType(action: AuditAction): SentimentEventType | null {
+    switch (action) {
+      case 'POST_CREATE':
+      case 'POST_UPDATE':
+        return 'AUTHORED_POST';
+      case 'COMMENT_CREATE':
+        return 'AUTHORED_COMMENT';
+      case 'REEL_COMMENT':
+      case 'REEL_SHARE':
+        return 'AUTHORED_REEL';
+      case 'POST_LIKE':
+        return 'LIKED_POST';
+      case 'REEL_LIKE':
+        return 'LIKED_REEL';
+      case 'CHAT_MESSAGE_SEND':
+      case 'SEARCH_QUERY':
+        return 'AUTHORED_COMMENT';
+      default:
+        return null;
+    }
+  }
+
+  async analyzeAuditText(
+    userId: string,
+    text: string,
+    action: AuditAction,
+    auditLogId?: string,
+  ) {
+    const normalizedText = (text ?? '').trim();
+    if (!normalizedText) {
+      return { skipped: true, reason: 'Empty text' };
+    }
+
+    const eventType = this.mapAuditActionToEventType(action);
+    if (!eventType) {
+      return { skipped: true, reason: 'No sentiment mapping for action' };
+    }
+
+    const wordTokens = tokenizeWords(normalizedText);
+    const sentenceTokens = tokenizeSentences(normalizedText);
+    const aggregate = computeAggregateScore(wordTokens, sentenceTokens);
+
+    return this.applyContentSentiment(
+      userId,
+      aggregate.positiveScore,
+      aggregate.negativeScore,
+      eventType,
+      auditLogId,
+    );
   }
 
   async applyReactionSentiment(
@@ -259,34 +311,66 @@ export class SentimentService {
     );
   }
 
-  async checkAndTriggerIntervention(userId: string) {
+  async evaluateEmotionActions(userId: string) {
     const profile = await this.db.userSentimentProfile.findUnique({
       where: { userId },
     });
 
-    if (!profile) return { skipped: true, reason: 'No sentiment profile' };
-    if (profile.negativePoints < SENTIMENT_THRESHOLDS.interventionNegativeScore) {
-      return { skipped: true, reason: 'Below threshold' };
+    if (!profile || profile.totalEventsProcessed < 10) {
+      return { skipped: true, reason: 'Insufficient samples' };
     }
 
-    const now = Date.now();
-    const withinCooldown =
-      profile.lastInterventionAt &&
-      now - profile.lastInterventionAt.getTime() <
-        SENTIMENT_THRESHOLDS.interventionCooldownMs;
+    const emotionCooldownMs = 24 * 60 * 60 * 1000;
+    const lastEmotionAction = await this.db.userEmotionAction.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (
+      lastEmotionAction &&
+      Date.now() - lastEmotionAction.createdAt.getTime() < emotionCooldownMs
+    ) {
+      return { skipped: true, reason: 'Emotion action cooldown' };
+    }
 
-    if (profile.noroActive && !withinCooldown) {
+    const positivePct = profile.positivePoints;
+    const negativePct = profile.negativePoints;
+
+    if (negativePct >= SENTIMENT_THRESHOLDS.interventionNegativeScore) {
+      const until = new Date(Date.now() + SENTIMENT_THRESHOLDS.feedBoostDurationMs);
+      await this.db.userEmotionAction.create({
+        data: {
+          userId,
+          trigger: 'HIGH_NEGATIVE',
+          actions: [
+            { type: 'FEED_BOOST', params: { tags: ['wellness', 'motivation', 'comedy'] } },
+            { type: 'NORO_CHECKIN', params: { soft: true } },
+          ],
+        },
+      });
       await this.db.userSentimentProfile.update({
         where: { userId },
-        data: { noroActive: false, lastUpdated: new Date() },
+        data: { feedBoostPositive: true, feedBoostUntil: until, lastUpdated: new Date() },
       });
+      return this.triggerNoroIntervention(userId, negativePct);
     }
 
-    if ((profile.noroActive && withinCooldown) || withinCooldown) {
-      return { skipped: true, reason: 'Intervention active or in cooldown' };
+    if (positivePct >= SENTIMENT_THRESHOLDS.interventionNegativeScore) {
+      await this.db.userEmotionAction.create({
+        data: {
+          userId,
+          trigger: 'HIGH_POSITIVE',
+          actions: [{ type: 'EXPLORE_BOOST', params: { mode: 'interest_tags' } }],
+        },
+      });
+      return { triggered: 'HIGH_POSITIVE' };
     }
 
-    return this.triggerNoroIntervention(userId, profile.negativePoints);
+    return { skipped: true, reason: 'No threshold crossed' };
+  }
+
+  /** @deprecated Use evaluateEmotionActions */
+  async checkAndTriggerIntervention(userId: string) {
+    return this.evaluateEmotionActions(userId);
   }
 
   async triggerNoroIntervention(userId: string, negativePoints: number) {

@@ -10,6 +10,7 @@ import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SessionModule } from '../session/session.module';
+import { NotificationModule } from '../notification/notification.module';
 import { LocalStrategy } from '../../common/strategies/local.strategy';
 import { JwtStrategy } from '../../common/strategies/jwt.strategy';
 import { SessionIdGuard } from '../../common/guards/refresh-token.guard';
@@ -42,6 +43,7 @@ import { TOKEN_CONSTANTS } from '../../common/constants';
     HelperModule,
     SessionModule,
     EmailModule,
+    NotificationModule,
     BullModule.registerQueue({
       name: 'search-indexing',
     }),

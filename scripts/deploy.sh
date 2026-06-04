@@ -68,13 +68,44 @@ deploy_services() {
     print_success "Services built and started"
 }
 
-wait_for_services() {
-    print_info "Waiting for backend to become healthy ..."
-    
-    max_attempts=30
+run_migrations() {
+    print_info "Running database migrations..."
+
+    # Migrations only need the container running, not the HTTP server.
+    max_attempts=15
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if docker compose $COMPOSE_FILES exec -T backend node -e "fetch(process.env.BACKEND_HEALTH_URL || '$BACKEND_HEALTH_URL').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" &> /dev/null; then
+        if docker compose $COMPOSE_FILES exec -T backend pnpm prisma migrate deploy; then
+            print_success "Database migrations completed"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        echo -n "."
+        sleep 2
+    done
+
+    print_error "Database migrations failed"
+    print_info "Check logs: docker compose $COMPOSE_FILES logs --tail=80 backend"
+    return 1
+}
+
+backend_health_ok() {
+    # Prefer host curl (prod binds 127.0.0.1:3000); fall back to in-container fetch.
+    if curl -sf "$BACKEND_HEALTH_URL" > /dev/null 2>&1; then
+        return 0
+    fi
+    docker compose $COMPOSE_FILES exec -T backend node -e \
+        "fetch(process.env.BACKEND_HEALTH_URL || '$BACKEND_HEALTH_URL').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" \
+        &> /dev/null
+}
+
+wait_for_services() {
+    print_info "Waiting for backend to become healthy ..."
+
+    max_attempts=90
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if backend_health_ok; then
             print_success "Backend is healthy"
             break
         fi
@@ -82,22 +113,14 @@ wait_for_services() {
         echo -n "."
         sleep 2
     done
-    
+
     if [ $attempt -eq $max_attempts ]; then
         print_error "Backend failed to become healthy (no successful response from $BACKEND_HEALTH_URL)"
         print_info "Check logs: docker compose $COMPOSE_FILES logs --tail=80 backend"
         return 1
     fi
-    
-    print_success "All services are healthy"
-}
 
-run_migrations() {
-    print_info "Running database migrations..."
-    
-    docker compose $COMPOSE_FILES exec -T backend pnpm prisma migrate deploy
-    
-    print_success "Database migrations completed"
+    print_success "All services are healthy"
 }
 
 display_summary() {
@@ -144,11 +167,11 @@ main() {
     
     deploy_services
     echo ""
-    
-    wait_for_services
-    echo ""
-    
+
     run_migrations
+    echo ""
+
+    wait_for_services
     echo ""
 
     if [ "${DEPLOY_FRONTEND:-0}" = "1" ]; then

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SearchService } from './search.service';
 import { DatabaseService } from '../../configs/database/database.service';
 import { MEILISEARCH_CLIENT } from './meilisearch.provider';
+import { SearchType } from './dto/search.dto';
 import { MeiliSearch } from 'meilisearch';
 
 describe('SearchService', () => {
@@ -91,7 +92,7 @@ describe('SearchService', () => {
 
       mockUserIndex.search.mockResolvedValue(mockUserResults);
       mockPostIndex.search.mockResolvedValue(mockPostResults);
-      mockPrisma.block.findMany.mockResolvedValue([]);
+      jest.spyOn(mockPrisma.block, 'findMany').mockResolvedValue([]);
 
       const result = await service.search({ q: 'test' });
 
@@ -108,15 +109,15 @@ describe('SearchService', () => {
     });
 
     it('should exclude blocked users when requested', async () => {
-      mockPrisma.block.findMany.mockResolvedValue([
+      jest.spyOn(mockPrisma.block, 'findMany').mockResolvedValue([
         { blockedId: 'blocked-user-1' },
         { blockedId: 'blocked-user-2' },
-      ]);
+      ] as never);
 
       await service.search({ 
         q: 'test', 
         excludeBlocked: 'true',
-        type: 'users' 
+        type: SearchType.USERS,
       }, 'current-user-id');
 
       expect(mockUserIndex.search).toHaveBeenCalledWith('test', expect.objectContaining({

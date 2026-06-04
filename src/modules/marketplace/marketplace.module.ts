@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from 'src/configs/database/database.module';
 import { CloudinaryModule } from 'src/common/services/cloudinary/cloudinary.module';
+import { NotificationModule } from '../notification/notification.module';
 
 // Product
 import { ProductController } from './product/product.controller';
@@ -30,6 +31,7 @@ import { AdminMarketplaceGuard } from './guards/admin-marketplace.guard';
   imports: [
     DatabaseModule,
     CloudinaryModule,
+    NotificationModule,
     BullModule.registerQueue({
       name: 'order-release',
     }),

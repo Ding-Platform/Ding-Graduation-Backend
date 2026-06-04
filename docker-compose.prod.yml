@@ -7,3 +7,7 @@ services:
     # Expose backend only on loopback for host Nginx upstream.
     ports:
       - "127.0.0.1:3000:3000"
+    # Override dev command from docker-compose.yml — use prebuilt dist for fast startup.
+    command: sh -c "node dist/src/main.js"
+    environment:
+      NODE_ENV: production

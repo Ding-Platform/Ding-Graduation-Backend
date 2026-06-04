@@ -298,7 +298,7 @@ export class ReelsService {
       ]),
     );
 
-    const userInterests = await this.interestService.getTopInterests(userId, 20);
+    const userInterests = await this.interestService.getCachedTopInterests(userId, 20);
     const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
 
     const scored = candidates

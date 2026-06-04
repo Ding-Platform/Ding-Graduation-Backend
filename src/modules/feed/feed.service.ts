@@ -112,7 +112,7 @@ export class FeedService {
 
     const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
 
-    const userInterests = await this.interestService.getTopInterests(userId, 20);
+    const userInterests = await this.interestService.getCachedTopInterests(userId, 20);
     const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
 
     const items = posts.map((p) => {
@@ -278,7 +278,7 @@ export class FeedService {
         sentiments.map((s) => [s.contentId, { pos: s.positiveScore, neg: s.negativeScore }]),
       );
 
-      const userInterests = await this.interestService.getTopInterests(userId, 20);
+      const userInterests = await this.interestService.getCachedTopInterests(userId, 20);
       const interestMap = new Map(userInterests.map((i) => [i.topic.toLowerCase(), i.score]));
 
       const ranked = posts

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Ding Platform API",
-    "description": "Complete API collection for Ding Platform Backend (Sprints 1\u201320).\n\nServer-side audit logs (`UserAuditLog`) are written asynchronously when you call instrumented endpoints (posts, likes, comments, search, chat, reels). There is no public audit API yet. After testing those flows, verify rows in PostgreSQL.",
+    "description": "Complete API collection for Ding Platform Backend (Sprints 1\u201320).\n\nServer-side audit logs (`UserAuditLog`) are written asynchronously when you call instrumented endpoints. Admins can query them via `GET /admin/audit-logs` and user insights via `GET /admin/users/:id/insights` (requires admin token).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "2.1.0",
     "_postman_id": "18bc3a44-9f12-462c-954f-e7098ed9d381"
@@ -113,6 +113,31 @@
     {
       "key": "transactionId",
       "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "activityLogId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hashtagTag",
+      "value": "coding",
+      "type": "string"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "groupId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -4498,6 +4523,15 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /posts/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "GET /posts/hashtag/{{hashtagTag}}",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/posts/hashtag/{{hashtagTag}}?page=1&limit=20",
+            "description": "Auto-synced from `post.controller.ts`.\n\n- Method: `GET`\n- Route: `/posts/hashtag/{{hashtagTag}}`\n- Purpose: List posts by hashtag.\n- Notes: Set `hashtagTag` without the leading `#`."
+          },
+          "response": []
         }
       ]
     },
@@ -8027,6 +8061,141 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /marketplace/products/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "List My Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/orders`\n- Purpose: List buyer orders for the authenticated user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/orders/{{orderId}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/cancel",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancelReason\": \"Changed my mind\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{orderId}}/cancel`"
+          },
+          "response": []
+        },
+        {
+          "name": "Open Order Dispute",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/dispute",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disputeReason\": \"Item not received as described in listing\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{orderId}}/dispute`"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Order Delivery",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/orders/{{orderId}}/confirm-delivery",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "deliveryProofImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Auto-synced from `order.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/orders/{{orderId}}/confirm-delivery`\n- Body: multipart with `deliveryProofImage` file."
+          },
+          "response": []
         }
       ]
     },
@@ -8670,6 +8839,83 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"GET /marketplace/seller/deals/history executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "List Seller Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/orders?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/seller/orders`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Seller Order Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/seller/orders/{{orderId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/seller/orders/{{orderId}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Shipment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/seller/orders/{{orderId}}/confirm-shipment",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{sellerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "shipmentTrackingNumber",
+                  "value": "TRACK-123456",
+                  "type": "text"
+                },
+                {
+                  "key": "shipmentCarrier",
+                  "value": "DHL",
+                  "type": "text"
+                },
+                {
+                  "key": "shipmentProofImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "description": "Auto-synced from `seller.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/seller/orders/{{orderId}}/confirm-shipment`"
+          },
+          "response": []
         }
       ]
     },
@@ -9665,6 +9911,146 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"POST /marketplace/admin/sellers/{{userId}}/unsuspend executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "List Admin Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/orders?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/admin/orders`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Order Detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `GET`\n- Route: `/marketplace/admin/orders/{{orderId}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Order Dispute",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/resolve-dispute",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolution\": \"REFUND\",\n  \"adminNote\": \"Buyer evidence accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{orderId}}/resolve-dispute`\n- Body: `resolution` is `REFUND` or `RELEASE`."
+          },
+          "response": []
+        },
+        {
+          "name": "Force Release Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/force-release",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Manual release after review\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{orderId}}/force-release`"
+          },
+          "response": []
+        },
+        {
+          "name": "Force Refund Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/marketplace/admin/orders/{{orderId}}/force-refund",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Manual refund after review\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `admin-marketplace.controller.ts`.\n\n- Method: `POST`\n- Route: `/marketplace/admin/orders/{{orderId}}/force-refund`"
+          },
+          "response": []
         }
       ]
     },
@@ -10527,6 +10913,69 @@
           ]
         },
         {
+          "name": "Get Trending Reels",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/trending?limit=10",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/trending`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reels By Hashtag",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/reels/hashtag/{{hashtagTag}}?limit=10",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/hashtag/{{hashtagTag}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Saved Reels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/saved?limit=10",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/saved`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Reels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/my?limit=10",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/my`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Reels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/user/{{targetUserId}}?limit=10",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/user/{{targetUserId}}`"
+          },
+          "response": []
+        },
+        {
           "name": "Get Reel Details",
           "request": {
             "method": "GET",
@@ -11289,6 +11738,79 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /reels/{{id}} executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "Toggle Reel Bookmark",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/bookmark",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `POST`\n- Route: `/reels/{{reelId}}/bookmark`"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reel Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/analytics",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `GET`\n- Route: `/reels/{{reelId}}/analytics`"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /reels/{{reelId}}/comments/{{commentId}}",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/comments/{{commentId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated comment text\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `PATCH`\n- Route: `/reels/{{reelId}}/comments/{{commentId}}`"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /reels/{{reelId}}/comments/{{commentId}}/like",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/reels/{{reelId}}/comments/{{commentId}}/like",
+            "description": "Auto-synced from `reels.controller.ts`.\n\n- Method: `POST`\n- Route: `/reels/{{reelId}}/comments/{{commentId}}/like`"
+          },
+          "response": []
         },
         {
           "name": "DELETE /reels/{{id}}/comments/{{cid}}",
@@ -14055,6 +14577,21 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"GET /search/indexes executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "Discovery Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/search/discovery?q=backend&type=posts&page=1&limit=20",
+            "description": "Auto-synced from `search.controller.ts`.\n\n- Method: `GET`\n- Route: `/search/discovery`\n- Purpose: Authenticated global discovery search.\n- Query: `q` (required), optional `type`, `page`, `limit`."
+          },
+          "response": []
         }
       ]
     },
@@ -15306,6 +15843,188 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"DELETE /events/{{id}}/rsvp executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Activity",
+      "item": [
+        {
+          "name": "Get My Activity",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/activity?page=1&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `GET`\n- Route: `/activity`"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Activity History",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/activity/clear",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `DELETE`\n- Route: `/activity/clear`"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Activity Log",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/activity/{{activityLogId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `activity.controller.ts`.\n\n- Method: `DELETE`\n- Route: `/activity/{{activityLogId}}`"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Audit",
+      "item": [
+        {
+          "name": "List User Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/audit-logs?page=1&limit=50",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `audit.controller.ts`.\n\n- Method: `GET`\n- Route: `/admin/audit-logs`\n- Auth: Admin (marketplace admin guard).\n- Query: optional `userId`, `action`, `from`, `to`, `page`, `limit`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Insights",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/admin/users/{{targetUserId}}/insights",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `audit.controller.ts`.\n\n- Method: `GET`\n- Route: `/admin/users/{{targetUserId}}/insights`\n- Returns interests, sentiment profile, and recent audit logs."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Interest & Recommendations",
+      "item": [
+        {
+          "name": "Get Interest Preferences",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/interest/preferences?limit=10",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `interest.controller.ts`.\n\n- Method: `GET`\n- Route: `/interest/preferences`"
+          },
+          "response": []
+        },
+        {
+          "name": "Record Dwell Time",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/interest/dwell",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contentId\": \"{{postId}}\",\n  \"contentType\": \"POST\",\n  \"durationSec\": 12\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Auto-synced from `interest.controller.ts`.\n\n- Method: `POST`\n- Route: `/interest/dwell`\n- Body: `contentType` is `POST` or `REEL`."
+          },
+          "response": []
+        },
+        {
+          "name": "For You Recommendations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/recommendations/for-you?type=ALL&limit=20",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "Auto-synced from `recommendation.controller.ts`.\n\n- Method: `GET`\n- Route: `/recommendations/for-you`\n- Query: `type` (`POST`, `REEL`, `ALL`), `limit` (1-50)."
+          },
+          "response": []
         }
       ]
     }

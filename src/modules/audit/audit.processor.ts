@@ -1,5 +1,6 @@
 import { Processor, Process } from '@nestjs/bull';
-import { Job } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { Job, Queue } from 'bull';
 import { PinoLogger } from 'nestjs-pino';
 import { DatabaseService } from '../../configs/database/database.service';
 import { AuditPersistJobData } from './audit.types';
@@ -9,6 +10,8 @@ export class AuditProcessor {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly logger: PinoLogger,
+    @InjectQueue('sentiment-analysis') private readonly sentimentQueue: Queue,
+    @InjectQueue('preference-scoring') private readonly preferenceQueue: Queue,
   ) {
     this.logger.setContext(AuditProcessor.name);
   }
@@ -31,7 +34,7 @@ export class AuditProcessor {
     }
 
     try {
-      await this.prisma.userAuditLog.create({
+      const log = await this.prisma.userAuditLog.create({
         data: {
           userId,
           action,
@@ -41,6 +44,28 @@ export class AuditProcessor {
           textSnapshot: textSnapshot ?? null,
           metadata: metadata ?? undefined,
         },
+      });
+
+      const fanOut = {
+        auditLogId: log.id,
+        userId,
+        action,
+        targetType: targetType ?? undefined,
+        targetId: targetId ?? undefined,
+        textSnapshot: textSnapshot ?? undefined,
+        metadata,
+      };
+
+      if (textSnapshot?.trim()) {
+        await this.sentimentQueue.add('analyze-audit-text', fanOut, {
+          removeOnComplete: true,
+          removeOnFail: 50,
+        });
+      }
+
+      await this.preferenceQueue.add('score-audit-event', fanOut, {
+        removeOnComplete: true,
+        removeOnFail: 50,
       });
     } catch (error) {
       this.logger.error(
