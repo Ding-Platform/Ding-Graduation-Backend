@@ -7,7 +7,8 @@ import { CreateCommentDto } from './dtos/create-comment.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { CommentResponseDto } from './dtos/comment-response.dto';
 import { PaginatedResponse } from '../../common/dtos/pagination.dto';
-import { Prisma } from '@prisma/client';
+import { AuditAction, Prisma } from '@prisma/client';
+import { AuditLogService } from '../audit/audit-log.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 
@@ -19,6 +20,7 @@ export class CommentService {
     private readonly prisma: DatabaseService,
     private readonly notificationService: NotificationService,
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async createComment(
@@ -129,6 +131,15 @@ export class CommentService {
     } catch (notificationError) {
       console.error('Failed to send comment notification', notificationError);
     }
+
+    await this.auditLogService.record({
+      userId: authorId,
+      action: AuditAction.COMMENT_CREATE,
+      targetType: 'COMMENT',
+      targetId: comment.id,
+      textSnapshot: comment.content,
+      metadata: { postId },
+    });
 
     return this.toCommentResponse(comment);
   }
@@ -321,6 +332,15 @@ export class CommentService {
       },
     });
 
+    await this.auditLogService.record({
+      userId: authorId,
+      action: AuditAction.COMMENT_UPDATE,
+      targetType: 'COMMENT',
+      targetId: commentId,
+      textSnapshot: updatedComment.content,
+      metadata: { postId: existingComment.postId },
+    });
+
     return this.toCommentResponse(updatedComment);
   }
 
@@ -394,6 +414,15 @@ export class CommentService {
       commentId,
       timestamp: new Date(),
       action: 'DELETE',
+    });
+
+    await this.auditLogService.record({
+      userId: authorId,
+      action: AuditAction.COMMENT_DELETE,
+      targetType: 'COMMENT',
+      targetId: commentId,
+      textSnapshot: comment.content,
+      metadata: { postId },
     });
 
     return { success: true };

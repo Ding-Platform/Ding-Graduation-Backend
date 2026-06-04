@@ -3,7 +3,8 @@ import { DatabaseService } from '../../configs/database/database.service';
 import { Neo4jService } from '../../configs/neo4j/neo4j.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { Prisma } from '@prisma/client';
+import { AuditAction, Prisma } from '@prisma/client';
+import { AuditLogService } from '../audit/audit-log.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 import { NotificationService } from '../notification/notification.service';
@@ -20,6 +21,7 @@ export class LikeService {
     private neo4j: Neo4jService,
     private readonly notificationService: NotificationService,
     @InjectQueue('graph-sync') private graphQueue: Queue,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // Direct Neo4j sync helpers are no longer needed; we rely on the graph-sync queue.
@@ -107,6 +109,14 @@ export class LikeService {
       console.error('Failed to enqueue like for graph sync', queueError);
     }
 
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.POST_LIKE,
+      targetType: 'POST',
+      targetId: postId,
+      textSnapshot: post.content,
+    });
+
     return {
       ...result,
       likesCount: updatedPost?.likeCount || 0,
@@ -114,6 +124,11 @@ export class LikeService {
   }
 
   async unlikePost(userId: string, postId: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { content: true },
+    });
+
     const like = await this.prisma.like.findUnique({
       where: {
         userId_postId: { userId, postId },
@@ -152,6 +167,14 @@ export class LikeService {
     } catch (queueError) {
       console.error('Failed to enqueue unlike for graph sync', queueError);
     }
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.POST_UNLIKE,
+      targetType: 'POST',
+      targetId: postId,
+      textSnapshot: post?.content,
+    });
 
     // Get updated post with like count
     const updatedPost = await this.prisma.post.findUnique({
@@ -253,6 +276,15 @@ export class LikeService {
         queueError,
       );
     }
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.COMMENT_LIKE,
+      targetType: 'COMMENT',
+      targetId: commentId,
+      textSnapshot: comment.content,
+      metadata: { postId: comment.postId },
+    });
 
     return {
       ...result,

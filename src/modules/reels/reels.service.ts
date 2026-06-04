@@ -6,12 +6,19 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { SentimentContentType, SentimentEventType, ShareType } from '@prisma/client';
+import {
+  AuditAction,
+  SentimentContentType,
+  SentimentEventType,
+  ShareType,
+} from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { RedisService } from '../../configs/redis/redis.service';
 import { extractHashtags, mergeHashtags } from '../../common/utils/hashtag.util';
 import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
+import { AuditLogService } from '../audit/audit-log.service';
 
 @Injectable()
 export class ReelsService {
@@ -21,9 +28,16 @@ export class ReelsService {
     private readonly notificationService: NotificationService,
     private readonly interestService: InterestService,
     private readonly activityService: ActivityService,
+    private readonly auditLogService: AuditLogService,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
   ) {}
+
+  private reelTextSnapshot(caption: string | null, hashtags: string[]): string {
+    const parts = [caption?.trim(), hashtags.length > 0 ? hashtags.join(' ') : '']
+      .filter(Boolean);
+    return parts.join(' ').trim();
+  }
 
   async createUploadUrl(userId: string) {
     const reel = await this.prisma.reel.create({
@@ -393,8 +407,24 @@ export class ReelsService {
       );
 
       if (payload.watchPct && payload.watchPct >= 70) {
-        this.interestService.recordInterest(payload.viewerId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.0);
+        this.interestService.recordInterest(
+          payload.viewerId,
+          [...(reel.hashtags || []), ...(reel.categories || [])],
+          1.0,
+        );
       }
+
+      await this.auditLogService.record({
+        userId: payload.viewerId,
+        sessionId: payload.sessionId,
+        action: AuditAction.REEL_VIEW,
+        targetType: 'REEL',
+        targetId: reelId,
+        textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+        metadata: {
+          watchPct: payload.watchPct,
+        },
+      });
     }
 
     return { counted: true };
@@ -427,6 +457,13 @@ export class ReelsService {
       const updated = await this.prisma.reel.findUnique({
         where: { id: reelId },
         select: { likesCount: true },
+      });
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.REEL_UNLIKE,
+        targetType: 'REEL',
+        targetId: reelId,
+        textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
       });
       return { liked: false, count: Number(updated?.likesCount || 0) };
     }
@@ -464,12 +501,21 @@ export class ReelsService {
       where: { id: reelId },
       select: { likesCount: true, userId: true },
     });
-
-    // Notify the reel owner
     if (updated) {
-      await this.notificationService.notifyReelLike(userId, updated.userId, reelId);
+      await this.notificationService.notifyReelLike(
+        userId,
+        updated.userId,
+        reelId,
+      );
     }
 
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_LIKE,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+    });
     return { liked: true, count: Number(updated?.likesCount || 0) };
   }
 
@@ -580,16 +626,28 @@ export class ReelsService {
       },
     );
 
-    this.interestService.recordInterest(userId, [...(reel.hashtags || []), ...(reel.categories || [])], 1.5);
+    this.interestService.recordInterest(
+      userId,
+      [...(reel.hashtags || []), ...(reel.categories || [])],
+      1.5,
+    );
     this.activityService.logActivity(userId, 'COMMENTED_ON_REEL', reelId, 'REEL');
 
-    // Notify the reel owner
     await this.notificationService.notifyReelComment(
       userId,
       reel.userId,
       reelId,
       payload.content,
     );
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_COMMENT,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: payload.content,
+      metadata: { commentId: comment.id },
+    });
 
     return comment;
   }
@@ -637,6 +695,19 @@ export class ReelsService {
         sharerId: userId,
         shareType: payload.shareType,
         targetId: payload.targetUserId,
+      },
+    });
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.REEL_SHARE,
+      targetType: 'REEL',
+      targetId: reelId,
+      textSnapshot: this.reelTextSnapshot(reel.caption, reel.hashtags),
+      metadata: {
+        shareType: payload.shareType,
+        targetUserId: payload.targetUserId,
+        shareId: share.id,
       },
     });
 

@@ -304,11 +304,19 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async zRangeWithScores(key: string, start: number, stop: number, options?: { REV?: boolean }): Promise<{ value: string; score: number }[]> {
+  async zRangeWithScores(
+    key: string,
+    start: number,
+    stop: number,
+    options?: { REV?: boolean },
+  ): Promise<{ value: string; score: number }[]> {
     if (!this.isConnected) return [];
 
     try {
-      return await this.client.zRangeWithScores(key, start, stop, options);
+      if (options?.REV) {
+        return await this.client.zRangeWithScores(key, start, stop, { REV: true });
+      }
+      return await this.client.zRangeWithScores(key, start, stop);
     } catch (error) {
       console.error('Redis zRangeWithScores error:', error);
       return [];

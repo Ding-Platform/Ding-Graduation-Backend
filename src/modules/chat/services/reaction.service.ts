@@ -17,10 +17,15 @@ import {
   CHAT_CONSTANTS,
   CHAT_ERROR_MESSAGES,
 } from 'src/common/constants/chat.constants';
+import { AuditAction } from '@prisma/client';
+import { AuditLogService } from '../../audit/audit-log.service';
 
 @Injectable()
 export class ReactionService {
-  constructor(private readonly mongodbService: MongodbService) {}
+  constructor(
+    private readonly mongodbService: MongodbService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
 
   /**
    * Add a reaction to a message
@@ -79,6 +84,18 @@ export class ReactionService {
 
     const result = await reactionsCollection.insertOne(newReaction);
     newReaction._id = result.insertedId;
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.CHAT_REACTION,
+      targetType: 'MESSAGE',
+      targetId: messageId,
+      metadata: {
+        emoji: dto.emoji,
+        roomId: message.roomId,
+        reactionId: result.insertedId.toHexString(),
+      },
+    });
 
     return newReaction;
   }

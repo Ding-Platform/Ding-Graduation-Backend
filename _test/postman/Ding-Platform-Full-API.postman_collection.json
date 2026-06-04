@@ -14756,6 +14756,82 @@
               "body": "{\n  \"success\": true,\n  \"message\": \"GET /search/trending executed successfully\",\n  \"data\": {}\n}"
             }
           ]
+        },
+        {
+          "name": "GET /search/public",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/search/public",
+            "description": "Auto-synced from `search.controller.ts`.\n\n- Method: `GET`\n- Route: `/search/public`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/search/public",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "search",
+                    "public"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /search/public executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET /search/indexes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/search/indexes",
+            "description": "Auto-synced from `search.controller.ts`.\n\n- Method: `GET`\n- Route: `/search/indexes`\n- Purpose: Executes `GET` on this backend endpoint.\n- Notes: Update request body/params for your test scenario."
+          },
+          "response": [
+            {
+              "name": "Example Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/search/indexes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "search",
+                    "indexes"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"GET /search/indexes executed successfully\",\n  \"data\": {}\n}"
+            }
+          ]
         }
       ]
     },

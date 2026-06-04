@@ -6,6 +6,7 @@ import { CloudinaryModule } from '../../common/services/cloudinary/cloudinary.mo
 import { NotificationModule } from '../notification/notification.module';
 import { HelperModule } from '../../common/utils/helper/helper.module';
 import { RedisModule } from '../../configs/redis/redis.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -13,11 +14,15 @@ import { RedisModule } from '../../configs/redis/redis.module';
     NotificationModule,
     HelperModule,
     RedisModule,
+    AuditModule,
     BullModule.registerQueue({
       name: 'graph-sync',
     }),
     BullModule.registerQueue({
       name: 'sentiment-analysis',
+    }),
+    BullModule.registerQueue({
+      name: 'search-indexing',
     }),
   ],
   controllers: [PostController],

@@ -103,8 +103,7 @@ export class ProfileService {
       });
 
       if (existingProfile) {
-        // Update existing profile
-        return await this.prisma.profile.update({
+        const updated = await this.prisma.profile.update({
           where: { userId },
           data: {
             bio: data.bio,
@@ -125,10 +124,9 @@ export class ProfileService {
             },
           },
         });
-        
-        // Trigger notification
+
         await this.notificationService.notifyAccountUpdate(userId, 'profile information');
-        
+
         return updated;
       }
 

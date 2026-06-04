@@ -1,5 +1,7 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { UserService } from '../user/user.service';
 import { SignupRequest } from './dtos/request/signup.request';
 import { TokenPayload } from '../../common/types/auth-token-payload.type';
@@ -27,6 +29,7 @@ export class AuthService {
     private readonly sessionService: SessionService,
     private readonly emailService: EmailService,
     private readonly notificationService: NotificationService,
+    @InjectQueue('search-indexing') private readonly searchQueue: Queue,
   ) {}
 
   async signup(request: SignupRequest) {
@@ -72,6 +75,17 @@ export class AuthService {
       otp,
       TOKEN_CONSTANTS.OTP.EXPIRES_IN_MINUTES,
     );
+
+    // Enqueue search indexing for user creation
+    try {
+      await this.searchQueue.add('index-document', {
+        type: 'user',
+        action: 'create',
+        data: { id: user.id },
+      });
+    } catch (queueError) {
+      console.error('Failed to enqueue user creation for search indexing', queueError);
+    }
 
     return user;
   }
@@ -219,6 +233,17 @@ export class AuthService {
             password: null, // No password for OAuth users
           },
         });
+
+        // Enqueue search indexing for user creation
+        try {
+          await this.searchQueue.add('index-document', {
+            type: 'user',
+            action: 'create',
+            data: { id: user.id },
+          });
+        } catch (queueError) {
+          console.error('Failed to enqueue user creation for search indexing', queueError);
+        }
       }
 
       // Check if user is active

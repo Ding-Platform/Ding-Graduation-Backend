@@ -35,16 +35,17 @@ import { HelperModule } from './common/utils/helper/helper.module';
 import { CallModule } from './modules/call/call.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { ReelsModule } from './modules/reels/reels.module';
+import { SearchModule } from './modules/search/search.module';
 import { StoriesModule } from './modules/stories/stories.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { PagesModule } from './modules/pages/pages.module';
-import { SearchModule } from './modules/search/search.module';
 import { StreamingModule } from './modules/streaming/streaming.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { EventsModule } from './modules/events/events.module';
 import { SentimentModule } from './modules/sentiment/sentiment.module';
 import { InterestModule } from './modules/interest/interest.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -115,16 +116,17 @@ try {
     CallModule,
     MarketplaceModule,
     ReelsModule,
+    SearchModule,
     StoriesModule,
     GroupsModule,
     PagesModule,
-    SearchModule,
     StreamingModule,
     AnalyticsModule,
     EventsModule,
     SentimentModule,
     InterestModule,
     ActivityModule,
+    AuditModule,
   ],
   controllers: [AppController, HealthController],
   providers: [

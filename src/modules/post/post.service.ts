@@ -17,6 +17,7 @@ import { RedisService } from '../../configs/redis/redis.service';
 import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
 import {
+  AuditAction,
   Post,
   PostPrivacy,
   Prisma,
@@ -25,6 +26,7 @@ import {
 } from '@prisma/client';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { AuditLogService } from '../audit/audit-log.service';
 
 type SimplePostResponse = {
   id: string;
@@ -50,6 +52,8 @@ export class PostService {
     @InjectQueue('graph-sync') private readonly graphQueue: Queue,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
+    @InjectQueue('search-indexing') private readonly searchQueue: Queue,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async getAllPosts(
@@ -299,6 +303,20 @@ export class PostService {
         );
       }
 
+      // Enqueue search indexing for post creation
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'create',
+          data: { id: newPost.id },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post creation for search indexing',
+          queueError,
+        );
+      }
+
       // Create post history
       await this.createPostHistory(
         newPost.id,
@@ -308,7 +326,6 @@ export class PostService {
         'CREATED',
       );
 
-      // Async sentiment analysis (non-blocking for API response).
       await this.sentimentQueue.add(
         'analyze-content',
         {
@@ -325,6 +342,14 @@ export class PostService {
       );
 
       this.activityService.logActivity(userId, 'CREATED_POST', newPost.id, 'POST');
+
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_CREATE,
+        targetType: 'POST',
+        targetId: newPost.id,
+        textSnapshot: data.content,
+      });
       return this.getPostById(newPost.id, userId);
     } catch (error) {
       console.error('Post creation error:', error);
@@ -397,6 +422,20 @@ export class PostService {
         );
       }
 
+      // Enqueue search indexing for post update
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'update',
+          data: { id: postId },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post update for search indexing',
+          queueError,
+        );
+      }
+
       // Create history record
       await this.createPostHistory(
         postId,
@@ -405,6 +444,14 @@ export class PostService {
         updatedPost.privacy,
         'UPDATED',
       );
+
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_UPDATE,
+        targetType: 'POST',
+        targetId: postId,
+        textSnapshot: updatedPost.content,
+      });
 
       return this.getPostById(postId, userId);
     } catch (error) {
@@ -454,6 +501,20 @@ export class PostService {
         );
       }
 
+      // Enqueue search indexing for post deletion
+      try {
+        await this.searchQueue.add('index-document', {
+          type: 'post',
+          action: 'delete',
+          data: { id: postId },
+        });
+      } catch (queueError) {
+        console.error(
+          'Failed to enqueue post deletion for search indexing',
+          queueError,
+        );
+      }
+
       // Create history record
       await this.createPostHistory(
         postId,
@@ -462,6 +523,14 @@ export class PostService {
         post.privacy,
         'DELETED',
       );
+
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_DELETE,
+        targetType: 'POST',
+        targetId: postId,
+        textSnapshot: post.content,
+      });
 
       return { message: 'Post deleted successfully' };
     } catch (error) {
@@ -626,6 +695,13 @@ export class PostService {
           id: existingLike.id,
         },
       });
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_UNLIKE,
+        targetType: 'POST',
+        targetId: postId,
+        textSnapshot: post.content,
+      });
       return { liked: false };
     } else {
       await this.prisma.like.create({
@@ -659,6 +735,14 @@ export class PostService {
         },
       );
 
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_LIKE,
+        targetType: 'POST',
+        targetId: postId,
+        textSnapshot: post.content,
+      });
+
       return { liked: true };
     }
   }
@@ -679,16 +763,26 @@ export class PostService {
       await this.prisma.savedPost.create({
         data: { userId, postId },
       });
-
       const post = await this.prisma.post.findUnique({
         where: { id: postId },
-        select: { hashtags: true, categories: true },
+        select: { content: true, hashtags: true, categories: true },
       });
       if (post) {
-        this.interestService.recordInterest(userId, [...(post.hashtags || []), ...(post.categories || [])], 2.0);
+        this.interestService.recordInterest(
+          userId,
+          [...(post.hashtags || []), ...(post.categories || [])],
+          2.0,
+        );
       }
       this.activityService.logActivity(userId, 'SAVED_POST', postId, 'POST');
 
+      await this.auditLogService.record({
+        userId,
+        action: AuditAction.POST_SAVE,
+        targetType: 'POST',
+        targetId: postId,
+        textSnapshot: post?.content,
+      });
       return { saved: true };
     }
   }
@@ -814,6 +908,15 @@ export class PostService {
       },
     );
 
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.COMMENT_CREATE,
+      targetType: 'COMMENT',
+      targetId: comment.id,
+      textSnapshot: comment.content,
+      metadata: { postId },
+    });
+
     return comment;
   }
 
@@ -855,6 +958,15 @@ export class PostService {
         queueError,
       );
     }
+
+    await this.auditLogService.record({
+      userId,
+      action: AuditAction.COMMENT_DELETE,
+      targetType: 'COMMENT',
+      targetId: commentId,
+      textSnapshot: comment.content,
+      metadata: { postId: comment.postId },
+    });
 
     return { success: true };
   }
