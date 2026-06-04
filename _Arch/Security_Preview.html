@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Security Architecture Preview</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 40px; max-width: 1000px; margin: 0 auto; color: #333; }
+        pre { background: #f6f8fa; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        code { font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace; background: #f6f8fa; padding: 2px 4px; border-radius: 4px; }
+        pre code { padding: 0; background: transparent; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; }
+        th { background-color: #f6f8fa; }
+        h1, h2, h3 { border-bottom: 1px solid #eaecef; padding-bottom: 0.3em; margin-top: 24px; }
+        .mermaid { text-align: center; margin: 30px 0; }
+        @media print {
+            body { padding: 0; }
+            .mermaid { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div id="content"></div>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        
+        const rawMd = `# Ding Platform: Security Architecture & Threat Model
+**Prepared for: Graduation Project Documentation**
+
+As a highly scalable social and commerce platform, the Ding Platform processes sensitive user data, real-time communications, and financial escrow transactions. This document outlines the rigorous security architecture, authentication mechanisms, and access control models implemented across the backend.
+
+---
+
+## 1. High-Level Security Topology
+
+The platform enforces a Defense-in-Depth strategy, layering security at the Edge, Application, and Data layers.
+
+\`\`\`mermaid
+flowchart TD
+    %% Edge Layer
+    Client[Client]
+    WAF[WAF]
+    
+    %% App Layer (NestJS)
+    subgraph app["Application Layer (NestJS Backend)"]
+        Helmet[Helmet]
+        RateLimiter[RateLimiter]
+        Guards[Guards]
+        Validator[Validator]
+    end
+    
+    %% Data Layer
+    subgraph data["Data Layer (VPC Protected)"]
+        Postgres[Postgres]
+        Neo4j[Neo4j]
+    end
+
+    Client -->|s12| WAF
+    WAF --> Helmet
+    Helmet --> RateLimiter
+    RateLimiter --> Guards
+    Guards --> Validator
+    Validator --> Postgres
+    Validator --> Neo4j
+\`\`\`
+
+---
+
+## 2. Authentication & Authorization (Identity Security)
+
+The platform utilizes a stateless, token-based authentication mechanism supplemented by OAuth2.0 for external identity providers.
+
+### 2.1. JWT Strategy & Token Lifecycle
+- **Access Tokens:** Short-lived JWTs (JSON Web Tokens) are issued upon login via \`LocalStrategy\` (Email/Password) or \`GoogleStrategy\` (OAuth).
+- **Refresh Tokens:** Long-lived refresh tokens are stored securely to generate new access tokens without requiring frequent user logins, minimizing the window of vulnerability if an access token is intercepted.
+- **Password Hashing:** Passwords are never stored in plaintext. They are salted and hashed using **bcrypt** before hitting the database.
+
+### 2.2. Role-Based Access Control (RBAC)
+Access to critical endpoints is restricted by \`RolesGuard\` and specific module guards:
+- **\`@Roles(Role.ADMIN)\`**: Restricts moderation endpoints (resolving reports, banning users) strictly to internal staff.
+- **\`seller.guard.ts\`**: Ensures only users with a verified and approved \`SellerProfile\` can create Marketplace listings or access Escrow withdrawal systems.
+
+---
+
+## 3. Real-Time Security (WebSockets & WebRTC)
+
+Securing real-time communication is paramount to prevent eavesdropping and unauthorized room access.
+
+### 3.1. WebSocket Authentication (\`ws-jwt.guard.ts\`)
+Standard HTTP cookies or headers do not apply seamlessly to WebSockets.
+1. The client establishes a WS connection.
+2. The \`chat.middleware.ts\` intercepts the handshake.
+3. The \`ws-jwt.guard.ts\` extracts the Bearer token from the handshake payload, verifies the signature, and rejects the socket connection immediately if invalid.
+
+### 3.2. Room-Level Access Control (\`room-member.guard.ts\`)
+Even if a user is authenticated, they cannot listen to arbitrary chat rooms.
+- Before a user can send a message or fetch chat history, the \`RoomMemberGuard\` queries PostgreSQL to verify that the \`User\` is explicitly linked via a \`RoomMember\` record to the target \`RoomId\`. 
+- **WebRTC Signaling:** Call offers/answers are routed strictly through these validated room channels.
+
+---
+
+## 4. Privacy & Social Graph Security
+
+Social networks risk severe data leaks if privacy settings are not enforced at the database level.
+
+### 4.1. Granular Profile Permissions (\`profile-permission.guard.ts\`)
+The \`ProfilePrivacy\` schema dictates visibility constraints (e.g., \`PUBLIC\`, \`FRIENDS\`, \`PRIVATE\`).
+- If User A requests User B's posts, the system checks User B's \`postsVisibility\`.
+- If set to \`FRIENDS\`, the backend executes a fast Cypher query against **Neo4j** to verify the existence of a \`(UserA)-[:FRIENDS]-(UserB)\` edge. If the edge does not exist, the response is blocked with a 403 Forbidden.
+
+---
+
+## 5. Transaction & Escrow Security
+
+The Marketplace module handles financial value, requiring strict state-machine enforcement.
+
+### 5.1. Immutable Deal Logs
+Transactions utilize an Escrow model to prevent fraud:
+1. Buyer pays; funds are locked (Status: \`PENDING\`).
+2. Seller ships item.
+3. Buyer confirms receipt (Status: \`DELIVERED\`).
+4. Funds are released.
+- Every state transition is appended to a \`DealLog\` table. This provides a cryptographically secure, append-only audit trail for Admins in case of disputes.
+
+---
+
+## 6. Infrastructure & Transport Security
+
+### 6.1. Payload Sanitization
+- All incoming requests pass through the global \`ValidationPipe\`.
+- Using \`class-validator\`, malicious payloads (e.g., SQL injection strings, oversized arrays) are stripped or rejected before reaching the controller.
+- \`serialize.interceptor.ts\` guarantees that sensitive fields (like user passwords or internal DB IDs) are automatically stripped from outbound JSON responses.
+
+### 6.2. File Upload Security
+- Direct uploads to the backend are avoided. Instead, files pass through \`upload-post-files.interceptor.ts\`, which streams them securely to **Cloudinary** (CDN).
+- The CDN handles malware scanning and image optimization, returning safe, sanitized URLs to the backend.
+`;
+        
+        const renderer = new marked.Renderer();
+        const originalCodeRenderer = renderer.code.bind(renderer);
+        renderer.code = function({text, lang, escaped}) {
+            if (lang === 'mermaid') {
+                return '<div class="mermaid">' + text + '</div>';
+            }
+            return originalCodeRenderer({text, lang, escaped});
+        };
+        
+        document.getElementById('content').innerHTML = marked.parse(rawMd, { renderer: renderer });
+        
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        setTimeout(() => mermaid.run(), 500);
+    </script>
+</body>
+</html>

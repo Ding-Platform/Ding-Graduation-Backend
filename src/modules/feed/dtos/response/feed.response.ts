@@ -5,7 +5,7 @@ export class FeedItemDto {
   id: string;
 
   @Expose()
-  author: string;
+  author: any;
 
   @Expose()
   time: string;

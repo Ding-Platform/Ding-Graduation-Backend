@@ -134,6 +134,7 @@ export const ERROR_MESSAGES = {
   POST_UPDATE_FAILED: 'Failed to update post. Please try again',
   POST_DELETE_FAILED: 'Failed to delete post. Please try again',
   POST_UNAUTHORIZED: 'You do not have permission to modify this post',
+  POST_EMPTY: 'Post cannot be empty. Please provide text content or attach media.',
   POST_CONTENT_TOO_LONG:
     'Post content exceeds maximum length of 10,000 characters',
   POST_TOO_MANY_IMAGES: 'You can upload a maximum of 5 images per post',

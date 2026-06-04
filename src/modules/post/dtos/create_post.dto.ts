@@ -18,17 +18,17 @@ export enum PostPrivacy {
 }
 
 export class CreatePostDto {
-  @IsNotEmpty({ message: 'Content is required' })
+  @IsOptional()
   @IsString({ message: 'Content must be a string' })
   @MaxLength(POST_CONSTANTS.VALIDATION.MAX_CONTENT_LENGTH, {
     message: `Content must not exceed ${POST_CONSTANTS.VALIDATION.MAX_CONTENT_LENGTH} characters`,
   })
-  content: string;
+  content?: string;
 
-  @IsNotEmpty({ message: 'Author ID is required' })
+  @IsOptional()
   @IsString({ message: 'Author ID must be a string' })
   @IsUUID('4', { message: 'Author ID must be a valid UUID' })
-  authorId: string;
+  authorId?: string;
 
   @IsOptional()
   @IsEnum(PostPrivacy, { message: 'Invalid privacy setting' })

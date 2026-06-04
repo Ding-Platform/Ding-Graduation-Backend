@@ -60,11 +60,18 @@ export class MessageService {
     const roomsCollection =
       this.mongodbService.getCollection<RoomDocument>(ROOMS_COLLECTION);
 
+    // Default content to empty string if undefined
+    dto.content = dto.content || '';
+
+    const hasContent = dto.content.trim().length > 0;
+    const hasMedia = media && media.length > 0;
+
+    if (!hasContent && !hasMedia) {
+      throw new BadRequestException(CHAT_ERROR_MESSAGES.MESSAGE_EMPTY);
+    }
+
     // Validate content length
-    if (
-      dto.content &&
-      dto.content.length > CHAT_CONSTANTS.MESSAGE.MAX_CONTENT_LENGTH
-    ) {
+    if (dto.content.length > CHAT_CONSTANTS.MESSAGE.MAX_CONTENT_LENGTH) {
       throw new BadRequestException(CHAT_ERROR_MESSAGES.MESSAGE_TOO_LONG);
     }
 

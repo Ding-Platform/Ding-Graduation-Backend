@@ -174,8 +174,21 @@ export class PostService {
     data: CreatePostDto,
     files?: Record<string, Express.Multer.File[]>,
   ): Promise<SimplePostResponse> {
-    const userId = data.authorId;
+    const userId = data.authorId!;
     try {
+      // Ensure content is at least an empty string
+      data.content = data.content || '';
+
+      const hasTextContent = data.content.trim().length > 0;
+      const hasMedia = files && ((files.images && files.images.length > 0) || (files.videos && files.videos.length > 0));
+
+      if (!hasTextContent && !hasMedia) {
+        throw GenericHttpException.createLocalized(
+          ERROR_MESSAGES.POST_EMPTY,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       // Validate content length
       this.validatePostContent(data.content);
 
@@ -200,7 +213,7 @@ export class PostService {
       const newPost = await this.prisma.post.create({
         data: {
           content: data.content,
-          authorId: data.authorId,
+          authorId: data.authorId!,
           privacy: data.privacy,
           hashtags,
         },

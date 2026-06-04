@@ -21,9 +21,9 @@ export class CreateMessageDto {
     maxLength: 4096,
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(4096)
-  content: string;
+  content?: string;
 
   @ApiProperty({
     description: 'Room ID to send the message to',

@@ -260,25 +260,25 @@ export class ChatController {
       properties: {
         content: { type: 'string' },
         replyToId: { type: 'string' },
-        files: { type: 'array', items: { type: 'string', format: 'binary' } },
+        images: { type: 'array', items: { type: 'string', format: 'binary' } },
       },
     },
   })
   @UseGuards(RoomMemberGuard)
   @RoomIdParam('roomId')
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'files', maxCount: 10 }]))
+  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
   async sendMessageWithMedia(
     @Param('roomId') roomId: string,
     @currentUser() user: User,
     @Body() dto: CreateMessageDto,
-    @UploadedFiles() files: { files?: Express.Multer.File[] },
+    @UploadedFiles() files: { images?: Express.Multer.File[] },
   ) {
     dto.roomId = roomId;
 
     // Upload media files
     let mediaFiles;
-    if (files?.files && files.files.length > 0) {
-      mediaFiles = await this.mediaService.uploadMultiple(files.files, 'temp');
+    if (files?.images && files.images.length > 0) {
+      mediaFiles = await this.mediaService.uploadMultiple(files.images, 'temp');
     }
 
     // Send message with media

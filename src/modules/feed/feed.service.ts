@@ -133,7 +133,11 @@ export class FeedService {
 
       return {
         id: p.id,
-        author: p.author?.name ?? '',
+        author: {
+          id: p.author?.id ?? '',
+          name: p.author?.name ?? '',
+          image: p.author?.image ?? null,
+        },
         time: p.createdAt.toISOString(),
         content: p.content,
         likes: p._count?.Likes ?? 0,
@@ -318,7 +322,11 @@ export class FeedService {
 
       const data: FeedItemDto[] = ranked.map(({ post: p }) => ({
         id: p.id,
-        author: p.author?.name ?? '',
+        author: {
+          id: p.author?.id ?? '',
+          name: p.author?.name ?? '',
+          image: p.author?.image ?? null,
+        },
         time: p.createdAt.toISOString(),
         content: p.content,
         likes: p._count?.Likes ?? 0,

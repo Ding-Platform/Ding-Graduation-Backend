@@ -1,0 +1,1738 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table User {
+  id String [pk]
+  email String [unique, not null]
+  name String
+  image String
+  password String
+  emailVerified Boolean [not null, default: false]
+  active Boolean [not null, default: true]
+  isBanned Boolean [not null, default: false]
+  banReason String
+  role UserRole [not null, default: 'USER']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  Session Session [not null]
+  Otp Otp [not null]
+  Profile Profile
+  Notification Notification [not null]
+  NotificationActor Notification [not null]
+  Post Post [not null]
+  Likes Like [not null]
+  Comments Comment [not null]
+  savedPosts SavedPost [not null]
+  sentFriendRequests Friendship [not null]
+  receivedFriendRequests Friendship [not null]
+  following Follow [not null]
+  followers Follow [not null]
+  blockedUsers Block [not null]
+  blockedBy Block [not null]
+  messages Message [not null]
+  roomMemberships RoomMember [not null]
+  createdRooms Room [not null]
+  messageReactions MessageReaction [not null]
+  readReceipts ReadReceipt [not null]
+  products Product [not null]
+  transactions Transaction [not null]
+  sales Transaction [not null]
+  buyerOrders Order [not null]
+  sellerOrders Order [not null]
+  reports Report [not null]
+  noroChats NoroChat [not null]
+  sellerApplication SellerApplication
+  sellerProfile SellerProfile
+  adminDealLogs DealLog [not null]
+  callRoomsCreated CallRoom [not null]
+  callParticipants CallParticipant [not null]
+  noroConversations NoroConversation [not null]
+  noroMessages NoroMessage [not null]
+  userMoodProfile UserMoodProfile
+  contentSentiments ContentSentiment [not null]
+  sentimentProfile UserSentimentProfile
+  sentimentEvents SentimentEvent [not null]
+  interests UserInterest [not null]
+  activityLogs ActivityLog [not null]
+  noroInterventions NoroIntervention [not null]
+  crisisEvents CrisisEvent [not null]
+  emergencyContacts UserEmergencyContact [not null]
+  reels Reel [not null]
+  reelViews ReelView [not null]
+  reelLikes ReelLike [not null]
+  reelComments ReelComment [not null]
+  reelShares ReelShare [not null]
+  reelBookmarks ReelBookmark [not null]
+  reelCommentLikes ReelCommentLike [not null]
+  stories Story [not null]
+  storyViews StoryView [not null]
+  ownedGroups Group [not null]
+  groupMemberships GroupMember [not null]
+  groupJoinRequests GroupJoinRequest [not null]
+  ownedPages Page [not null]
+  pageRoles PageMember [not null]
+  hostedStreams LiveStream [not null]
+  analyticsEvents AnalyticsEvent [not null]
+  hostedEvents Event [not null]
+  eventRsvps EventAttendee [not null]
+  eventTickets EventTicket [not null]
+  eventReminders EventReminder [not null]
+}
+
+Table Session {
+  id String [pk]
+  status SessionStatus [not null, default: 'ACTIVE']
+  refreshToken String
+  ipAddress String
+  userAgent String
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Otp {
+  id String [pk]
+  otpHash String [not null]
+  otpExpiresAt DateTime [not null]
+  otpVerified Boolean [not null, default: false]
+  type OtpType [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Profile {
+  id String [pk]
+  userId String [unique, not null]
+  user User [not null]
+  bio String
+  coverPhoto String
+  dateOfBirth DateTime
+  location String
+  website String
+  phoneNumber String
+  privacySettings ProfilePrivacy
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table ProfilePrivacy {
+  id String [pk]
+  profileId String [unique, not null]
+  profile Profile [not null]
+  profileVisibility VisibilityType [not null, default: 'FRIENDS']
+  postsVisibility VisibilityType [not null, default: 'FRIENDS']
+  friendsVisibility VisibilityType [not null, default: 'FRIENDS']
+  bioVisibility VisibilityType [not null, default: 'FRIENDS']
+  emailVisibility VisibilityType [not null, default: 'PRIVATE']
+  phoneVisibility VisibilityType [not null, default: 'PRIVATE']
+  locationVisibility VisibilityType [not null, default: 'FRIENDS']
+  dateOfBirthVisibility VisibilityType [not null, default: 'FRIENDS']
+  whoCanSendFriendRequests VisibilityType [not null, default: 'EVERYONE']
+  whoCanMessageMe VisibilityType [not null, default: 'FRIENDS']
+  allowCameraAccess Boolean [not null, default: false]
+  allowMicrophoneAccess Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Notification {
+  id String [pk]
+  type NotificationType [not null]
+  title String [not null]
+  message String [not null]
+  read Boolean [not null, default: false]
+  data Json
+  userId String [not null]
+  user User [not null]
+  actorId String
+  actor User
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Post {
+  id String [pk]
+  content String [not null]
+  authorId String [not null]
+  author User [not null]
+  mediaUrls String[] [not null]
+  privacy PostPrivacy [not null, default: 'PUBLIC']
+  hashtags String[] [not null]
+  categories String[] [not null]
+  isDeleted Boolean [not null, default: false]
+  deletedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  likeCount Int [not null, default: 0]
+  commentCount Int [not null, default: 0]
+  PostHistory PostHistory [not null]
+  PostMedia PostMedia [not null]
+  PostAudience PostAudience [not null]
+  Likes Like [not null]
+  Comments Comment [not null]
+  savedBy SavedPost [not null]
+  groupPosts GroupPost [not null]
+  pagePosts PagePost [not null]
+}
+
+Table Like {
+  id String [pk]
+  userId String [not null]
+  postId String
+  commentId String
+  user User [not null]
+  post Post
+  comment Comment
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, postId) [unique]
+    (userId, commentId) [unique]
+  }
+}
+
+Table Comment {
+  id String [pk]
+  content String [not null]
+  postId String [not null]
+  authorId String [not null]
+  parentId String
+  likeCount Int [not null, default: 0]
+  replyCount Int [not null, default: 0]
+  post Post [not null]
+  author User [not null]
+  parent Comment
+  replies Comment [not null]
+  likes Like [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+}
+
+Table Friendship {
+  id String [pk]
+  requester User [not null]
+  requesterId String [not null]
+  recipient User [not null]
+  recipientId String [not null]
+  status FriendshipStatus [not null, default: 'PENDING']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (requesterId, recipientId) [unique]
+  }
+}
+
+Table Follow {
+  id String [pk]
+  follower User [not null]
+  followerId String [not null]
+  following User [not null]
+  followingId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (followerId, followingId) [unique]
+  }
+}
+
+Table Block {
+  id String [pk]
+  blocker User [not null]
+  blockerId String [not null]
+  blocked User [not null]
+  blockedId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (blockerId, blockedId) [unique]
+  }
+}
+
+Table PostHistory {
+  id String [pk]
+  postId String [not null]
+  post Post [not null]
+  content String [not null]
+  mediaUrls String[] [not null]
+  privacy PostPrivacy [not null]
+  changeType PostChangeType [not null]
+  changedAt DateTime [default: `now()`, not null]
+}
+
+Table PostMedia {
+  id String [pk]
+  postId String [not null]
+  post Post [not null]
+  url String [not null]
+  type MediaType [not null]
+  publicId String [not null]
+  size Int [not null]
+  width Int
+  height Int
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table PostAudience {
+  id String [pk]
+  postId String [not null]
+  post Post [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (postId, userId) [unique]
+  }
+}
+
+Table Message {
+  id String [pk]
+  content String [not null]
+  userId String [not null]
+  user User [not null]
+  roomId String [not null]
+  room Room [not null]
+  replyToId String
+  replyTo Message
+  replies Message [not null]
+  isEdited Boolean [not null, default: false]
+  isForwarded Boolean [not null, default: false]
+  forwardedFromId String
+  deletedAt DateTime
+  deletedForEveryone Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  reactions MessageReaction [not null]
+  readReceipts ReadReceipt [not null]
+  media MessageMedia [not null]
+  editHistory MessageEditHistory [not null]
+  pinnedIn PinnedMessage [not null]
+}
+
+Table MessageReaction {
+  id String [pk]
+  emoji String [not null]
+  messageId String [not null]
+  message Message [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (messageId, userId, emoji) [unique]
+  }
+}
+
+Table ReadReceipt {
+  id String [pk]
+  messageId String [not null]
+  message Message [not null]
+  userId String [not null]
+  user User [not null]
+  readAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (messageId, userId) [unique]
+  }
+}
+
+Table MessageMedia {
+  id String [pk]
+  messageId String [not null]
+  message Message [not null]
+  url String [not null]
+  type MessageMediaType [not null]
+  fileName String
+  fileSize Int
+  mimeType String
+  width Int
+  height Int
+  duration Int
+  thumbnail String
+  publicId String
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table MessageEditHistory {
+  id String [pk]
+  messageId String [not null]
+  message Message [not null]
+  content String [not null]
+  editedAt DateTime [default: `now()`, not null]
+}
+
+Table Room {
+  id String [pk]
+  type RoomType [not null, default: 'DIRECT']
+  name String
+  description String
+  imageUrl String
+  createdById String
+  createdBy User
+  lastMessageAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  messages Message [not null]
+  members RoomMember [not null]
+  pinnedMessages PinnedMessage [not null]
+}
+
+Table RoomMember {
+  id String [pk]
+  roomId String [not null]
+  room Room [not null]
+  userId String [not null]
+  user User [not null]
+  role RoomMemberRole [not null, default: 'MEMBER']
+  isMuted Boolean [not null, default: false]
+  isArchived Boolean [not null, default: false]
+  joinedAt DateTime [default: `now()`, not null]
+  leftAt DateTime
+  lastReadMessageId String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (roomId, userId) [unique]
+  }
+}
+
+Table PinnedMessage {
+  id String [pk]
+  roomId String [not null]
+  room Room [not null]
+  messageId String [not null]
+  message Message [not null]
+  pinnedAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (roomId, messageId) [unique]
+  }
+}
+
+Table SavedPost {
+  id String [pk]
+  user User [not null]
+  userId String [not null]
+  post Post [not null]
+  postId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table Product {
+  id String [pk]
+  title String [not null]
+  description String [not null]
+  price Float [not null]
+  currency String [not null, default: 'USD']
+  images String[] [not null]
+  categoryId String
+  status ProductStatus [not null, default: 'ACTIVE']
+  quantity Int [not null, default: 1]
+  sellerId String [not null]
+  seller User [not null]
+  transactions Transaction [not null]
+  orders Order [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Transaction {
+  id String [pk]
+  amount Float [not null]
+  currency String [not null]
+  status TransactionStatus [not null, default: 'PENDING']
+  buyerId String [not null]
+  buyer User [not null]
+  sellerId String [not null]
+  seller User [not null]
+  productId String [not null]
+  product Product [not null]
+  orderId String [unique]
+  order Order
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Order {
+  id String [pk]
+  orderNumber String [unique, not null]
+  status OrderStatus [not null, default: 'PLACED']
+  buyerId String [not null]
+  buyer User [not null]
+  sellerId String [not null]
+  seller User [not null]
+  productId String [not null]
+  product Product [not null]
+  quantity Int [not null, default: 1]
+  unitPrice Float [not null]
+  currency String [not null, default: 'USD']
+  totalAmount Float [not null]
+  escrowAmount Float [not null]
+  escrowStatus EscrowStatus [not null, default: 'HELD']
+  shipmentTrackingNumber String
+  shipmentCarrier String
+  shipmentProofImageUrl String
+  shippedAt DateTime
+  deliveryProofImageUrl String
+  deliveredAt DateTime
+  buyerConfirmedAt DateTime
+  releaseScheduledAt DateTime
+  releasedAt DateTime
+  disputeReason String
+  disputeOpenedAt DateTime
+  disputeResolvedAt DateTime
+  disputeResolution String
+  disputeResolvedById String
+  cancelledAt DateTime
+  cancelReason String
+  transaction Transaction
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Report {
+  id String [pk]
+  targetId String [not null]
+  targetType ReportTargetType [not null]
+  reason ReportReason [not null]
+  description String
+  status ReportStatus [not null, default: 'PENDING']
+  actionTaken String
+  reporterId String [not null]
+  reporter User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table NoroChat {
+  id String [pk]
+  message String [not null]
+  response String [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table ContentSentiment {
+  id String [pk]
+  contentType SentimentContentType [not null]
+  contentId String [not null]
+  userId String [not null]
+  user User [not null]
+  positiveScore Int [not null]
+  negativeScore Int [not null]
+  wordTokens Json [not null]
+  sentenceTokens Json [not null]
+  rawText String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (contentType, contentId) [unique]
+  }
+}
+
+Table UserSentimentProfile {
+  userId String [pk]
+  user User [not null]
+  positivePoints Float [not null, default: 50]
+  negativePoints Float [not null, default: 50]
+  totalEventsProcessed Int [not null, default: 0]
+  noroActive Boolean [not null, default: false]
+  lastInterventionAt DateTime
+  interventionCount Int [not null, default: 0]
+  feedBoostPositive Boolean [not null, default: false]
+  feedBoostUntil DateTime
+  lastUpdated DateTime [default: `now()`, not null]
+}
+
+Table SentimentEvent {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  eventType SentimentEventType [not null]
+  sourceContentId String
+  sourceUserId String
+  positiveImpact Float [not null]
+  negativeImpact Float [not null]
+  resultPositive Float [not null]
+  resultNegative Float [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table NoroIntervention {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  method InterventionMethod [not null]
+  triggerScore Float [not null]
+  resolved Boolean [not null, default: false]
+  resolvedAt DateTime
+  conversationId String
+  suggestedFriendIds String[] [not null]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table CallRoom {
+  id String [pk]
+  createdById String
+  createdBy User
+  endedAt DateTime
+  maxParticipants Int [not null, default: 16]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  participants CallParticipant [not null]
+}
+
+Table CallParticipant {
+  id String [pk]
+  roomId String [not null]
+  room CallRoom [not null]
+  userId String [not null]
+  user User [not null]
+  peerId String [not null]
+  isAudioOn Boolean [not null, default: true]
+  isVideoOn Boolean [not null, default: true]
+  joinedAt DateTime [default: `now()`, not null]
+  leftAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table NoroConversation {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  trigger NoroTrigger
+  moodScore Int
+  startedAt DateTime [default: `now()`, not null]
+  endedAt DateTime
+  deletedAt DateTime
+  messages NoroMessage [not null]
+  moodSource UserMoodProfile [not null]
+}
+
+Table NoroMessage {
+  id String [pk]
+  conversationId String [not null]
+  conversation NoroConversation [not null]
+  userId String [not null]
+  user User [not null]
+  role NoroMessageRole [not null]
+  content String [not null]
+  sentiment Json
+  keywords String[] [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+  crisisEvents CrisisEvent [not null]
+}
+
+Table UserMoodProfile {
+  userId String [pk]
+  user User [not null]
+  moodScore Decimal
+  dominantMood String
+  energyLevel Decimal
+  lastUpdated DateTime [default: `now()`, not null]
+  sourceConvId String
+  sourceConv NoroConversation
+}
+
+Table CrisisEvent {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  messageId String
+  message NoroMessage
+  crisisScore Decimal [not null]
+  severity CrisisSeverity [not null]
+  intervention CrisisIntervention
+  keywordsHit String[] [not null]
+  resolvedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table CrisisHotline {
+  id String [pk]
+  countryCode String [not null]
+  name String [not null]
+  phone String
+  sms String
+  chatUrl String
+  language String [not null, default: 'en']
+  isActive Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table UserEmergencyContact {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  contactName String [not null]
+  contactPhone String
+  contactEmail String
+  notifyOnCrisis Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table Reel {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  videoUrl String
+  rawVideoKey String
+  thumbnailUrl String
+  caption String
+  audioTrackId String
+  audioTrack AudioTrack
+  audioOffsetMs Int [not null, default: 0]
+  durationSec Int
+  width Int
+  height Int
+  fileSizeBytes BigInt
+  status ReelStatus [not null, default: 'PENDING']
+  failReason String
+  viewsCount BigInt [not null, default: 0]
+  likesCount BigInt [not null, default: 0]
+  commentsCount BigInt [not null, default: 0]
+  sharesCount BigInt [not null, default: 0]
+  savesCount BigInt [not null, default: 0]
+  hashtags String[] [not null]
+  categories String[] [not null]
+  isPublic Boolean [not null, default: true]
+  commentsEnabled Boolean [not null, default: true]
+  downloadsEnabled Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+  views ReelView [not null]
+  likes ReelLike [not null]
+  comments ReelComment [not null]
+  shares ReelShare [not null]
+  bookmarks ReelBookmark [not null]
+}
+
+Table AudioTrack {
+  id String [pk]
+  title String [not null]
+  artist String
+  durationSec Int [not null]
+  audioUrl String [not null]
+  waveformData Json
+  genre String
+  isLicensed Boolean [not null, default: false]
+  usageCount BigInt [not null, default: 0]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  reels Reel [not null]
+}
+
+Table ReelView {
+  id String [pk]
+  reelId String [not null]
+  reel Reel [not null]
+  viewerId String
+  viewer User
+  viewedAt DateTime [default: `now()`, not null]
+  watchPct Int
+  sessionId String
+}
+
+Table ReelLike {
+  reelId String [not null]
+  reel Reel [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (reelId, userId) [pk]
+  }
+}
+
+Table ReelComment {
+  id String [pk]
+  reelId String [not null]
+  reel Reel [not null]
+  userId String [not null]
+  user User [not null]
+  parentId String
+  parent ReelComment
+  replies ReelComment [not null]
+  content String [not null]
+  likesCount Int [not null, default: 0]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  deletedAt DateTime
+  commentLikes ReelCommentLike [not null]
+}
+
+Table ReelShare {
+  id String [pk]
+  reelId String [not null]
+  reel Reel [not null]
+  sharerId String [not null]
+  sharer User [not null]
+  shareType ShareType [not null]
+  targetId String
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table ReelBookmark {
+  reelId String [not null]
+  reel Reel [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (reelId, userId) [pk]
+  }
+}
+
+Table ReelCommentLike {
+  commentId String [not null]
+  comment ReelComment [not null]
+  userId String [not null]
+  user User [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (commentId, userId) [pk]
+  }
+}
+
+Table SellerApplication {
+  id String [pk]
+  userId String [unique, not null]
+  user User [not null]
+  fullName String [not null]
+  phoneNumber String [not null]
+  email String [not null]
+  address String [not null]
+  city String [not null]
+  country String [not null]
+  idCardNumber String [not null]
+  idCardFrontImage String [not null]
+  idCardBackImage String [not null]
+  sellerFaceImage String [not null]
+  commercialRegNumber String [not null]
+  bankAccountNumber String [not null]
+  bankCardNumber String [not null]
+  bankCardExpiry String [not null]
+  bankCardHolderName String [not null]
+  addressTrustScore Float [not null, default: 0]
+  addressVerified Boolean [not null, default: false]
+  sessionCount Int [not null, default: 0]
+  uniqueIpCount Int [not null, default: 0]
+  status ApplicationStatus [not null, default: 'PENDING']
+  adminNote String
+  reviewedById String
+  reviewedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  Note: 'Full KYC application submitted by a user requesting Seller status'
+}
+
+Table SellerProfile {
+  id String [pk]
+  userId String [unique, not null]
+  user User [not null]
+  businessName String
+  phoneNumber String [not null]
+  address String [not null]
+  city String [not null]
+  country String [not null]
+  commercialRegNumber String [not null]
+  bankAccountNumber String [not null]
+  bankCardLast4 String [not null]
+  isSuspended Boolean [not null, default: false]
+  isBanned Boolean [not null, default: false]
+  suspendReason String
+  banReason String
+  suspendedAt DateTime
+  bannedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  Note: 'Extended profile created when a SellerApplication is approved'
+}
+
+Table DealLog {
+  id String [pk]
+  adminId String [not null]
+  admin User [not null]
+  targetType DealLogTargetType [not null]
+  targetId String [not null]
+  action DealLogAction [not null]
+  cause String
+  createdAt DateTime [default: `now()`, not null]
+
+  Note: 'Admin audit trail for every action taken on sellers or deals'
+}
+
+Table Story {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  mediaUrl String [not null]
+  thumbnailUrl String
+  caption String
+  privacy StoryPrivacy [not null, default: 'FRIENDS']
+  isHighlight Boolean [not null, default: false]
+  viewsCount Int [not null, default: 0]
+  expiresAt DateTime [not null]
+  createdAt DateTime [default: `now()`, not null]
+  deletedAt DateTime
+  views StoryView [not null]
+}
+
+Table StoryView {
+  id String [pk]
+  storyId String [not null]
+  story Story [not null]
+  viewerId String [not null]
+  viewer User [not null]
+  viewedAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (storyId, viewerId) [unique]
+  }
+}
+
+Table Group {
+  id String [pk]
+  name String [not null]
+  description String
+  coverPhoto String
+  type GroupType [not null, default: 'PUBLIC']
+  createdById String [not null]
+  createdBy User [not null]
+  membersCount Int [not null, default: 0]
+  postsCount Int [not null, default: 0]
+  restrictPosting Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+  members GroupMember [not null]
+  joinRequests GroupJoinRequest [not null]
+  rules GroupRule [not null]
+  groupPosts GroupPost [not null]
+  groupEvents GroupEvent [not null]
+}
+
+Table GroupMember {
+  id String [pk]
+  groupId String [not null]
+  group Group [not null]
+  userId String [not null]
+  user User [not null]
+  role GroupMemberRole [not null, default: 'MEMBER']
+  acceptedRulesAt DateTime
+  joinedAt DateTime [default: `now()`, not null]
+  isMuted Boolean [not null, default: false]
+
+  indexes {
+    (groupId, userId) [unique]
+  }
+}
+
+Table GroupJoinRequest {
+  id String [pk]
+  groupId String [not null]
+  group Group [not null]
+  userId String [not null]
+  user User [not null]
+  status JoinRequestStatus [not null, default: 'PENDING']
+  message String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (groupId, userId) [unique]
+  }
+}
+
+Table GroupRule {
+  id String [pk]
+  groupId String [not null]
+  group Group [not null]
+  title String [not null]
+  description String
+  order Int [not null, default: 0]
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table GroupPost {
+  id String [pk]
+  groupId String [not null]
+  group Group [not null]
+  postId String [not null]
+  post Post [not null]
+  isApproved Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (groupId, postId) [unique]
+  }
+}
+
+Table Page {
+  id String [pk]
+  name String [not null]
+  description String
+  category PageCategory [not null, default: 'OTHER']
+  coverPhoto String
+  logoUrl String
+  website String
+  phone String
+  isVerified Boolean [not null, default: false]
+  followersCount Int [not null, default: 0]
+  createdById String [not null]
+  createdBy User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+  members PageMember [not null]
+  pagePosts PagePost [not null]
+  pageFollows PageFollow [not null]
+}
+
+Table PageMember {
+  id String [pk]
+  pageId String [not null]
+  page Page [not null]
+  userId String [not null]
+  user User [not null]
+  role PageRole [not null, default: 'EDITOR']
+  joinedAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (pageId, userId) [unique]
+  }
+}
+
+Table PageFollow {
+  id String [pk]
+  pageId String [not null]
+  page Page [not null]
+  userId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (pageId, userId) [unique]
+  }
+}
+
+Table PagePost {
+  id String [pk]
+  pageId String [not null]
+  page Page [not null]
+  postId String [not null]
+  post Post [not null]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (pageId, postId) [unique]
+  }
+}
+
+Table LiveStream {
+  id String [pk]
+  hostId String [not null]
+  host User [not null]
+  title String [not null]
+  description String
+  thumbnailUrl String
+  streamKey String [unique, not null]
+  status StreamStatus [not null, default: 'IDLE']
+  viewerCount Int [not null, default: 0]
+  peakViewers Int [not null, default: 0]
+  isRecorded Boolean [not null, default: true]
+  recordingUrl String
+  startedAt DateTime
+  endedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table AnalyticsEvent {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  eventType AnalyticsEventType [not null]
+  targetId String
+  targetType String
+  metadata Json
+  sessionId String
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Table Event {
+  id String [pk]
+  title String [not null]
+  description String
+  coverPhoto String
+  hostId String [not null]
+  host User [not null]
+  eventType EventType [not null, default: 'OFFLINE']
+  startTime DateTime [not null]
+  endTime DateTime
+  location String
+  onlineMeetingUrl String
+  isPublic Boolean [not null, default: true]
+  maxAttendees Int
+  attendeeCount Int [not null, default: 0]
+  ticketPrice Float
+  currency String [not null, default: 'USD']
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  deletedAt DateTime
+  attendees EventAttendee [not null]
+  tickets EventTicket [not null]
+  reminders EventReminder [not null]
+  groupEvents GroupEvent [not null]
+}
+
+Table EventAttendee {
+  id String [pk]
+  eventId String [not null]
+  event Event [not null]
+  userId String [not null]
+  user User [not null]
+  rsvpStatus RSVPStatus [not null, default: 'INTERESTED']
+  rsvpAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (eventId, userId) [unique]
+  }
+}
+
+Table EventTicket {
+  id String [pk]
+  eventId String [not null]
+  event Event [not null]
+  userId String [not null]
+  user User [not null]
+  ticketCode String [unique, not null]
+  status EventTicketStatus [not null, default: 'ACTIVE']
+  paidAmount Float [not null, default: 0]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (eventId, userId) [unique]
+  }
+}
+
+Table EventReminder {
+  id String [pk]
+  eventId String [not null]
+  event Event [not null]
+  userId String [not null]
+  user User [not null]
+  remindAt DateTime [not null]
+  sent Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+
+  indexes {
+    (eventId, userId) [unique]
+  }
+}
+
+Table GroupEvent {
+  id String [pk]
+  groupId String [not null]
+  group Group [not null]
+  eventId String [not null]
+  event Event [not null]
+  linkedAt DateTime [default: `now()`, not null]
+  linkedById String
+
+  indexes {
+    (groupId, eventId) [unique]
+  }
+}
+
+Table UserInterest {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  topic String [not null]
+  score Float [not null, default: 1]
+  lastUpdated DateTime [default: `now()`, not null]
+
+  indexes {
+    (userId, topic) [unique]
+  }
+}
+
+Table ActivityLog {
+  id String [pk]
+  userId String [not null]
+  user User [not null]
+  actionType String [not null]
+  entityId String
+  entityType String
+  metadata Json
+  createdAt DateTime [default: `now()`, not null]
+}
+
+Enum SessionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+Enum OtpType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+Enum VisibilityType {
+  PUBLIC
+  FRIENDS
+  FRIENDS_OF_FRIENDS
+  ONLY_ME
+  PRIVATE
+  EVERYONE
+  CUSTOM
+}
+
+Enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_REQUEST_ACCEPTED
+  NEW_FOLLOWER
+  POST_LIKE
+  POST_COMMENT
+  COMMENT_LIKE
+  MENTION
+  SYSTEM
+  STORY_REACTION
+  GROUP_INVITE
+  GROUP_JOIN
+  GROUP_JOIN_REQUEST
+  GROUP_JOIN_APPROVED
+  REEL_LIKE
+  REEL_COMMENT
+  REEL_SHARE
+  LIVE_STARTED
+  EVENT_INVITE
+  EVENT_REMINDER
+  EVENT_RSVP
+  NEW_MESSAGE
+  NEW_LOGIN
+  ACCOUNT_UPDATE
+  MARKETPLACE_ORDER
+  MARKETPLACE_REVIEW
+}
+
+Enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+Enum PostChangeType {
+  CREATED
+  UPDATED
+  DELETED
+  RESTORED
+}
+
+Enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+Enum PostPrivacy {
+  PUBLIC
+  FRIENDS
+  FRIENDS_OF_FRIENDS
+  ONLY_ME
+  CUSTOM
+}
+
+Enum MessageMediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  VOICE_NOTE
+  DOCUMENT
+  FILE
+}
+
+Enum RoomType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+Enum RoomMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+Enum ReportReason {
+  SPAM
+  HARASSMENT
+  HATE_SPEECH
+  NUDITY
+  VIOLENCE
+  OTHER
+}
+
+Enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  RESOLVED
+}
+
+Enum ProductStatus {
+  ACTIVE
+  SOLD
+  INACTIVE
+}
+
+Enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+Enum OrderStatus {
+  PLACED
+  SELLER_CONFIRMED
+  SHIPPED
+  DELIVERED
+  RELEASE_PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  REFUNDED
+}
+
+Enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+}
+
+Enum SentimentContentType {
+  POST
+  COMMENT
+  REEL
+}
+
+Enum SentimentEventType {
+  AUTHORED_POST
+  AUTHORED_COMMENT
+  AUTHORED_REEL
+  LIKED_POST
+  LIKED_REEL
+  COMMENTED_ON_POST
+  VIEWED_REEL
+  REACTED_TO_COMMENT
+}
+
+Enum InterventionMethod {
+  CONVERSATION
+  FEED_BOOST
+  FRIEND_SUGGESTION
+}
+
+Enum ReportTargetType {
+  USER
+  POST
+  COMMENT
+  REEL
+  REEL_COMMENT
+}
+
+Enum UserRole {
+  USER
+  SELLER
+  ADMIN
+}
+
+Enum ApplicationStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+Enum DealLogTargetType {
+  SELLER
+  TRANSACTION
+  ORDER
+}
+
+Enum DealLogAction {
+  BAN_SELLER
+  UNBAN_SELLER
+  SUSPEND_SELLER
+  UNSUSPEND_SELLER
+  CANCEL_DEAL
+  APPROVE_APPLICATION
+  DECLINE_APPLICATION
+  CONFIRM_SHIPMENT
+  CONFIRM_DELIVERY
+  RELEASE_FUNDS
+  AUTO_RELEASE_FUNDS
+  OPEN_DISPUTE
+  RESOLVE_DISPUTE
+}
+
+Enum NoroTrigger {
+  USER_INITIATED
+  PERIODIC_CHECKIN
+  CRISIS_ALERT
+}
+
+Enum NoroMessageRole {
+  USER
+  ASSISTANT
+}
+
+Enum CrisisSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+Enum CrisisIntervention {
+  NONE
+  SOFT
+  HOTLINE
+  ESCALATED
+}
+
+Enum ReelStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+Enum ShareType {
+  STORY
+  FEED
+  EXTERNAL
+  DM
+}
+
+Enum StoryPrivacy {
+  PUBLIC
+  FRIENDS
+  CLOSE_FRIENDS
+}
+
+Enum GroupType {
+  PUBLIC
+  PRIVATE
+  SECRET
+}
+
+Enum GroupMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+Enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+Enum PageCategory {
+  BUSINESS
+  BRAND
+  ARTIST
+  COMMUNITY
+  PUBLIC_FIGURE
+  OTHER
+}
+
+Enum PageRole {
+  ADMIN
+  EDITOR
+  MODERATOR
+}
+
+Enum StreamStatus {
+  IDLE
+  LIVE
+  ENDED
+}
+
+Enum AnalyticsEventType {
+  VIEW_POST
+  LIKE_POST
+  COMMENT_POST
+  SHARE_POST
+  VIEW_REEL
+  LIKE_REEL
+  VIEW_PROFILE
+  VIEW_EVENT
+  VIEW_GROUP
+  VIEW_PAGE
+  VIEW_STORY
+  SEARCH
+  JOIN_GROUP
+  RSVP_EVENT
+  FOLLOW_USER
+  FOLLOW_PAGE
+}
+
+Enum EventType {
+  ONLINE
+  OFFLINE
+}
+
+Enum RSVPStatus {
+  GOING
+  INTERESTED
+  NOT_GOING
+}
+
+Enum EventTicketStatus {
+  ACTIVE
+  USED
+  CANCELLED
+  PENDING_PAYMENT
+}
+
+Ref: Session.userId > User.id
+
+Ref: Otp.userId > User.id [delete: Cascade]
+
+Ref: Profile.userId - User.id [delete: Cascade]
+
+Ref: ProfilePrivacy.profileId - Profile.id [delete: Cascade]
+
+Ref: Notification.userId > User.id [delete: Cascade]
+
+Ref: Notification.actorId > User.id [delete: Cascade]
+
+Ref: Post.authorId > User.id [delete: Cascade]
+
+Ref: Like.userId > User.id [delete: Cascade]
+
+Ref: Like.postId > Post.id [delete: Cascade]
+
+Ref: Like.commentId > Comment.id [delete: Cascade]
+
+Ref: Comment.postId > Post.id [delete: Cascade]
+
+Ref: Comment.authorId > User.id
+
+Ref: Comment.parentId - Comment.id [delete: Cascade]
+
+Ref: Friendship.requesterId > User.id [delete: Cascade]
+
+Ref: Friendship.recipientId > User.id [delete: Cascade]
+
+Ref: Follow.followerId > User.id [delete: Cascade]
+
+Ref: Follow.followingId > User.id [delete: Cascade]
+
+Ref: Block.blockerId > User.id [delete: Cascade]
+
+Ref: Block.blockedId > User.id [delete: Cascade]
+
+Ref: PostHistory.postId > Post.id [delete: Cascade]
+
+Ref: PostMedia.postId > Post.id [delete: Cascade]
+
+Ref: PostAudience.postId > Post.id [delete: Cascade]
+
+Ref: Message.userId > User.id [delete: Cascade]
+
+Ref: Message.roomId > Room.id [delete: Cascade]
+
+Ref: Message.replyToId - Message.id [delete: Set Null]
+
+Ref: MessageReaction.messageId > Message.id [delete: Cascade]
+
+Ref: MessageReaction.userId > User.id [delete: Cascade]
+
+Ref: ReadReceipt.messageId > Message.id [delete: Cascade]
+
+Ref: ReadReceipt.userId > User.id [delete: Cascade]
+
+Ref: MessageMedia.messageId > Message.id [delete: Cascade]
+
+Ref: MessageEditHistory.messageId > Message.id [delete: Cascade]
+
+Ref: Room.createdById > User.id [delete: Set Null]
+
+Ref: RoomMember.roomId > Room.id [delete: Cascade]
+
+Ref: RoomMember.userId > User.id [delete: Cascade]
+
+Ref: PinnedMessage.roomId > Room.id [delete: Cascade]
+
+Ref: PinnedMessage.messageId > Message.id [delete: Cascade]
+
+Ref: SavedPost.userId > User.id [delete: Cascade]
+
+Ref: SavedPost.postId > Post.id [delete: Cascade]
+
+Ref: Product.sellerId > User.id [delete: Cascade]
+
+Ref: Transaction.buyerId > User.id
+
+Ref: Transaction.sellerId > User.id
+
+Ref: Transaction.productId > Product.id
+
+Ref: Transaction.orderId - Order.id
+
+Ref: Order.buyerId > User.id
+
+Ref: Order.sellerId > User.id
+
+Ref: Order.productId > Product.id
+
+Ref: Report.reporterId > User.id [delete: Cascade]
+
+Ref: NoroChat.userId > User.id [delete: Cascade]
+
+Ref: ContentSentiment.userId > User.id [delete: Cascade]
+
+Ref: UserSentimentProfile.userId - User.id [delete: Cascade]
+
+Ref: SentimentEvent.userId > User.id [delete: Cascade]
+
+Ref: NoroIntervention.userId > User.id [delete: Cascade]
+
+Ref: CallRoom.createdById > User.id [delete: Set Null]
+
+Ref: CallParticipant.roomId > CallRoom.id [delete: Cascade]
+
+Ref: CallParticipant.userId > User.id [delete: Cascade]
+
+Ref: NoroConversation.userId > User.id [delete: Cascade]
+
+Ref: NoroMessage.conversationId > NoroConversation.id [delete: Cascade]
+
+Ref: NoroMessage.userId > User.id [delete: Cascade]
+
+Ref: UserMoodProfile.userId - User.id [delete: Cascade]
+
+Ref: UserMoodProfile.sourceConvId > NoroConversation.id [delete: Set Null]
+
+Ref: CrisisEvent.userId > User.id [delete: Cascade]
+
+Ref: CrisisEvent.messageId > NoroMessage.id [delete: Set Null]
+
+Ref: UserEmergencyContact.userId > User.id [delete: Cascade]
+
+Ref: Reel.userId > User.id [delete: Cascade]
+
+Ref: Reel.audioTrackId > AudioTrack.id [delete: Set Null]
+
+Ref: ReelView.reelId > Reel.id [delete: Cascade]
+
+Ref: ReelView.viewerId > User.id [delete: Set Null]
+
+Ref: ReelLike.reelId > Reel.id [delete: Cascade]
+
+Ref: ReelLike.userId > User.id [delete: Cascade]
+
+Ref: ReelComment.reelId > Reel.id [delete: Cascade]
+
+Ref: ReelComment.userId > User.id [delete: Cascade]
+
+Ref: ReelComment.parentId - ReelComment.id [delete: Cascade]
+
+Ref: ReelShare.reelId > Reel.id [delete: Cascade]
+
+Ref: ReelShare.sharerId > User.id [delete: Cascade]
+
+Ref: ReelBookmark.reelId > Reel.id [delete: Cascade]
+
+Ref: ReelBookmark.userId > User.id [delete: Cascade]
+
+Ref: ReelCommentLike.commentId > ReelComment.id [delete: Cascade]
+
+Ref: ReelCommentLike.userId > User.id [delete: Cascade]
+
+Ref: SellerApplication.userId - User.id [delete: Cascade]
+
+Ref: SellerProfile.userId - User.id [delete: Cascade]
+
+Ref: DealLog.adminId > User.id
+
+Ref: Story.userId > User.id [delete: Cascade]
+
+Ref: StoryView.storyId > Story.id [delete: Cascade]
+
+Ref: StoryView.viewerId > User.id [delete: Cascade]
+
+Ref: Group.createdById > User.id [delete: Cascade]
+
+Ref: GroupMember.groupId > Group.id [delete: Cascade]
+
+Ref: GroupMember.userId > User.id [delete: Cascade]
+
+Ref: GroupJoinRequest.groupId > Group.id [delete: Cascade]
+
+Ref: GroupJoinRequest.userId > User.id [delete: Cascade]
+
+Ref: GroupRule.groupId > Group.id [delete: Cascade]
+
+Ref: GroupPost.groupId > Group.id [delete: Cascade]
+
+Ref: GroupPost.postId > Post.id [delete: Cascade]
+
+Ref: Page.createdById > User.id [delete: Cascade]
+
+Ref: PageMember.pageId > Page.id [delete: Cascade]
+
+Ref: PageMember.userId > User.id [delete: Cascade]
+
+Ref: PageFollow.pageId > Page.id [delete: Cascade]
+
+Ref: PagePost.pageId > Page.id [delete: Cascade]
+
+Ref: PagePost.postId > Post.id [delete: Cascade]
+
+Ref: LiveStream.hostId > User.id [delete: Cascade]
+
+Ref: AnalyticsEvent.userId > User.id [delete: Cascade]
+
+Ref: Event.hostId > User.id [delete: Cascade]
+
+Ref: EventAttendee.eventId > Event.id [delete: Cascade]
+
+Ref: EventAttendee.userId > User.id [delete: Cascade]
+
+Ref: EventTicket.eventId > Event.id [delete: Cascade]
+
+Ref: EventTicket.userId > User.id [delete: Cascade]
+
+Ref: EventReminder.eventId > Event.id [delete: Cascade]
+
+Ref: EventReminder.userId > User.id [delete: Cascade]
+
+Ref: GroupEvent.groupId > Group.id [delete: Cascade]
+
+Ref: GroupEvent.eventId > Event.id [delete: Cascade]
+
+Ref: UserInterest.userId > User.id [delete: Cascade]
+
+Ref: ActivityLog.userId > User.id [delete: Cascade]
