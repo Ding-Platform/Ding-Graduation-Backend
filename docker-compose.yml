@@ -70,6 +70,11 @@ services:
       context: ../Ding-Platform-Frontend
       dockerfile: Dockerfile.dev
     restart: always
+    env_file:
+      - ../Ding-Platform-Frontend/.env
+    volumes:
+      - ../Ding-Platform-Frontend:/app
+      - /app/node_modules
     networks:
       - public
 
