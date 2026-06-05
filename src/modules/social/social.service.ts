@@ -703,6 +703,20 @@ export class SocialService {
          SET r.createdAt = datetime()`,
         { followerId, followeeId },
       );
+
+      await this.prisma.follow.upsert({
+        where: {
+          followerId_followingId: {
+            followerId,
+            followingId: followeeId,
+          },
+        },
+        create: {
+          followerId,
+          followingId: followeeId,
+        },
+        update: {},
+      });
     } catch (error) {
       if (error instanceof GenericHttpException) {
         throw error;
@@ -742,6 +756,13 @@ export class SocialService {
          DELETE r`,
         { followerId, followeeId },
       );
+
+      await this.prisma.follow.deleteMany({
+        where: {
+          followerId,
+          followingId: followeeId,
+        },
+      });
     } catch (error) {
       if (error instanceof GenericHttpException) {
         throw error;

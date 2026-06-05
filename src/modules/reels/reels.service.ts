@@ -1133,7 +1133,7 @@ export class ReelsService {
   private async enrichReels(userId: string | undefined, items: any[]) {
     if (!userId || items.length === 0) return items;
 
-    const [likedReels, savedReels] = await Promise.all([
+    const [likedReels, savedReels, followedUsers] = await Promise.all([
       this.prisma.reelLike.findMany({
         where: {
           userId,
@@ -1148,15 +1148,27 @@ export class ReelsService {
         },
         select: { reelId: true },
       }),
+      this.prisma.follow.findMany({
+        where: {
+          followerId: userId,
+          followingId: { in: items.map((r) => r.userId) },
+        },
+        select: { followingId: true },
+      }),
     ]);
 
     const likedSet = new Set(likedReels.map((l) => l.reelId));
     const savedSet = new Set(savedReels.map((s) => s.reelId));
+    const followedSet = new Set(followedUsers.map((f) => f.followingId));
 
     return items.map((reel) => ({
       ...reel,
       isLikedByMe: likedSet.has(reel.id),
       isSavedByMe: savedSet.has(reel.id),
+      user: {
+        ...reel.user,
+        isFollowedByMe: followedSet.has(reel.userId),
+      },
     }));
   }
 
