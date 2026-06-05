@@ -1,4 +1,10 @@
 import helmet from 'helmet';
+
+// Global polyfill for BigInt JSON serialization
+(BigInt.prototype as any).toJSON = function () {
+  return Number(this);
+};
+
 import { get } from 'env-var';
 import { json, static as staticMiddleware } from 'express';
 import { AppModule } from './app.module';
