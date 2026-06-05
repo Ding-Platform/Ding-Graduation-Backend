@@ -30,8 +30,8 @@ export class CreateMessageDto {
     example: '507f1f77bcf86cd799439011',
   })
   @IsString()
-  @IsNotEmpty()
-  roomId: string;
+  @IsOptional()
+  roomId?: string;
 
   @ApiPropertyOptional({
     description: 'Message ID to reply to',
