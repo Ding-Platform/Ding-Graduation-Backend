@@ -1226,7 +1226,6 @@ export class SocialService {
            AND NOT (u)-[:FRIENDS]-(c1)
            AND NOT (u)-[:FRIEND_REQUEST]->(c1)
            AND NOT (c1)-[:FRIEND_REQUEST]->(u)
-         WITH u, c1, count(DISTINCT f) as mutualFriends
 
          // ===== Stage 2: Common Following =====
          OPTIONAL MATCH (u)-[:FOLLOWS]->(f2)-[:FOLLOWS]->(c2:User)
@@ -1234,15 +1233,16 @@ export class SocialService {
            AND NOT (u)-[:FRIENDS]-(c2)
            AND NOT (u)-[:FRIEND_REQUEST]->(c2)
            AND NOT (c2)-[:FRIEND_REQUEST]->(u)
-         WITH u,
-              c1, mutualFriends,
-              c2, count(DISTINCT f2) as commonFollowing
 
-         // Merge candidates
+         // ===== Stage 3: Global fallback pool =====
+         OPTIONAL MATCH (c3:User)
+         WHERE c3.userId <> $userId
+           AND NOT (u)-[:FRIENDS]-(c3)
+           AND NOT (u)-[:FRIEND_REQUEST]->(c3)
+           AND NOT (c3)-[:FRIEND_REQUEST]->(u)
+
          WITH u,
-              collect(DISTINCT c1) + collect(DISTINCT c2) AS candidates,
-              collect(mutualFriends) AS mutualFriendsList,
-              collect(commonFollowing) AS commonFollowingList
+               collect(DISTINCT c1) + collect(DISTINCT c2) + collect(DISTINCT c3) AS candidates
 
          UNWIND candidates AS candidate
          WITH u, candidate
@@ -1257,37 +1257,37 @@ export class SocialService {
 
          OPTIONAL MATCH (candidate)<-[:FOLLOWS]-(follower)
          WITH u, candidate, mutualFriends, commonFollowing,
-              count(DISTINCT follower) as popularity
+               count(DISTINCT follower) as popularity
 
          OPTIONAL MATCH (u)-[f1:FOLLOWS]->(candidate)
          OPTIONAL MATCH (candidate)-[f2:FOLLOWS]->(u)
 
          WITH candidate,
-              mutualFriends,
-              commonFollowing,
-              popularity,
-              CASE WHEN f1 IS NOT NULL THEN 2 ELSE 0 END +
-              CASE WHEN f2 IS NOT NULL THEN 1 ELSE 0 END as followBoost
+               mutualFriends,
+               commonFollowing,
+               popularity,
+               CASE WHEN f1 IS NOT NULL THEN 2 ELSE 0 END +
+               CASE WHEN f2 IS NOT NULL THEN 1 ELSE 0 END as followBoost
 
          // ===== Weighted Blending =====
          WITH candidate,
-              mutualFriends,
-              commonFollowing,
-              popularity,
-              followBoost,
-              (mutualFriends * 10.0 +
-               commonFollowing * 6.0 +
-               (popularity / 10.0) +
-               followBoost) as score
+               mutualFriends,
+               commonFollowing,
+               popularity,
+               followBoost,
+               (mutualFriends * 10.0 +
+                commonFollowing * 6.0 +
+                (popularity / 10.0) +
+                followBoost) as score
 
-         RETURN candidate.userId as userId,
-                mutualFriends,
-                score,
-                CASE
-                  WHEN mutualFriends > 0 THEN 'mutual_friends'
-                  WHEN commonFollowing > 0 THEN 'common_following'
-                  ELSE 'popular_users'
-                END as reason
+         RETURN DISTINCT candidate.userId as userId,
+                 mutualFriends,
+                 score,
+                 CASE
+                   WHEN mutualFriends > 0 THEN 'mutual_friends'
+                   WHEN commonFollowing > 0 THEN 'common_following'
+                   ELSE 'popular_users'
+                 END as reason
          ORDER BY score DESC
          SKIP $offset
          LIMIT $limit`,
