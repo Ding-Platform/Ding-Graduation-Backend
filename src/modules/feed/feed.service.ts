@@ -100,7 +100,7 @@ export class FeedService {
     const followedIds = follows.map(f => f.followingId);
     if (followedIds.length > 0) {
       const fPosts = await this.prisma.post.findMany({
-        where: { authorId: { in: followedIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FOLLOWERS'] } },
+        where: { authorId: { in: followedIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FRIENDS'] } },
         select: { id: true },
         take: targetFollowed * 3,
         orderBy: { createdAt: 'desc' }
@@ -121,7 +121,7 @@ export class FeedService {
 
     if (friendIds.length > 0) {
       const frPosts = await this.prisma.post.findMany({
-        where: { authorId: { in: friendIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FOLLOWERS', 'FRIENDS'] } },
+        where: { authorId: { in: friendIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FRIENDS'] } },
         select: { id: true },
         take: targetFriends * 3,
         orderBy: { createdAt: 'desc' }
@@ -257,7 +257,10 @@ export class FeedService {
       }));
       if (ids.length === 0)
         return { data: [], total: 0, page, limit, totalPages: 0 };
-      return this.mapPosts(ids, page, limit, userId);
+      const response = await this.mapPostsForFeed(ids.map(i => i.postId), userId);
+      response.page = page;
+      response.limit = limit;
+      return response;
     } finally {
       await session.close();
     }
@@ -384,7 +387,7 @@ export class FeedService {
             post: p,
             score:
               p.createdAt.getTime() / 1_000_000_000_000 +
-              this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)) +
+              0 +
               finalAffinityBoost,
           };
         })
@@ -412,65 +415,4 @@ export class FeedService {
     }
   }
 
-  /**
-   * Neo4j scoring query that returns candidate posts with scores
-   * based on engagement, affinity, and recency.
-   */
-  private async getScoredPostsFromGraph(userId: string, limit: number) {
-    // Ensure Neo4j LIMIT always receives a non-negative integer value
-    const safeLimit = Math.max(0, Math.floor(limit));
-    const session = this.neo4jService.getSession();
-
-    try {
-      const result = await session.run(
-        `
-        MATCH (user:User {id: $userId})-[:FOLLOWS]->(author:User)
-        MATCH (author)-[:POSTED]->(post:Post)
-        WHERE post.createdAt > datetime() - duration('P7D')
-
-        OPTIONAL MATCH (user)-[userInteraction:LIKED|COMMENTED]->(post)
-        OPTIONAL MATCH (post)<-[allEngagement:LIKED|COMMENTED]-()
-        OPTIONAL MATCH (user)-[affinity:INTERACTED_WITH]->(author)
-
-        WITH post, author, 
-             COUNT(DISTINCT allEngagement) as totalEngagement,
-             affinity.score as affinityScore,
-             CASE WHEN userInteraction IS NULL THEN 0 ELSE 1 END as alreadyInteracted,
-             duration.between(post.createdAt, datetime()).minutes as ageMinutes
-
-        WHERE alreadyInteracted = 0
-
-        WITH post,
-             totalEngagement * 1.0 as engagementScore,
-             COALESCE(affinityScore, 0) * 2.0 as affinityWeight,
-             1.0 / (1.0 + ageMinutes / 60.0) as timeDecay
-
-        WITH post,
-             (engagementScore + affinityWeight) * timeDecay as finalScore
-
-        RETURN post.id as postId, finalScore as score
-        ORDER BY finalScore DESC
-        LIMIT toInteger($limit)
-        `,
-        { userId, limit: safeLimit },
-      );
-
-      return result.records.map((record) => ({
-        postId: record.get('postId') as string,
-        score: record.get('score') as number,
-      }));
-    } finally {
-      await session.close();
-    }
-  }
-
-  private getMoodBoostScore(
-    enabled: boolean,
-    sentiment?: { pos: number; neg: number },
-  ) {
-    if (!enabled || !sentiment) return 0;
-    if (sentiment.pos > 65) return 0.35;
-    if (sentiment.neg > 65) return -0.35;
-    return 0;
-  }
 }

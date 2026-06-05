@@ -21,6 +21,7 @@ import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { StorageService } from '../../common/services/storage/storage.service';
+import { Neo4jService } from '../../configs/neo4j/neo4j.service';
 import type { Request } from 'express';
 
 @Injectable()
@@ -32,6 +33,7 @@ export class ReelsService {
     private readonly interestService: InterestService,
     private readonly activityService: ActivityService,
     private readonly storageService: StorageService,
+    private readonly neo4jService: Neo4jService,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
   ) {}
