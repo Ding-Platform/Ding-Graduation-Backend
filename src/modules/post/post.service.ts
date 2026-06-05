@@ -172,6 +172,62 @@ export class PostService {
     return posts.map((post) => this.mapPostToSimple(post, userId));
   }
 
+  async getUserPosts(
+    targetUserId: string,
+    requestingUserId?: string,
+    page = 1,
+    limit = 20,
+  ): Promise<SimplePostResponse[]> {
+    const skip = (page - 1) * limit;
+
+    const posts = await this.prisma.post.findMany({
+      where: {
+        authorId: targetUserId,
+        isDeleted: false,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+        PostMedia: true,
+        _count: {
+          select: {
+            Likes: true,
+            Comments: true,
+          },
+        },
+        Likes: requestingUserId
+          ? {
+              where: {
+                userId: requestingUserId,
+              },
+              select: {
+                userId: true,
+              },
+            }
+          : false,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip,
+      take: limit,
+    });
+
+    if (!posts || posts.length === 0) {
+      throw GenericHttpException.createLocalized(
+        ERROR_MESSAGES.POSTS_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return posts.map((post) => this.mapPostToSimple(post, requestingUserId));
+  }
+
   async createPost(
     data: CreatePostDto,
     files?: Record<string, Express.Multer.File[]>,

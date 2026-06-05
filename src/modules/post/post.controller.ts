@@ -60,6 +60,30 @@ export class PostController {
     return this.postService.getPostsByHashtag(tag, userId, page, limit);
   }
 
+  @Get('/me')
+  async getMyPosts(
+    @currentUser('id') userId: string,
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+  ) {
+    return this.postService.getUserPosts(userId, userId, page, limit);
+  }
+
+  @Get('/user/:id')
+  async getUserPosts(
+    @Param('id') targetUserId: string,
+    @currentUser('id') requestingUserId: string,
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+  ) {
+    return this.postService.getUserPosts(
+      targetUserId,
+      requestingUserId,
+      page,
+      limit,
+    );
+  }
+
   @Get('/:id')
   async getPostById(
     @Param('id') postId: string,
