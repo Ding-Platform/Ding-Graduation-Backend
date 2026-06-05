@@ -7,3 +7,10 @@ services:
     # Expose backend only on loopback for host Nginx upstream.
     ports:
       - "127.0.0.1:3000:3000"
+
+  frontend:
+    build:
+      context: ../Ding-Platform-Frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "127.0.0.1:5173:80"
