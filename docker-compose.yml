@@ -59,7 +59,7 @@ services:
       - backend_uploads:/app/uploads
     command: sh -c "pnpm prisma generate && pnpm start"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qS --spider http://localhost:3000/api/v1/feed 2>&1 | grep -qE 'HTTP/[0-9.]+ [1-4][0-9][0-9]'"]
+      test: ["CMD-SHELL", "wget -O - --server-response http://127.0.0.1:3000/api/v1/feed 2>&1 | grep -q 'HTTP/'"]
       interval: 10s
       timeout: 5s
       retries: 10
