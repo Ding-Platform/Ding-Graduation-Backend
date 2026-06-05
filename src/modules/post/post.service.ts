@@ -794,10 +794,8 @@ export class PostService {
   }
 
   async toggleSave(postId: string, userId: string) {
-    const existingSave = await this.prisma.savedPost.findUnique({
-      where: {
-        userId_postId: { userId, postId },
-      } as unknown as Prisma.SavedPostWhereUniqueInput,
+    const existingSave = await this.prisma.savedPost.findFirst({
+      where: { userId, postId },
     });
 
     if (existingSave) {
