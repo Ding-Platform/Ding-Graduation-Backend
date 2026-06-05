@@ -250,6 +250,10 @@ export class ChatMediaService {
   ): Promise<MessageMediaDocument> {
     const mimeType = file.mimetype;
 
+    if (file.fieldname === 'voiceNote') {
+      return this.uploadVoiceNote(file, messageId);
+    }
+
     if (CHAT_CONSTANTS.UPLOAD.ALLOWED_IMAGE_TYPES.includes(mimeType as any)) {
       return this.uploadImage(file, messageId);
     }

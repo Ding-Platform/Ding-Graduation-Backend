@@ -261,24 +261,51 @@ export class ChatController {
         content: { type: 'string' },
         replyToId: { type: 'string' },
         images: { type: 'array', items: { type: 'string', format: 'binary' } },
+        voiceNote: { type: 'string', format: 'binary' },
+        audio: { type: 'string', format: 'binary' },
+        video: { type: 'string', format: 'binary' },
+        documents: { type: 'array', items: { type: 'string', format: 'binary' } },
       },
     },
   })
   @UseGuards(RoomMemberGuard)
   @RoomIdParam('roomId')
-  @UseInterceptors(FileFieldsInterceptor([{ name: 'images', maxCount: 10 }]))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'images', maxCount: 10 },
+      { name: 'voiceNote', maxCount: 1 },
+      { name: 'audio', maxCount: 1 },
+      { name: 'video', maxCount: 1 },
+      { name: 'documents', maxCount: 10 },
+    ]),
+  )
   async sendMessageWithMedia(
     @Param('roomId') roomId: string,
     @currentUser() user: User,
     @Body() dto: CreateMessageDto,
-    @UploadedFiles() files: { images?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      images?: Express.Multer.File[];
+      voiceNote?: Express.Multer.File[];
+      audio?: Express.Multer.File[];
+      video?: Express.Multer.File[];
+      documents?: Express.Multer.File[];
+    },
   ) {
     dto.roomId = roomId;
 
+    // Combine all uploaded files into one array for processing
+    const allFiles: Express.Multer.File[] = [];
+    if (files?.images) allFiles.push(...files.images);
+    if (files?.voiceNote) allFiles.push(...files.voiceNote);
+    if (files?.audio) allFiles.push(...files.audio);
+    if (files?.video) allFiles.push(...files.video);
+    if (files?.documents) allFiles.push(...files.documents);
+
     // Upload media files
     let mediaFiles;
-    if (files?.images && files.images.length > 0) {
-      mediaFiles = await this.mediaService.uploadMultiple(files.images, 'temp');
+    if (allFiles.length > 0) {
+      mediaFiles = await this.mediaService.uploadMultiple(allFiles, 'temp');
     }
 
     // Send message with media
