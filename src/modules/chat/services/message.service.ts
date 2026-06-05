@@ -92,7 +92,7 @@ export class MessageService {
     const newMessage: MessageDocument = {
       content: dto.content,
       userId,
-      roomId: dto.roomId,
+      roomId: dto.roomId!,
       replyToId: dto.replyToId,
       isEdited: false,
       isForwarded: false,
@@ -121,7 +121,7 @@ export class MessageService {
 
     // Update room's last message info
     await roomsCollection.updateOne(
-      { _id: new ObjectId(dto.roomId) },
+      { _id: new ObjectId(dto.roomId!) },
       {
         $set: {
           lastMessageAt: now,
