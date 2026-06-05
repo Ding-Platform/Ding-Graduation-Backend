@@ -238,7 +238,10 @@ export class PostService {
       data.content = data.content || '';
 
       const hasTextContent = data.content.trim().length > 0;
-      const hasMedia = files && ((files.images && files.images.length > 0) || (files.videos && files.videos.length > 0));
+      const hasMedia =
+        files &&
+        ((files.images && files.images.length > 0) ||
+          (files.videos && files.videos.length > 0));
 
       if (!hasTextContent && !hasMedia) {
         throw GenericHttpException.createLocalized(
@@ -289,14 +292,13 @@ export class PostService {
 
       // Upload media if provided
       if (files && (files.images || files.videos)) {
-        const uploadResult =
-          await this.storageService.uploadMultiplePostMedia(
-            {
-              images: files.images,
-              videos: files.videos,
-            },
-            newPost.id,
-          );
+        const uploadResult = await this.storageService.uploadMultiplePostMedia(
+          {
+            images: files.images,
+            videos: files.videos,
+          },
+          newPost.id,
+        );
 
         // Process images
         if (uploadResult.imageUrls.length > 0) {

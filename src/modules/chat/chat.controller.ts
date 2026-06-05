@@ -264,7 +264,10 @@ export class ChatController {
         voiceNote: { type: 'string', format: 'binary' },
         audio: { type: 'string', format: 'binary' },
         video: { type: 'string', format: 'binary' },
-        documents: { type: 'array', items: { type: 'string', format: 'binary' } },
+        documents: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
       },
     },
   })
