@@ -363,6 +363,10 @@ export class PostService {
         newPost.id,
         'POST',
       );
+
+      // Invalidate the feed cache so the new post appears immediately
+      await this.redisService.delPattern(`feed:${userId}:*`);
+
       return this.getPostById(newPost.id, userId);
     } catch (error) {
       console.error('Post creation error:', error);
