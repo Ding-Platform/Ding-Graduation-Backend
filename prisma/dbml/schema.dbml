@@ -60,6 +60,7 @@ Table User {
   emergencyContacts UserEmergencyContact [not null]
   reels Reel [not null]
   reelViews ReelView [not null]
+  postViews PostView [not null]
   reelLikes ReelLike [not null]
   reelComments ReelComment [not null]
   reelShares ReelShare [not null]
@@ -169,11 +170,13 @@ Table Post {
   updatedAt DateTime [not null]
   likeCount Int [not null, default: 0]
   commentCount Int [not null, default: 0]
+  viewsCount Int [not null, default: 0]
   PostHistory PostHistory [not null]
   PostMedia PostMedia [not null]
   PostAudience PostAudience [not null]
   Likes Like [not null]
   Comments Comment [not null]
+  views PostView [not null]
   savedBy SavedPost [not null]
   groupPosts GroupPost [not null]
   pagePosts PagePost [not null]
@@ -743,6 +746,16 @@ Table ReelView {
   viewedAt DateTime [default: `now()`, not null]
   watchPct Int
   sessionId String
+}
+
+Table PostView {
+  id String [pk]
+  postId String [not null]
+  post Post [not null]
+  viewerId String
+  viewer User
+  viewedAt DateTime [default: `now()`, not null]
+  durationSec Int [not null, default: 0]
 }
 
 Table ReelLike {
@@ -1648,6 +1661,10 @@ Ref: Reel.audioTrackId > AudioTrack.id [delete: Set Null]
 Ref: ReelView.reelId > Reel.id [delete: Cascade]
 
 Ref: ReelView.viewerId > User.id [delete: Set Null]
+
+Ref: PostView.postId > Post.id [delete: Cascade]
+
+Ref: PostView.viewerId > User.id [delete: Set Null]
 
 Ref: ReelLike.reelId > Reel.id [delete: Cascade]
 

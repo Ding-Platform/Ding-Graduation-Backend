@@ -5,6 +5,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Post,
+  Param,
 } from '@nestjs/common';
 import { FeedService } from './feed.service';
 import { JwtAuthenticationGuard } from '../../common/guards/strategy.guards/jwt.guard';
@@ -29,5 +31,14 @@ export class FeedController {
     const pageNum = pagination.page ?? 1;
     const limitNum = pagination.limit ?? 20;
     return this.feedService.getFeed(user.id, type, pageNum, limitNum);
+  }
+
+  @Post(':postId/view')
+  @HttpCode(HttpStatus.OK)
+  async recordPostView(
+    @currentUser() user: any,
+    @Param('postId') postId: string,
+  ) {
+    return this.feedService.recordPostView(user.id, postId);
   }
 }

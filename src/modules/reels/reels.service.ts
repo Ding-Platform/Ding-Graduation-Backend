@@ -270,26 +270,16 @@ export class ReelsService {
 
   async getFeed(userId: string, cursor?: string, limit = 10) {
     const safeLimit = Math.min(Math.max(limit, 1), 30);
-    const cursorDate = this.decodeCursor(cursor);
-    const moodProfile = await this.prisma.userMoodProfile.findUnique({
-      where: { userId },
-    });
-    const sentimentProfile = await this.prisma.userSentimentProfile.findUnique({
-      where: { userId },
-    });
-    const feedBoostActive = Boolean(
-      sentimentProfile?.feedBoostPositive &&
-      sentimentProfile.feedBoostUntil &&
-      sentimentProfile.feedBoostUntil.getTime() > Date.now(),
-    );
+    
+    // Instead of chronological with score, use quota based feed
+    const feedIds = await this.getQuotaBasedFeedIds(userId, safeLimit);
+    if (feedIds.length === 0) {
+      return { reels: [], nextCursor: null };
+    }
 
-    const candidates = await this.prisma.reel.findMany({
+    const items = await this.prisma.reel.findMany({
       where: {
-        isPublic: true,
-        status: 'READY',
-        deletedAt: null,
-        userId: { not: userId },
-        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+        id: { in: feedIds }
       },
       include: {
         user: {
@@ -303,92 +293,130 @@ export class ReelsService {
             views: true,
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: safeLimit * 3,
+      }
     });
 
-    const reelSentiments = await this.prisma.contentSentiment.findMany({
-      where: {
-        contentType: 'REEL',
-        contentId: { in: candidates.map((r) => r.id) },
-      },
-      select: {
-        contentId: true,
-        positiveScore: true,
-        negativeScore: true,
-      },
-    });
-    const sentimentMap = new Map(
-      reelSentiments.map((s) => [
-        s.contentId,
-        { positiveScore: s.positiveScore, negativeScore: s.negativeScore },
-      ]),
-    );
+    // Keep the shuffled order
+    const orderedItems = feedIds.map(id => items.find(i => i.id === id)).filter(Boolean) as any[];
 
-    const userInterests = await this.interestService.getTopInterests(
-      userId,
-      20,
-    );
-    const interestMap = new Map(
-      userInterests.map((i) => [i.topic.toLowerCase(), i.score]),
-    );
+    const enrichedItems = await this.enrichReels(userId, orderedItems);
 
-    const scored = candidates
-      .map((reel) => {
-        const hoursAgo = Math.max(
-          1,
-          (Date.now() - reel.createdAt.getTime()) / (1000 * 60 * 60),
-        );
-        const recencyScore = 1 / Math.log(hoursAgo + 2);
-        // BigInt fields cast to number safely — reels with billions of interactions
-        // are not expected; this is guarded by MAX safe integer at ~9 quadrillion.
-        const engagementScore =
-          Number(reel.likesCount) +
-          Number(reel.commentsCount) * 2 +
-          Number(reel.sharesCount) * 3;
-        const completionScore = reel._count.views > 0 ? 0.6 : 0.1;
-        const moodBoost = this.calculateMoodBoost(
-          moodProfile?.dominantMood || null,
-          reel,
-        );
-        const sentimentBoost = this.calculateSentimentFeedBoost(
-          feedBoostActive,
-          sentimentMap.get(reel.id),
-        );
-
-        let affinityBoost = 0;
-        const tags = [...(reel.hashtags || []), ...(reel.categories || [])];
-        for (const tag of tags) {
-          affinityBoost += interestMap.get(tag.toLowerCase()) || 0;
-        }
-        const finalAffinityBoost = Math.min(affinityBoost * 0.1, 2.0);
-
-        const score =
-          0.2 * recencyScore +
-          0.35 * this.normalizeScore(engagementScore) +
-          0.25 * this.normalizeScore(reel._count.views) +
-          0.15 * completionScore +
-          0.05 * moodBoost +
-          sentimentBoost +
-          finalAffinityBoost;
-
-        return { reel, score };
-      })
-      .sort((a, b) => b.score - a.score);
-
-    const items = scored.slice(0, safeLimit).map((row) => row.reel);
-    const enrichedItems = await this.enrichReels(userId, items);
-
-    const nextCursor =
-      items.length > 0
-        ? this.encodeCursor(items[items.length - 1].createdAt)
-        : null;
+    // Return a dummy cursor to keep the frontend fetching if it wants more
+    const nextCursor = feedIds.length > 0 ? "next_" + Date.now() : null;
 
     return {
       reels: enrichedItems,
       nextCursor,
     };
+  }
+
+  private async getQuotaBasedFeedIds(userId: string, limit: number): Promise<string[]> {
+    let targetFollowed = Math.floor(limit * 0.5);
+    let targetFriends = Math.floor(limit * 0.2);
+    let targetInterests = Math.floor(limit * 0.2);
+    let targetRandom = limit - (targetFollowed + targetFriends + targetInterests);
+
+    const seenReels = await this.prisma.reelView.findMany({
+      where: { viewerId: userId },
+      select: { reelId: true }
+    });
+    const excludeIds = new Set<string>(seenReels.map(p => p.reelId));
+    const resultIds: string[] = [];
+
+    // Helper to add IDs
+    const addIds = (ids: string[], target: number) => {
+      // shuffle
+      const shuffled = ids.sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, target);
+      selected.forEach(id => {
+        resultIds.push(id);
+        excludeIds.add(id);
+      });
+      return selected.length;
+    };
+
+    // 1. Followed
+    const follows = await this.prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } });
+    const followedIds = follows.map(f => f.followingId);
+    if (followedIds.length > 0) {
+      const fReels = await this.prisma.reel.findMany({
+        where: { userId: { in: followedIds }, status: 'READY', deletedAt: null, isPublic: true, id: { notIn: Array.from(excludeIds) } },
+        select: { id: true },
+        take: targetFollowed * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(fReels.map(p => p.id), targetFollowed);
+      const shortfall = targetFollowed - added;
+      targetInterests += Math.floor(shortfall * 0.5); // distribute shortfall
+      targetFriends += Math.floor(shortfall * 0.5);
+    }
+
+    // 2. Friends
+    const session = this.neo4jService.getSession();
+    let friendIds: string[] = [];
+    try {
+      const res = await session.run(`MATCH (u:User {userId: $userId})-[:FRIENDS]-(f:User) RETURN f.userId as fId`, { userId });
+      friendIds = res.records.map(r => r.get('fId'));
+    } catch (e) {} finally { await session.close(); }
+
+    if (friendIds.length > 0) {
+      const frReels = await this.prisma.reel.findMany({
+        where: { userId: { in: friendIds }, status: 'READY', deletedAt: null, isPublic: true, id: { notIn: Array.from(excludeIds) } },
+        select: { id: true },
+        take: targetFriends * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(frReels.map(p => p.id), targetFriends);
+      const shortfall = targetFriends - added;
+      targetInterests += shortfall;
+    }
+
+    // Max interests fallback cap
+    const maxInterests = Math.floor(limit * 0.7);
+    if (targetInterests > maxInterests) {
+      targetRandom += (targetInterests - maxInterests);
+      targetInterests = maxInterests;
+    }
+
+    // 3. Interests
+    const interests = await this.interestService.getTopInterests(userId, 10);
+    const topTags = interests.map(i => i.topic);
+    if (topTags.length > 0) {
+      const intReels = await this.prisma.reel.findMany({
+        where: {
+          status: 'READY',
+          deletedAt: null,
+          isPublic: true,
+          id: { notIn: Array.from(excludeIds) },
+          userId: { not: userId },
+          OR: [
+            { hashtags: { hasSome: topTags } },
+            { categories: { hasSome: topTags } }
+          ]
+        },
+        select: { id: true },
+        take: targetInterests * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(intReels.map(p => p.id), targetInterests);
+      const shortfall = targetInterests - added;
+      targetRandom += shortfall; // remaining shortfall goes to random
+    } else {
+      targetRandom += targetInterests;
+    }
+
+    // 4. Random
+    if (targetRandom > 0) {
+      const randReels = await this.prisma.reel.findMany({
+        where: { status: 'READY', deletedAt: null, isPublic: true, userId: { not: userId }, id: { notIn: Array.from(excludeIds) } },
+        select: { id: true },
+        take: 100,
+        orderBy: { createdAt: 'desc' }
+      });
+      addIds(randReels.map(p => p.id), targetRandom);
+    }
+
+    return resultIds.sort(() => 0.5 - Math.random());
   }
 
   async recordView(

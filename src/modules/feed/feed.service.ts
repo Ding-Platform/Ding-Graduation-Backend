@@ -18,6 +18,21 @@ export class FeedService {
     private readonly interestService: InterestService,
   ) {}
 
+  async recordPostView(userId: string, postId: string) {
+    try {
+      await this.prisma.postView.create({
+        data: {
+          viewerId: userId,
+          postId: postId,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      // Ignore unique constraint errors or other issues
+      return { success: false };
+    }
+  }
+
   async getFeed(
     userId: string,
     type: 'HOME' | 'FOLLOWING' | 'EXPLORE' = 'HOME',
@@ -38,41 +53,140 @@ export class FeedService {
     } else if (type === 'EXPLORE') {
       response = await this.getExploreFeed(userId, page, limit);
     } else {
-      // HOME: Personalized feed backed by Neo4j; falls back to chronological feed.
-      const scoredPostIds = await this.getScoredPostsFromGraph(
-        userId,
-        limit * 2,
-      );
-
-      if (!scoredPostIds.length) {
-        response = await this.getChronologicalFeed(userId, page, limit, false);
-      } else {
-        response = await this.mapPosts(scoredPostIds, page, limit, userId);
+      // HOME: Quota-based feed
+      const feedIds = await this.getQuotaBasedFeedIds(userId, limit);
+      if (feedIds.length === 0) {
+        return { data: [], total: 0, page, limit, totalPages: 0 };
       }
+      response = await this.mapPostsForFeed(feedIds, userId);
+      // We manually paginate inside mapPostsForFeed to return correctly structure, or we just treat the result as one page.
+      response.page = page;
+      response.limit = limit;
+      response.total = response.data.length; // Actually total available is unbounded, but we return length
+      response.totalPages = 1;
     }
 
     await this.redisService.set(cacheKey, response, 60);
     return response;
   }
 
-  private async mapPosts(
-    scoredPostIds: { postId: string; score: number }[],
-    page: number,
-    limit: number,
+  private async getQuotaBasedFeedIds(userId: string, limit: number): Promise<string[]> {
+    let targetFollowed = Math.floor(limit * 0.5);
+    let targetFriends = Math.floor(limit * 0.2);
+    let targetInterests = Math.floor(limit * 0.2);
+    let targetRandom = limit - (targetFollowed + targetFriends + targetInterests);
+
+    const seenPosts = await this.prisma.postView.findMany({
+      where: { viewerId: userId },
+      select: { postId: true }
+    });
+    const excludeIds = new Set<string>(seenPosts.map(p => p.postId));
+    const resultIds: string[] = [];
+
+    // Helper to add IDs
+    const addIds = (ids: string[], target: number) => {
+      // shuffle
+      const shuffled = ids.sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, target);
+      selected.forEach(id => {
+        resultIds.push(id);
+        excludeIds.add(id);
+      });
+      return selected.length;
+    };
+
+    // 1. Followed
+    const follows = await this.prisma.follow.findMany({ where: { followerId: userId }, select: { followingId: true } });
+    const followedIds = follows.map(f => f.followingId);
+    if (followedIds.length > 0) {
+      const fPosts = await this.prisma.post.findMany({
+        where: { authorId: { in: followedIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FOLLOWERS'] } },
+        select: { id: true },
+        take: targetFollowed * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(fPosts.map(p => p.id), targetFollowed);
+      const shortfall = targetFollowed - added;
+      targetInterests += Math.floor(shortfall * 0.5); // distribute shortfall
+      targetFriends += Math.floor(shortfall * 0.5);
+    }
+
+    // 2. Friends
+    const session = this.neo4jService.getSession();
+    let friendIds: string[] = [];
+    try {
+      const res = await session.run(`MATCH (u:User {userId: $userId})-[:FRIENDS]-(f:User) RETURN f.userId as fId`, { userId });
+      friendIds = res.records.map(r => r.get('fId'));
+    } catch (e) {} finally { await session.close(); }
+
+    if (friendIds.length > 0) {
+      const frPosts = await this.prisma.post.findMany({
+        where: { authorId: { in: friendIds }, isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: { in: ['PUBLIC', 'FOLLOWERS', 'FRIENDS'] } },
+        select: { id: true },
+        take: targetFriends * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(frPosts.map(p => p.id), targetFriends);
+      const shortfall = targetFriends - added;
+      targetInterests += shortfall;
+    }
+
+    // Max interests fallback cap
+    const maxInterests = Math.floor(limit * 0.7);
+    if (targetInterests > maxInterests) {
+      targetRandom += (targetInterests - maxInterests);
+      targetInterests = maxInterests;
+    }
+
+    // 3. Interests
+    const interests = await this.interestService.getTopInterests(userId, 10);
+    const topTags = interests.map(i => i.topic);
+    if (topTags.length > 0) {
+      const intPosts = await this.prisma.post.findMany({
+        where: {
+          isDeleted: false,
+          id: { notIn: Array.from(excludeIds) },
+          privacy: 'PUBLIC',
+          OR: [
+            { hashtags: { hasSome: topTags } },
+            { categories: { hasSome: topTags } }
+          ]
+        },
+        select: { id: true },
+        take: targetInterests * 3,
+        orderBy: { createdAt: 'desc' }
+      });
+      const added = addIds(intPosts.map(p => p.id), targetInterests);
+      const shortfall = targetInterests - added;
+      targetRandom += shortfall; // remaining shortfall goes to random
+    } else {
+      targetRandom += targetInterests;
+    }
+
+    // 4. Random
+    // Fetch random posts
+    if (targetRandom > 0) {
+      // Fast random selection for a small batch by ordering desc and taking a chunk, then shuffling in memory
+      // Real random order in DB is slow, so we take latest 100 unseen public posts and pick randomly
+      const randPosts = await this.prisma.post.findMany({
+        where: { isDeleted: false, id: { notIn: Array.from(excludeIds) }, privacy: 'PUBLIC' },
+        select: { id: true },
+        take: 100,
+        orderBy: { createdAt: 'desc' }
+      });
+      addIds(randPosts.map(p => p.id), targetRandom);
+    }
+
+    return resultIds.sort(() => 0.5 - Math.random());
+  }
+
+  private async mapPostsForFeed(
+    postIds: string[],
     userId: string,
   ) {
-    const moodProfile = await this.prisma.userSentimentProfile.findUnique({
-      where: { userId },
-    });
-    const feedBoostActive = Boolean(
-      moodProfile?.feedBoostPositive &&
-      moodProfile.feedBoostUntil &&
-      moodProfile.feedBoostUntil.getTime() > Date.now(),
-    );
-
     const posts = await this.prisma.post.findMany({
       where: {
-        id: { in: scoredPostIds.map((p) => p.postId) },
+        id: { in: postIds },
         isDeleted: false,
       },
       include: {
@@ -94,43 +208,7 @@ export class FeedService {
       },
     });
 
-    const sentiments = await this.prisma.contentSentiment.findMany({
-      where: {
-        contentType: 'POST',
-        contentId: { in: posts.map((p) => p.id) },
-      },
-      select: {
-        contentId: true,
-        positiveScore: true,
-        negativeScore: true,
-      },
-    });
-
-    const sentimentMap = new Map(
-      sentiments.map((s) => [
-        s.contentId,
-        { pos: s.positiveScore, neg: s.negativeScore },
-      ]),
-    );
-
-    const scoreMap = new Map(scoredPostIds.map((s) => [s.postId, s.score]));
-
-    const userInterests = await this.interestService.getTopInterests(
-      userId,
-      20,
-    );
-    const interestMap = new Map(
-      userInterests.map((i) => [i.topic.toLowerCase(), i.score]),
-    );
-
     const items = posts.map((p) => {
-      let affinityBoost = 0;
-      const tags = [...(p.hashtags || []), ...(p.categories || [])];
-      for (const tag of tags) {
-        affinityBoost += interestMap.get(tag.toLowerCase()) || 0;
-      }
-      const finalAffinityBoost = Math.min(affinityBoost * 0.5, 10.0);
-
       return {
         id: p.id,
         author: p.author?.name ?? '',
@@ -142,25 +220,19 @@ export class FeedService {
         comments: p._count?.Comments ?? 0,
         image: p.mediaUrls?.[0] ?? null,
         liked: p.Likes && p.Likes.length > 0,
-        score:
-          (scoreMap.get(p.id) ?? 0) +
-          this.getMoodBoostScore(feedBoostActive, sentimentMap.get(p.id)) +
-          finalAffinityBoost,
+        score: 1,
       };
     });
 
-    items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
-    const start = (page - 1) * limit;
-    const paginated = items.slice(start, start + limit);
-    const data: FeedItemDto[] = paginated.map(({ score, ...rest }) => rest);
+    // Keep the order of the shuffled postIds
+    const orderedItems = postIds.map(id => items.find(i => i.id === id)).filter(Boolean) as FeedItemDto[];
 
     return {
-      data,
-      total: items.length,
-      page,
-      limit,
-      totalPages: Math.ceil(items.length / limit),
+      data: orderedItems,
+      total: orderedItems.length,
+      page: 1,
+      limit: orderedItems.length,
+      totalPages: 1,
     };
   }
 

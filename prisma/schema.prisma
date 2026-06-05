@@ -82,6 +82,7 @@ model User {
   emergencyContacts  UserEmergencyContact[]
   reels              Reel[]
   reelViews          ReelView[]
+  postViews          PostView[]
   reelLikes          ReelLike[]
   reelComments       ReelComment[]
   reelShares         ReelShare[]
@@ -291,6 +292,7 @@ model Post {
 
   likeCount    Int       @default(0)
   commentCount Int       @default(0)
+  viewsCount   Int       @default(0)
 
   // Relations
   PostHistory  PostHistory[]
@@ -298,6 +300,7 @@ model Post {
   PostAudience PostAudience[]
   Likes        Like[]
   Comments     Comment[]
+  views        PostView[]
   savedBy      SavedPost[]
   groupPosts   GroupPost[]
   pagePosts    PagePost[]
@@ -1189,6 +1192,21 @@ model ReelView {
   @@index([reelId, viewedAt])
   @@index([viewerId, viewedAt])
   @@index([sessionId, reelId])
+}
+
+model PostView {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  viewerId  String?
+  viewer    User?    @relation(fields: [viewerId], references: [id], onDelete: SetNull)
+  viewedAt  DateTime @default(now())
+
+  // Used for tracking duration to eventually send to interest endpoint
+  durationSec Int @default(0)
+
+  @@index([postId, viewedAt])
+  @@index([viewerId, viewedAt])
 }
 
 model ReelLike {
