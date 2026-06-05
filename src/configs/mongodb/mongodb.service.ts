@@ -21,7 +21,7 @@ export class MongodbService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const uri = mongoUri || 'mongodb://localhost:27017';
+    const uri = mongoUri || (process.env.NODE_ENV === 'production' ? 'mongodb://mongodb:27017' : 'mongodb://localhost:27017');
     const dbName = get('MONGODB_DB_NAME').default('ding_chat').asString();
 
     // Retry connection with exponential backoff
