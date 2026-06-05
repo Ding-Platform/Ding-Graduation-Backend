@@ -113,7 +113,14 @@ export class SearchService {
       }
     }
 
-    return await this.meilisearch.index('users').search(query, searchParams);
+    try {
+      return await this.meilisearch.index('users').search(query, searchParams);
+    } catch (error: any) {
+      if (error.code === 'index_not_found') {
+        return { hits: [], estimatedTotalHits: 0 };
+      }
+      throw error;
+    }
   }
 
   private async searchPosts(
@@ -146,7 +153,14 @@ export class SearchService {
       searchParams.filter = "privacy = 'PUBLIC'";
     }
 
-    return await this.meilisearch.index('posts').search(query, searchParams);
+    try {
+      return await this.meilisearch.index('posts').search(query, searchParams);
+    } catch (error: any) {
+      if (error.code === 'index_not_found') {
+        return { hits: [], estimatedTotalHits: 0 };
+      }
+      throw error;
+    }
   }
 
   private async getBlockedUsers(userId: string): Promise<string[]> {
