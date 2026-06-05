@@ -826,38 +826,6 @@ export class ReelsService {
     return { saved: true };
   }
 
-  async getSavedReels(userId: string, cursor?: string, limit = 10) {
-    const safeLimit = Math.min(Math.max(limit, 1), 30);
-    const cursorDate = this.decodeCursor(cursor);
-
-    const bookmarks = await this.prisma.reelBookmark.findMany({
-      where: {
-        userId,
-        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
-      },
-      include: {
-        reel: {
-          include: {
-            user: { select: { id: true, name: true, image: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: safeLimit + 1,
-    });
-
-    const hasMore = bookmarks.length > safeLimit;
-    const items = hasMore ? bookmarks.slice(0, safeLimit) : bookmarks;
-    const reels = items
-      .filter((b) => b.reel.deletedAt === null)
-      .map((b) => b.reel);
-    const nextCursor =
-      hasMore && items.length > 0
-        ? this.encodeCursor(items[items.length - 1].createdAt)
-        : null;
-
-    return { reels, nextCursor, hasMore };
-  }
 
   // ─────────────────────────────────────────────
   // User Profile Reels
