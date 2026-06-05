@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Request } from 'express';
@@ -47,16 +51,21 @@ export class StorageService {
     const folderPath = path.join(this.uploadDir, subfolder);
     this.ensureDirectoryExists(folderPath);
 
-    const ext = req.headers['content-type'] === 'video/mp4' ? '.mp4' : 
-                req.headers['content-type'] === 'video/quicktime' ? '.mov' : 
-                req.headers['content-type'] === 'video/webm' ? '.webm' : '.mp4';
-    
+    const ext =
+      req.headers['content-type'] === 'video/mp4'
+        ? '.mp4'
+        : req.headers['content-type'] === 'video/quicktime'
+          ? '.mov'
+          : req.headers['content-type'] === 'video/webm'
+            ? '.webm'
+            : '.mp4';
+
     const fullFileName = `${filename}${ext}`;
     const filePath = path.join(folderPath, fullFileName);
 
     return new Promise((resolve, reject) => {
       const writeStream = fs.createWriteStream(filePath);
-      
+
       req.pipe(writeStream);
 
       req.on('end', () => {
@@ -66,12 +75,16 @@ export class StorageService {
       req.on('error', (err) => {
         writeStream.close();
         fs.unlink(filePath, () => {});
-        reject(new InternalServerErrorException('Failed to read upload stream'));
+        reject(
+          new InternalServerErrorException('Failed to read upload stream'),
+        );
       });
 
       writeStream.on('error', (err) => {
         fs.unlink(filePath, () => {});
-        reject(new InternalServerErrorException('Failed to write upload stream'));
+        reject(
+          new InternalServerErrorException('Failed to write upload stream'),
+        );
       });
     });
   }
@@ -97,10 +110,10 @@ export class StorageService {
       // If a full url is provided, extract the path part
       let relativePath = publicIdOrUrl;
       if (publicIdOrUrl.startsWith('http')) {
-         const url = new URL(publicIdOrUrl);
-         relativePath = url.pathname; // e.g. /uploads/profiles/pictures/...
+        const url = new URL(publicIdOrUrl);
+        relativePath = url.pathname; // e.g. /uploads/profiles/pictures/...
       }
-      
+
       if (relativePath.startsWith('/uploads')) {
         const absolutePath = path.join(process.cwd(), relativePath);
         if (fs.existsSync(absolutePath)) {
@@ -163,11 +176,31 @@ export class StorageService {
     files: { images?: Express.Multer.File[]; videos?: Express.Multer.File[] },
     postId: string,
   ): Promise<{
-    imageUrls: Array<{ url: string; publicId: string; width: number; height: number }>;
-    videoUrls: Array<{ url: string; publicId: string; width: number; height: number }>;
+    imageUrls: Array<{
+      url: string;
+      publicId: string;
+      width: number;
+      height: number;
+    }>;
+    videoUrls: Array<{
+      url: string;
+      publicId: string;
+      width: number;
+      height: number;
+    }>;
   }> {
-    const imageUrls: Array<{ url: string; publicId: string; width: number; height: number }> = [];
-    const videoUrls: Array<{ url: string; publicId: string; width: number; height: number }> = [];
+    const imageUrls: Array<{
+      url: string;
+      publicId: string;
+      width: number;
+      height: number;
+    }> = [];
+    const videoUrls: Array<{
+      url: string;
+      publicId: string;
+      width: number;
+      height: number;
+    }> = [];
 
     if (files.images && files.images.length > 0) {
       for (const image of files.images) {

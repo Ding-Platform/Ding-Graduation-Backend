@@ -292,6 +292,9 @@ export class ReelsService {
         ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
       },
       include: {
+        user: {
+          select: { id: true, name: true, image: true },
+        },
         _count: {
           select: {
             likes: true,
