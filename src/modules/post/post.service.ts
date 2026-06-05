@@ -812,7 +812,7 @@ export class PostService {
 
       const post = await this.prisma.post.findUnique({
         where: { id: postId },
-        select: { hashtags: true, categories: true },
+        select: { hashtags: true, categories: true, authorId: true },
       });
       if (post) {
         this.interestService.recordInterest(
@@ -820,6 +820,14 @@ export class PostService {
           [...(post.hashtags || []), ...(post.categories || [])],
           2.0,
         );
+
+        if (post.authorId !== userId) {
+          await this.notificationService.notifyPostSaved(
+            userId,
+            post.authorId,
+            postId,
+          );
+        }
       }
       this.activityService.logActivity(userId, 'SAVED_POST', postId, 'POST');
 
@@ -849,6 +857,32 @@ export class PostService {
 
     return {
       data: saved.map((s) => this.mapPostToSimple(s.post, userId)),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getLikedPosts(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    const likes = await this.prisma.like.findMany({
+      where: { userId, postId: { not: null } },
+      include: {
+        post: {
+          include: {
+            author: { select: { id: true, name: true, image: true } },
+            PostMedia: true,
+            _count: { select: { Likes: true, Comments: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    });
+
+    const total = await this.prisma.like.count({ where: { userId, postId: { not: null } } });
+
+    return {
+      data: likes.map((l) => this.mapPostToSimple(l.post, userId)).filter(p => p !== null),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }

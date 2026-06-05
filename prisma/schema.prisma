@@ -222,7 +222,9 @@ enum NotificationType {
   NEW_FOLLOWER
   POST_LIKE
   POST_COMMENT
+  POST_SAVED
   COMMENT_LIKE
+  COMMENT_REPLY
   MENTION
   SYSTEM
   // Sprint 12
@@ -236,6 +238,7 @@ enum NotificationType {
   REEL_LIKE
   REEL_COMMENT
   REEL_SHARE
+  REEL_SAVED
   // Sprint 18
   LIVE_STARTED
   // Sprint 20

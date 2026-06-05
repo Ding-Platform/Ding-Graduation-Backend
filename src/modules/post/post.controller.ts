@@ -50,6 +50,15 @@ export class PostController {
     return this.postService.getSavedPosts(userId, page, limit);
   }
 
+  @Get('/liked')
+  async getLikedPosts(
+    @currentUser('id') userId: string,
+    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', ParseIntPipe) limit = 20,
+  ) {
+    return this.postService.getLikedPosts(userId, page, limit);
+  }
+
   @Get('/hashtag/:tag')
   async getPostsByHashtag(
     @Param('tag') tag: string,

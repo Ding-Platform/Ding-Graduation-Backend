@@ -108,6 +108,17 @@ export class NotificationService {
     });
   }
 
+  async notifyPostSaved(actorId: string, targetUserId: string, postId: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.POST_SAVED,
+      'Post Saved',
+      'saved your post',
+      actorId,
+      { postId },
+    );
+  }
+
   async notifyPostLike(actorId: string, targetUserId: string, postId: string) {
     return this.createNotification(
       targetUserId,
@@ -124,14 +135,33 @@ export class NotificationService {
     targetUserId: string,
     commentId: string,
     postId: string,
+    totalLikes: number = 1,
   ) {
     return this.createNotification(
       targetUserId,
       NotificationType.COMMENT_LIKE,
       'New Like',
-      'liked your comment',
+      `liked your comment (total likes: ${totalLikes})`,
       actorId,
-      { commentId, postId },
+      { commentId, postId, totalLikes },
+    );
+  }
+
+  async notifyCommentReply(
+    actorId: string,
+    targetUserId: string,
+    commentId: string,
+    postId: string,
+    content: string,
+    totalReplies: number = 1,
+  ) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.COMMENT_REPLY,
+      'New Reply',
+      `replied to your comment: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}" (total replies: ${totalReplies})`,
+      actorId,
+      { commentId, postId, content, totalReplies },
     );
   }
 
@@ -182,6 +212,17 @@ export class NotificationService {
   }
 
   // ─── Reel Notifications ───────────────────────
+
+  async notifyReelSaved(actorId: string, targetUserId: string, reelId: string) {
+    return this.createNotification(
+      targetUserId,
+      NotificationType.REEL_SAVED,
+      'Reel Saved',
+      'saved your reel',
+      actorId,
+      { reelId },
+    );
+  }
 
   async notifyReelLike(actorId: string, targetUserId: string, reelId: string) {
     return this.createNotification(

@@ -42,12 +42,14 @@ export class CommentService {
       id: string;
       parentId: string | null;
       postId: string;
+      authorId: string;
+      replyCount: number;
     } | null = null;
 
     if (dto.parentCommentId) {
       parentComment = await this.prisma.comment.findUnique({
         where: { id: dto.parentCommentId },
-        select: { id: true, parentId: true, postId: true },
+        select: { id: true, parentId: true, postId: true, authorId: true, replyCount: true },
       });
 
       if (!parentComment || parentComment.postId !== postId) {
@@ -120,12 +122,27 @@ export class CommentService {
     });
 
     try {
-      await this.notificationService.notifyPostComment(
-        authorId,
-        post.authorId,
-        postId,
-        comment.content,
-      );
+      if (parentComment) {
+        if (parentComment.authorId !== authorId) {
+          await this.notificationService.notifyCommentReply(
+            authorId,
+            parentComment.authorId,
+            parentComment.id,
+            postId,
+            comment.content,
+            parentComment.replyCount + 1,
+          );
+        }
+      } else {
+        if (post.authorId !== authorId) {
+          await this.notificationService.notifyPostComment(
+            authorId,
+            post.authorId,
+            postId,
+            comment.content,
+          );
+        }
+      }
     } catch (notificationError) {
       console.error('Failed to send comment notification', notificationError);
     }

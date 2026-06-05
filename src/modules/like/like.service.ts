@@ -219,6 +219,12 @@ export class LikeService {
       return like;
     });
 
+    // Get updated comment with like count
+    const updatedComment = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { likeCount: true },
+    });
+
     // Send notification
     try {
       if (comment.authorId !== userId) {
@@ -227,17 +233,12 @@ export class LikeService {
           comment.authorId,
           commentId,
           comment.postId,
+          updatedComment?.likeCount || 1,
         );
       }
     } catch (error) {
       console.error('Failed to send comment like notification', error);
     }
-
-    // Get updated comment with like count
-    const updatedComment = await this.prisma.comment.findUnique({
-      where: { id: commentId },
-      select: { likeCount: true },
-    });
 
     // Async: enqueue background sync job (Neo4j is updated in the graph-sync processor)
     try {

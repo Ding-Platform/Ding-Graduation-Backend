@@ -125,6 +125,32 @@ export class ReelsController {
     );
   }
 
+  @Get('liked')
+  @UseGuards(JwtAuthGuard)
+  async getLikedReels(
+    @User() user: currentUserType,
+    @Query() pagination: CursorPaginationDto,
+  ) {
+    return this.reelsService.getLikedReels(
+      user.id,
+      pagination.cursor,
+      pagination.limit ?? 10,
+    );
+  }
+
+  @Get('saved')
+  @UseGuards(JwtAuthGuard)
+  async getSavedReels(
+    @User() user: currentUserType,
+    @Query() pagination: CursorPaginationDto,
+  ) {
+    return this.reelsService.getSavedReels(
+      user.id,
+      pagination.cursor,
+      pagination.limit ?? 10,
+    );
+  }
+
   @Get('user/:userId')
   @UseGuards(JwtAuthGuard)
   async getUserReels(

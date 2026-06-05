@@ -655,6 +655,23 @@ export class ReelsService {
       data: { commentsCount: { increment: 1 } },
     });
 
+    if (payload.parentId) {
+      const parentComment = await this.prisma.reelComment.findUnique({
+        where: { id: payload.parentId },
+        include: { _count: { select: { replies: true } } }
+      });
+      if (parentComment && parentComment.userId !== userId) {
+        await this.notificationService.notifyCommentReply(
+          userId,
+          parentComment.userId,
+          parentComment.id,
+          reelId,
+          payload.content,
+          parentComment._count.replies + 1
+        );
+      }
+    }
+
     await this.sentimentQueue.add(
       'analyze-comment',
       {
@@ -798,6 +815,14 @@ export class ReelsService {
     );
     this.activityService.logActivity(userId, 'BOOKMARKED_REEL', reelId, 'REEL');
 
+    if (reel.userId !== userId) {
+      await this.notificationService.notifyReelSaved(
+        userId,
+        reel.userId,
+        reelId,
+      );
+    }
+
     return { saved: true };
   }
 
@@ -902,6 +927,67 @@ export class ReelsService {
     return { reels: enrichedItems, nextCursor, hasMore };
   }
 
+  async getLikedReels(userId: string, cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+
+    const likes = await this.prisma.reelLike.findMany({
+      where: {
+        userId,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+      include: {
+        reel: true,
+      },
+    });
+
+    const hasMore = likes.length > safeLimit;
+    const items = hasMore ? likes.slice(0, safeLimit) : likes;
+    
+    // Filter out deleted/not-ready reels
+    const validReels = items.map(l => l.reel).filter(r => r && !r.deletedAt && r.status === 'READY');
+    const enrichedItems = await this.enrichReels(userId, validReels);
+
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: enrichedItems, nextCursor, hasMore };
+  }
+
+  async getSavedReels(userId: string, cursor?: string, limit = 10) {
+    const safeLimit = Math.min(Math.max(limit, 1), 30);
+    const cursorDate = this.decodeCursor(cursor);
+
+    const bookmarks = await this.prisma.reelBookmark.findMany({
+      where: {
+        userId,
+        ...(cursorDate ? { createdAt: { lt: cursorDate } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: safeLimit + 1,
+      include: {
+        reel: true,
+      },
+    });
+
+    const hasMore = bookmarks.length > safeLimit;
+    const items = hasMore ? bookmarks.slice(0, safeLimit) : bookmarks;
+    
+    const validReels = items.map(b => b.reel).filter(r => r && !r.deletedAt && r.status === 'READY');
+    const enrichedItems = await this.enrichReels(userId, validReels);
+
+    const nextCursor =
+      hasMore && items.length > 0
+        ? this.encodeCursor(items[items.length - 1].createdAt)
+        : null;
+
+    return { reels: enrichedItems, nextCursor, hasMore };
+  }
+
   // ─────────────────────────────────────────────
   // Comment Likes & Editing
   // ─────────────────────────────────────────────
@@ -931,7 +1017,7 @@ export class ReelsService {
       return { liked: false };
     }
 
-    await this.prisma.$transaction([
+    const [_, updatedComment] = await this.prisma.$transaction([
       this.prisma.reelCommentLike.create({
         data: { commentId, userId },
       }),
@@ -940,6 +1026,17 @@ export class ReelsService {
         data: { likesCount: { increment: 1 } },
       }),
     ]);
+
+    if (comment.userId !== userId) {
+      await this.notificationService.notifyCommentLike(
+        userId,
+        comment.userId,
+        commentId,
+        reelId,
+        updatedComment.likesCount,
+      );
+    }
+
     return { liked: true };
   }
 
