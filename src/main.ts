@@ -51,6 +51,9 @@ function getCorsOrigin(): CorsOptions['origin'] {
 }
 
 function setupMiddlewares(app: NestExpressApplication) {
+  // Trust the Nginx reverse proxy to securely parse X-Forwarded-For
+  app.set('trust proxy', 1);
+
   app.use(json());
   app.use(compression());
   app.use(cookieParser());

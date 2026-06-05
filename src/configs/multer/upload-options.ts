@@ -1,20 +1,7 @@
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-import * as fs from 'fs';
-
-const uploadDir = './uploads/media';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+import { memoryStorage } from 'multer';
 
 export const uploadOptions = {
-  storage: diskStorage({
-    destination: './uploads/media',
-    filename: (req, file, cb) => {
-      const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      cb(null, unique + extname(file.originalname));
-    },
-  }),
+  storage: memoryStorage(),
 
   limits: {
     fileSize: 20 * 1024 * 1024, // 20MB
