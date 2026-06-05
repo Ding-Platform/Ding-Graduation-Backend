@@ -378,13 +378,15 @@ export class ReelsService {
       .sort((a, b) => b.score - a.score);
 
     const items = scored.slice(0, safeLimit).map((row) => row.reel);
+    const enrichedItems = await this.enrichReels(userId, items);
+
     const nextCursor =
       items.length > 0
         ? this.encodeCursor(items[items.length - 1].createdAt)
         : null;
 
     return {
-      reels: items,
+      reels: enrichedItems,
       nextCursor,
     };
   }
@@ -834,12 +836,14 @@ export class ReelsService {
 
     const hasMore = reels.length > safeLimit;
     const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const enrichedItems = await this.enrichReels(viewerId, items);
+
     const nextCursor =
       hasMore && items.length > 0
         ? this.encodeCursor(items[items.length - 1].createdAt)
         : null;
 
-    return { reels: items, nextCursor, hasMore };
+    return { reels: enrichedItems, nextCursor, hasMore };
   }
 
   async getMyReels(userId: string, cursor?: string, limit = 10) {
@@ -858,12 +862,14 @@ export class ReelsService {
 
     const hasMore = reels.length > safeLimit;
     const items = hasMore ? reels.slice(0, safeLimit) : reels;
+    const enrichedItems = await this.enrichReels(userId, items);
+
     const nextCursor =
       hasMore && items.length > 0
         ? this.encodeCursor(items[items.length - 1].createdAt)
         : null;
 
-    return { reels: items, nextCursor, hasMore };
+    return { reels: enrichedItems, nextCursor, hasMore };
   }
 
   // ─────────────────────────────────────────────
@@ -1122,6 +1128,36 @@ export class ReelsService {
     if (sentiment.positiveScore > 65) return 0.2;
     if (sentiment.negativeScore > 65) return -0.2;
     return 0;
+  }
+
+  private async enrichReels(userId: string | undefined, items: any[]) {
+    if (!userId || items.length === 0) return items;
+
+    const [likedReels, savedReels] = await Promise.all([
+      this.prisma.reelLike.findMany({
+        where: {
+          userId,
+          reelId: { in: items.map((r) => r.id) },
+        },
+        select: { reelId: true },
+      }),
+      this.prisma.reelBookmark.findMany({
+        where: {
+          userId,
+          reelId: { in: items.map((r) => r.id) },
+        },
+        select: { reelId: true },
+      }),
+    ]);
+
+    const likedSet = new Set(likedReels.map((l) => l.reelId));
+    const savedSet = new Set(savedReels.map((s) => s.reelId));
+
+    return items.map((reel) => ({
+      ...reel,
+      isLikedByMe: likedSet.has(reel.id),
+      isSavedByMe: savedSet.has(reel.id),
+    }));
   }
 
   private encodeCursor(date: Date) {

@@ -67,6 +67,7 @@ function setupMiddlewares(app: NestExpressApplication) {
     helmet({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: false,
     }),
   );
 }
