@@ -258,9 +258,23 @@ export class SocialService {
              DELETE r
              MERGE (from)-[:FRIENDS {createdAt: datetime()}]->(to)
              MERGE (to)-[:FRIENDS {createdAt: datetime()}]->(from)
+             MERGE (from)-[:FOLLOWS {createdAt: datetime()}]->(to)
+             MERGE (to)-[:FOLLOWS {createdAt: datetime()}]->(from)
              RETURN count(r) as deleted`,
         { fromUserId, toUserId },
       );
+
+      // Also create bidirectional follow records in Postgres
+      await this.prisma.follow.upsert({
+        where: { followerId_followingId: { followerId: fromUserId, followingId: toUserId } },
+        create: { followerId: fromUserId, followingId: toUserId },
+        update: {},
+      });
+      await this.prisma.follow.upsert({
+        where: { followerId_followingId: { followerId: toUserId, followingId: fromUserId } },
+        create: { followerId: toUserId, followingId: fromUserId },
+        update: {},
+      });
 
       // Verify the request was deleted
       if (result.records[0].get('deleted').toNumber() === 0) {
