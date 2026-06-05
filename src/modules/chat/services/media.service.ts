@@ -204,7 +204,11 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.storageService.uploadGenericFile(file, 'chat/media/documents', `chat_${messageId}`);
+      // Clean original filename to be URL safe
+      const safeName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.[^/.]+$/, '');
+      const prefix = messageId === 'temp' ? `doc_${safeName}` : `chat_${messageId}_${safeName}`;
+      
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/documents', prefix);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
