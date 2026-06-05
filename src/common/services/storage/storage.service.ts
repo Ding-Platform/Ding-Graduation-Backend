@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { Request } from 'express';
 
 @Injectable()
 export class StorageService {
@@ -36,6 +37,43 @@ export class StorageService {
 
     // Return the relative URL starting with /uploads
     return `/uploads/${subfolder}/${fullFileName}`;
+  }
+
+  async saveRawStream(
+    req: Request,
+    subfolder: string,
+    filename: string,
+  ): Promise<string> {
+    const folderPath = path.join(this.uploadDir, subfolder);
+    this.ensureDirectoryExists(folderPath);
+
+    const ext = req.headers['content-type'] === 'video/mp4' ? '.mp4' : 
+                req.headers['content-type'] === 'video/quicktime' ? '.mov' : 
+                req.headers['content-type'] === 'video/webm' ? '.webm' : '.mp4';
+    
+    const fullFileName = `${filename}${ext}`;
+    const filePath = path.join(folderPath, fullFileName);
+
+    return new Promise((resolve, reject) => {
+      const writeStream = fs.createWriteStream(filePath);
+      
+      req.pipe(writeStream);
+
+      req.on('end', () => {
+        resolve(`/uploads/${subfolder}/${fullFileName}`);
+      });
+
+      req.on('error', (err) => {
+        writeStream.close();
+        fs.unlink(filePath, () => {});
+        reject(new InternalServerErrorException('Failed to read upload stream'));
+      });
+
+      writeStream.on('error', (err) => {
+        fs.unlink(filePath, () => {});
+        reject(new InternalServerErrorException('Failed to write upload stream'));
+      });
+    });
   }
 
   async uploadProfilePicture(

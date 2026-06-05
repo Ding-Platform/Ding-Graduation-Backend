@@ -20,6 +20,8 @@ import {
 import { InterestService } from '../interest/interest.service';
 import { ActivityService } from '../activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { StorageService } from '../../common/services/storage/storage.service';
+import type { Request } from 'express';
 
 @Injectable()
 export class ReelsService {
@@ -29,6 +31,7 @@ export class ReelsService {
     private readonly notificationService: NotificationService,
     private readonly interestService: InterestService,
     private readonly activityService: ActivityService,
+    private readonly storageService: StorageService,
     @InjectQueue('sentiment-analysis')
     private readonly sentimentQueue: Queue,
   ) {}
@@ -41,12 +44,30 @@ export class ReelsService {
       },
     });
 
-    const uploadKey = `reels/raw/${reel.id}.mp4`;
+    const uploadKey = reel.id;
+    const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000/api';
     return {
       reelId: reel.id,
-      uploadUrl: `${process.env.REELS_FAKE_UPLOAD_BASE_URL || 'https://uploads.ding.local'}/${uploadKey}`,
+      key: uploadKey,
+      uploadUrl: `${baseUrl}/reels/raw/${uploadKey}`,
       expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     };
+  }
+
+  async handleRawUpload(reelId: string, req: Request) {
+    const reel = await this.prisma.reel.findUnique({ where: { id: reelId } });
+    if (!reel) {
+      throw new NotFoundException('Reel not found');
+    }
+
+    const url = await this.storageService.saveRawStream(req, 'reels/raw', reelId);
+    
+    await this.prisma.reel.update({
+      where: { id: reelId },
+      data: { rawVideoKey: url },
+    });
+    
+    return { success: true, url };
   }
 
   async finalizeReel(
@@ -116,8 +137,8 @@ export class ReelsService {
         fileSizeBytes: payload.fileSizeBytes
           ? BigInt(payload.fileSizeBytes)
           : null,
-        videoUrl: `${processingBase}/reels/${reelId}/video.mp4`,
-        thumbnailUrl: `${processingBase}/reels/${reelId}/thumb.jpg`,
+        videoUrl: reel.rawVideoKey,
+        thumbnailUrl: null, // Frontend currently doesn't upload thumbnails, so we leave it null or could generate one
         failReason: null,
       },
     });

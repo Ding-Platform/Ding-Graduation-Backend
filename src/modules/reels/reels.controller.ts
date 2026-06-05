@@ -6,9 +6,12 @@ import {
   Param,
   Patch,
   Post,
+  Put,
+  Req,
   Query,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { User } from '../../common/decorators/user.decorator';
 import { currentUserType } from '../../common/types/current-user.type';
@@ -33,6 +36,14 @@ export class ReelsController {
   @UseGuards(JwtAuthGuard)
   async createUploadUrl(@User() user: currentUserType) {
     return this.reelsService.createUploadUrl(user.id);
+  }
+
+  @Put('raw/:id')
+  async uploadRawVideo(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
+    return this.reelsService.handleRawUpload(id, req);
   }
 
   @Post(':id/finalize')
