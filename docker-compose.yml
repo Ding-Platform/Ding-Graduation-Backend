@@ -55,7 +55,8 @@ services:
     networks:
       - internal
       - public
-    # ❌ NO VOLUMES
+    volumes:
+      - backend_uploads:/app/uploads
     command: sh -c "pnpm prisma generate && pnpm start"
 
   frontend:
@@ -87,6 +88,7 @@ volumes:
   redis_data:
   neo4j_data:
   meilisearch_data:
+  backend_uploads:
 
 networks:
   internal:
