@@ -9,6 +9,7 @@ import { Queue } from 'bull';
 import { Prisma, OrderStatus } from '@prisma/client';
 import { DatabaseService } from 'src/configs/database/database.service';
 import { CloudinaryService } from 'src/common/services/cloudinary/cloudinary.service';
+import { StorageService } from 'src/common/services/storage/storage.service';
 import { NotificationService } from 'src/modules/notification/notification.service';
 import {
   CancelOrderDto,
@@ -25,6 +26,7 @@ export class OrderService {
   constructor(
     private readonly db: DatabaseService,
     private readonly cloudinary: CloudinaryService,
+    private readonly storageService: StorageService,
     @InjectQueue('order-release') private readonly orderReleaseQueue: Queue,
     private readonly notificationService: NotificationService,
   ) {}
@@ -254,7 +256,7 @@ export class OrderService {
       throw new BadRequestException('Only placed orders can be shipped');
     }
 
-    const proofUrl = await this.cloudinary.uploadOrderProof(
+    const proofUrl = await this.storageService.uploadOrderProof(
       proofFile,
       orderId,
       sellerId,
@@ -309,7 +311,7 @@ export class OrderService {
       );
     }
 
-    const proofUrl = await this.cloudinary.uploadOrderProof(
+    const proofUrl = await this.storageService.uploadOrderProof(
       proofFile,
       orderId,
       buyerId,

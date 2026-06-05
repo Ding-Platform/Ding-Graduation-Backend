@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { CloudinaryService } from 'src/common/services/cloudinary/cloudinary.service';
+import { StorageService } from 'src/common/services/storage/storage.service';
 import { MongodbService } from 'src/configs/mongodb/mongodb.service';
 import {
   MessageMediaDocument,
@@ -19,6 +20,7 @@ import {
 export class ChatMediaService {
   constructor(
     private readonly cloudinaryService: CloudinaryService,
+    private readonly storageService: StorageService,
     private readonly mongodbService: MongodbService,
   ) {}
 
@@ -44,7 +46,7 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.uploadToCloudinary(file, 'images', messageId);
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/images', `chat_${messageId}`);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
@@ -88,12 +90,7 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.uploadToCloudinary(
-        file,
-        'videos',
-        messageId,
-        'video',
-      );
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/videos', `chat_${messageId}`);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
@@ -139,12 +136,7 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.uploadToCloudinary(
-        file,
-        'audio',
-        messageId,
-        'video',
-      ); // Cloudinary treats audio as video
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/audio', `chat_${messageId}`);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
@@ -178,12 +170,7 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.uploadToCloudinary(
-        file,
-        'voice-notes',
-        messageId,
-        'video',
-      );
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/voice-notes', `chat_${messageId}`);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
@@ -217,12 +204,7 @@ export class ChatMediaService {
     }
 
     try {
-      const result = await this.uploadToCloudinary(
-        file,
-        'documents',
-        messageId,
-        'raw',
-      );
+      const result = await this.storageService.uploadGenericFile(file, 'chat/media/documents', `chat_${messageId}`);
 
       const mediaDoc: MessageMediaDocument = {
         messageId,
@@ -328,11 +310,11 @@ export class ChatMediaService {
   }
 
   /**
-   * Delete media from Cloudinary
+   * Delete media from Storage
    */
   async deleteMedia(publicId: string): Promise<void> {
     try {
-      await this.cloudinaryService.deleteFile(publicId);
+      await this.storageService.deleteFile(publicId);
     } catch (error) {
       console.error('Failed to delete media:', error);
     }

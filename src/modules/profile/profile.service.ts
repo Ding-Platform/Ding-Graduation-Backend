@@ -7,6 +7,7 @@ import {
 } from '@prisma/client';
 import { DatabaseService } from '../../configs/database/database.service';
 import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.service';
+import { StorageService } from '../../common/services/storage/storage.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { PROFILE_ERROR_MESSAGES } from '../../common/constants/profile-error-messages.constant';
 import { PROFILE_CONSTANTS } from '../../common/constants/profile.constants';
@@ -41,6 +42,7 @@ export class ProfileService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly storageService: StorageService,
     private readonly socialService: SocialService,
     private readonly notificationService: NotificationService,
   ) {}
@@ -189,8 +191,8 @@ export class ProfileService {
    */
   async uploadProfilePicture(userId: string, file: Express.Multer.File) {
     try {
-      // Upload to Cloudinary with transformations
-      const imageUrl = await this.cloudinaryService.uploadProfilePicture(
+      // Upload to local storage
+      const imageUrl = await this.storageService.uploadProfilePicture(
         file,
         userId,
       );
@@ -226,8 +228,8 @@ export class ProfileService {
    */
   async uploadCoverPhoto(userId: string, file: Express.Multer.File) {
     try {
-      // Upload to Cloudinary with transformations
-      const coverPhotoUrl = await this.cloudinaryService.uploadCoverPhoto(
+      // Upload to local storage
+      const coverPhotoUrl = await this.storageService.uploadCoverPhoto(
         file,
         userId,
       );

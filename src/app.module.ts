@@ -45,6 +45,9 @@ import { EventsModule } from './modules/events/events.module';
 import { SentimentModule } from './modules/sentiment/sentiment.module';
 import { InterestModule } from './modules/interest/interest.module';
 import { ActivityModule } from './modules/activity/activity.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { StorageModule } from './common/services/storage/storage.module';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -100,6 +103,7 @@ try {
     SessionModule,
     ProfileModule,
     CloudinaryModule,
+    StorageModule,
     SocialModule,
     PostModule,
     FeedModule,
@@ -125,6 +129,10 @@ try {
     SentimentModule,
     InterestModule,
     ActivityModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   controllers: [AppController, HealthController],
   providers: [

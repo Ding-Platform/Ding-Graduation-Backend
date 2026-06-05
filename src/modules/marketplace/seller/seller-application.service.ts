@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { DatabaseService } from 'src/configs/database/database.service';
 import { CloudinaryService } from 'src/common/services/cloudinary/cloudinary.service';
+import { StorageService } from 'src/common/services/storage/storage.service';
 import { SellerApplicationDto } from '../dtos/seller-application.dto';
 import {
   encrypt,
@@ -20,6 +21,7 @@ export class SellerApplicationService {
   constructor(
     private readonly db: DatabaseService,
     private readonly cloudinary: CloudinaryService,
+    private readonly storageService: StorageService,
   ) {}
 
   /**
@@ -83,17 +85,17 @@ export class SellerApplicationService {
 
     // ── Upload images to Cloudinary ────────────────────────────────
     const [frontUrl, backUrl, faceUrl] = await Promise.all([
-      this.cloudinary.uploadSellerDocument(
+      this.storageService.uploadSellerDocument(
         files.idCardFrontImage[0],
         userId,
         'id_front',
       ),
-      this.cloudinary.uploadSellerDocument(
+      this.storageService.uploadSellerDocument(
         files.idCardBackImage[0],
         userId,
         'id_back',
       ),
-      this.cloudinary.uploadSellerDocument(
+      this.storageService.uploadSellerDocument(
         files.sellerFaceImage[0],
         userId,
         'face',

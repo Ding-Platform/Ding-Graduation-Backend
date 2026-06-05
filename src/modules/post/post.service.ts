@@ -2,6 +2,7 @@ import { Injectable, HttpStatus } from '@nestjs/common';
 import { DatabaseService } from '../../configs/database/database.service';
 import { HelperService } from '../../common/utils/helper/helper.service';
 import { CloudinaryService } from '../../common/services/cloudinary/cloudinary.service';
+import { StorageService } from '../../common/services/storage/storage.service';
 import { GenericHttpException } from '../../common/application/exceptions/generic-http-exception';
 import { ERROR_MESSAGES } from '../../common/constants/error-messages.constant';
 import { POST_CONSTANTS } from '../../common/constants/post.constants';
@@ -43,6 +44,7 @@ export class PostService {
     private readonly prisma: DatabaseService,
     private readonly helperService: HelperService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly storageService: StorageService,
     private readonly notificationService: NotificationService,
     private readonly redisService: RedisService,
     private readonly interestService: InterestService,
@@ -232,7 +234,7 @@ export class PostService {
       // Upload media if provided
       if (files && (files.images || files.videos)) {
         const uploadResult =
-          await this.cloudinaryService.uploadMultiplePostMedia(
+          await this.storageService.uploadMultiplePostMedia(
             {
               images: files.images,
               videos: files.videos,
