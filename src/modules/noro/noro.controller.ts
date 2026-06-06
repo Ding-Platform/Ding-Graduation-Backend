@@ -24,8 +24,17 @@ export class NoroController {
   constructor(private readonly noroService: NoroService) {}
 
   @Post('chat')
-  async chat(@User() user: currentUserType, @Body('message') message: string) {
-    return this.noroService.chat(user.id, message);
+  async chat(
+    @User() user: currentUserType,
+    @Body('message') message: string,
+    @Body('systemPrompt') systemPrompt?: string,
+  ) {
+    return this.noroService.chat(user.id, message, systemPrompt);
+  }
+
+  @Get('context')
+  async getContext(@User() user: currentUserType) {
+    return this.noroService.getContext(user.id);
   }
 
   @Get('history')

@@ -8,15 +8,68 @@ import {
   NoroTrigger,
 } from '@prisma/client';
 
+import { InterestService } from '../interest/interest.service';
+
 @Injectable()
 export class NoroService {
   private readonly logger = new Logger(NoroService.name);
   private readonly OLLAMA_URL = 'http://localhost:11434/api/chat';
   private readonly MODEL = 'llama3'; // or 'noro' custom model
 
-  constructor(private readonly prisma: DatabaseService) {}
+  constructor(
+    private readonly prisma: DatabaseService,
+    private readonly interestService: InterestService,
+  ) {}
 
-  async chat(userId: string, content: string) {
+  async getContext(userId: string) {
+    // Fetch User Profile, Mood, Sentiment, and Interests
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { Profile: true, userMoodProfile: true, sentimentProfile: true },
+    });
+
+    let age: number | null = null;
+    if (user?.Profile?.dateOfBirth) {
+      const diff = Date.now() - user.Profile.dateOfBirth.getTime();
+      age = Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
+    }
+
+    const interests = await this.interestService.getTopInterests(userId, 5);
+    const interestTopics = interests.map((i) => i.topic);
+    
+    let dominantMood = 'neutral';
+    let energyLevel = 5;
+
+    if (user?.userMoodProfile) {
+      dominantMood = user.userMoodProfile.dominantMood || 'neutral';
+      energyLevel = user.userMoodProfile.energyLevel ? Number(user.userMoodProfile.energyLevel) : 5;
+    } else if (user?.sentimentProfile) {
+      const { positivePoints, negativePoints } = user.sentimentProfile;
+      if (negativePoints >= 70) {
+        dominantMood = 'sad';
+        energyLevel = 3;
+      } else if (negativePoints >= 55) {
+        dominantMood = 'anxious';
+        energyLevel = 4;
+      } else if (positivePoints >= 65) {
+        dominantMood = 'happy';
+        energyLevel = 8;
+      }
+    }
+
+    return {
+      name: user?.name || null,
+      age,
+      location: user?.Profile?.location || null,
+      interests: interestTopics,
+      emotionalState: {
+        dominantMood,
+        energyLevel,
+      }
+    };
+  }
+
+  async chat(userId: string, content: string, systemPrompt?: string) {
     // 1. Context Retrieval
     const history = await this.prisma.noroChat.findMany({
       where: { userId },
@@ -34,12 +87,13 @@ export class NoroService {
     // 2. Call Ollama
     let responseText = "I'm having trouble connecting to my brain right now.";
 
+    const defaultSystemPrompt = 'You are Noro, a friendly and helpful AI assistant for the Ding platform.';
+
     try {
       const messages = [
         {
           role: 'system',
-          content:
-            'You are Noro, a friendly and helpful AI assistant for the Ding platform.',
+          content: systemPrompt || defaultSystemPrompt,
         },
         ...contextMessages,
         { role: 'user', content: content },

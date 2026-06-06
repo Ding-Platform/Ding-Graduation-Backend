@@ -16,6 +16,13 @@ import { PROFILE_ERROR_MESSAGES } from '../../../../common/constants/profile-err
 export class UpdateProfileRequest {
   @IsOptional()
   @IsString()
+  @MaxLength(50)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  name?: string;
+  @IsOptional()
+  @IsString()
   @MaxLength(PROFILE_CONSTANTS.FIELDS.BIO_MAX_LENGTH, {
     message: PROFILE_ERROR_MESSAGES.BIO_TOO_LONG,
   })

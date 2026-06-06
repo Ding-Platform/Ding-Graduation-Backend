@@ -100,6 +100,13 @@ export class ProfileService {
   ): Promise<ProfileWithUserAndPrivacy> {
     let existingProfile: PrismaProfile | null = null;
     try {
+      if (data.name) {
+        await this.prisma.user.update({
+          where: { id: userId },
+          data: { name: data.name },
+        });
+      }
+
       existingProfile = await this.prisma.profile.findUnique({
         where: { userId },
       });
