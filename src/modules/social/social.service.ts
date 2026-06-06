@@ -494,21 +494,8 @@ export class SocialService {
 
       const friendIds = result.records.map((r) => r.get('userId'));
 
-      // Batch fetch profile details from PostgreSQL with all data
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: friendIds } },
-        include: {
-          user: true,
-        },
-      });
-
-      // Create a map for quick lookup
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
-
-      // Return full profile data, preserving order from Neo4j
-      const friends = friendIds
-        .map((id) => profileMap.get(id))
-        .filter((p): p is Profile & { user: User } => p !== undefined);
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const friends = await this.getProfilesWithUsersFallback(friendIds);
 
       // Calculate pagination metadata
       const hasMore = offsetInt + limitInt < total;
@@ -629,21 +616,8 @@ export class SocialService {
 
       const requesterIds = result.records.map((r) => r.get('userId'));
 
-      // Batch fetch profile details from PostgreSQL with all data
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: requesterIds } },
-        include: {
-          user: true,
-        },
-      });
-
-      // Create a map for quick lookup
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
-
-      // Return full profile data, preserving order from Neo4j
-      const requests = requesterIds
-        .map((id) => profileMap.get(id))
-        .filter((p): p is Profile & { user: User } => p !== undefined);
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const requests = await this.getProfilesWithUsersFallback(requesterIds);
 
       // Calculate pagination metadata
       const hasMore = offsetInt + limitInt < total;
@@ -894,16 +868,11 @@ export class SocialService {
         followBackResult?.records.map((r) => r.get('userId')) ?? [];
       const followedBackSet = new Set(followedBackIds);
 
-      // Batch fetch profile details from PostgreSQL with all data
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: followerIds } },
-        include: {
-          user: true,
-        },
-      });
-
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const followersList = await this.getProfilesWithUsersFallback(followerIds);
+      
       // Create a map for quick lookup
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+      const profileMap = new Map(followersList.map((p) => [p.userId, p]));
 
       // Return full profile data, preserving order from Neo4j
       const followers = followerIds
@@ -1040,16 +1009,11 @@ export class SocialService {
 
       const followingIds = result.records.map((r) => r.get('userId'));
 
-      // Batch fetch profile details from PostgreSQL with all data
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: followingIds } },
-        include: {
-          user: true,
-        },
-      });
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const followingList = await this.getProfilesWithUsersFallback(followingIds);
 
       // Create a map for quick lookup
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+      const profileMap = new Map(followingList.map((p) => [p.userId, p]));
 
       // Return full profile data, preserving order from Neo4j
       const following = followingIds
@@ -1347,12 +1311,8 @@ export class SocialService {
         }
       });
 
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: recommendedUserIds } },
-        include: {
-          user: true,
-        },
-      });
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const profiles = await this.getProfilesWithUsersFallback(recommendedUserIds);
 
       const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
@@ -1594,12 +1554,8 @@ export class SocialService {
         }
       });
 
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: recommendedUserIds } },
-        include: {
-          user: true,
-        },
-      });
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const profiles = await this.getProfilesWithUsersFallback(recommendedUserIds);
 
       const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
@@ -1738,16 +1694,11 @@ export class SocialService {
 
       const mutualFriendIds = result.records.map((r) => r.get('userId'));
 
-      // Batch fetch profile details from PostgreSQL with all data
-      const profiles = await this.prisma.profile.findMany({
-        where: { userId: { in: mutualFriendIds } },
-        include: {
-          user: true,
-        },
-      });
+      // Batch fetch profile details from PostgreSQL, fallback to User if Profile is missing
+      const mutualFriendsList = await this.getProfilesWithUsersFallback(mutualFriendIds);
 
       // Create a map for quick lookup
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+      const profileMap = new Map(mutualFriendsList.map((p) => [p.userId, p]));
 
       // Return full profile data, preserving order from Neo4j
       const mutualFriends = mutualFriendIds
@@ -2140,5 +2091,40 @@ export class SocialService {
     } finally {
       await session.close();
     }
+  }
+  private async getProfilesWithUsersFallback(userIds: string[]): Promise<any[]> {
+    if (!userIds.length) return [];
+    
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      include: {
+        Profile: true,
+      },
+    });
+
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    return userIds
+      .map((id) => userMap.get(id))
+      .filter((u): u is any => u !== undefined)
+      .map((u) => {
+        const profile = u.Profile || {
+          id: '',
+          userId: u.id,
+          bio: null,
+          location: null,
+          website: null,
+          phoneNumber: null,
+          dateOfBirth: null,
+          coverPhoto: null,
+          createdAt: u.createdAt,
+          updatedAt: u.updatedAt,
+        };
+        const { Profile, ...userData } = u;
+        return {
+          ...profile,
+          user: userData,
+        };
+      });
   }
 }
