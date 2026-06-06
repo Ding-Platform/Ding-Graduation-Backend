@@ -191,6 +191,13 @@ export class ProfileService {
    */
   async uploadProfilePicture(userId: string, file: Express.Multer.File) {
     try {
+      // Get existing user to find the old image
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { image: true },
+      });
+      const oldImage = user?.image;
+
       // Upload to local storage
       const imageUrl = await this.storageService.uploadProfilePicture(
         file,
@@ -202,6 +209,11 @@ export class ProfileService {
         where: { id: userId },
         data: { image: imageUrl },
       });
+
+      // Delete old image if it exists
+      if (oldImage && oldImage !== imageUrl) {
+        await this.storageService.deleteFile(oldImage);
+      }
 
       // Ensure profile exists (create if needed)
       await this.ensureProfileExists(userId);
@@ -228,20 +240,26 @@ export class ProfileService {
    */
   async uploadCoverPhoto(userId: string, file: Express.Multer.File) {
     try {
+      // Ensure profile exists (create if needed)
+      const profile = await this.ensureProfileExists(userId);
+      const oldCover = profile.coverPhoto;
+
       // Upload to local storage
       const coverPhotoUrl = await this.storageService.uploadCoverPhoto(
         file,
         userId,
       );
 
-      // Ensure profile exists (create if needed)
-      const profile = await this.ensureProfileExists(userId);
-
       // Update profile's coverPhoto field
       await this.prisma.profile.update({
         where: { id: profile.id },
         data: { coverPhoto: coverPhotoUrl },
       });
+
+      // Delete old cover photo if it exists
+      if (oldCover && oldCover !== coverPhotoUrl) {
+        await this.storageService.deleteFile(oldCover);
+      }
 
       return { coverPhotoUrl };
     } catch (error) {

@@ -6,6 +6,12 @@ import {
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Request } from 'express';
+const sharp = require('sharp');
+import * as ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+const ffmpeg = require('fluent-ffmpeg');
+import { v4 as uuidv4 } from 'uuid';
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 @Injectable()
 export class StorageService {
@@ -33,13 +39,51 @@ export class StorageService {
     const folderPath = path.join(this.uploadDir, subfolder);
     this.ensureDirectoryExists(folderPath);
 
+    const isGif = file.mimetype === 'image/gif' || file.originalname.toLowerCase().endsWith('.gif');
+    
+    // Image conversion (skip GIFs)
+    if (file.mimetype.startsWith('image/') && !isGif) {
+      const fullFileName = `${filename}.webp`;
+      const filePath = path.join(folderPath, fullFileName);
+      const buffer = await sharp(file.buffer).webp({ quality: 80 }).toBuffer();
+      await fs.promises.writeFile(filePath, buffer);
+      return `/uploads/${subfolder}/${fullFileName}`;
+    }
+
+    // Video conversion
+    if (file.mimetype.startsWith('video/')) {
+      const ext = path.extname(file.originalname) || '';
+      const fullFileName = `${filename}.mp4`;
+      const filePath = path.join(folderPath, fullFileName);
+      const tempPath = path.join(folderPath, `temp_${filename}${ext}`);
+
+      await fs.promises.writeFile(tempPath, file.buffer);
+
+      return new Promise((resolve, reject) => {
+        ffmpeg(tempPath)
+          .output(filePath)
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .on('end', () => {
+            fs.promises.unlink(tempPath).catch(() => {});
+            resolve(`/uploads/${subfolder}/${fullFileName}`);
+          })
+          .on('error', (err) => {
+            console.error('Video conversion error:', err);
+            fs.promises.unlink(tempPath).catch(() => {});
+            reject(new InternalServerErrorException('Video conversion failed'));
+          })
+          .run();
+      });
+    }
+
+    // Default processing for other file types or GIFs
     const ext = path.extname(file.originalname) || '';
     const fullFileName = `${filename}${ext}`;
     const filePath = path.join(folderPath, fullFileName);
 
     await fs.promises.writeFile(filePath, file.buffer);
 
-    // Return the relative URL starting with /uploads
     return `/uploads/${subfolder}/${fullFileName}`;
   }
 
@@ -51,40 +95,56 @@ export class StorageService {
     const folderPath = path.join(this.uploadDir, subfolder);
     this.ensureDirectoryExists(folderPath);
 
-    const ext =
-      req.headers['content-type'] === 'video/mp4'
-        ? '.mp4'
-        : req.headers['content-type'] === 'video/quicktime'
-          ? '.mov'
-          : req.headers['content-type'] === 'video/webm'
-            ? '.webm'
-            : '.mp4';
+    const tempExt =
+      req.headers['content-type'] === 'video/quicktime'
+        ? '.mov'
+        : req.headers['content-type'] === 'video/webm'
+          ? '.webm'
+          : '.mp4';
 
-    const fullFileName = `${filename}${ext}`;
-    const filePath = path.join(folderPath, fullFileName);
+    const tempFileName = `temp_${filename}${tempExt}`;
+    const tempFilePath = path.join(folderPath, tempFileName);
+
+    const finalFileName = `${filename}.mp4`;
+    const finalFilePath = path.join(folderPath, finalFileName);
 
     return new Promise((resolve, reject) => {
-      const writeStream = fs.createWriteStream(filePath);
+      const writeStream = fs.createWriteStream(tempFilePath);
 
       req.pipe(writeStream);
 
-      req.on('end', () => {
-        resolve(`/uploads/${subfolder}/${fullFileName}`);
-      });
-
       req.on('error', (err) => {
         writeStream.close();
-        fs.unlink(filePath, () => {});
+        fs.unlink(tempFilePath, () => {});
         reject(
           new InternalServerErrorException('Failed to read upload stream'),
         );
       });
 
       writeStream.on('error', (err) => {
-        fs.unlink(filePath, () => {});
+        fs.unlink(tempFilePath, () => {});
         reject(
           new InternalServerErrorException('Failed to write upload stream'),
         );
+      });
+
+      writeStream.on('finish', () => {
+        ffmpeg(tempFilePath)
+          .output(finalFilePath)
+          .videoCodec('libx264')
+          .audioCodec('aac')
+          .on('end', () => {
+            fs.promises.unlink(tempFilePath).catch(() => {});
+            resolve(`/uploads/${subfolder}/${finalFileName}`);
+          })
+          .on('error', (err) => {
+            console.error('Raw video conversion error:', err);
+            fs.promises.unlink(tempFilePath).catch(() => {});
+            reject(
+              new InternalServerErrorException('Raw video conversion failed'),
+            );
+          })
+          .run();
       });
     });
   }
@@ -93,7 +153,7 @@ export class StorageService {
     file: Express.Multer.File,
     userId: string,
   ): Promise<string> {
-    const filename = `profile_${userId}_${Date.now()}`;
+    const filename = `profile_${userId}_${Date.now()}_${uuidv4()}`;
     return this.saveFile(file, 'profiles/pictures', filename);
   }
 
@@ -101,7 +161,7 @@ export class StorageService {
     file: Express.Multer.File,
     userId: string,
   ): Promise<string> {
-    const filename = `cover_${userId}_${Date.now()}`;
+    const filename = `cover_${userId}_${Date.now()}_${uuidv4()}`;
     return this.saveFile(file, 'profiles/covers', filename);
   }
 
@@ -130,7 +190,7 @@ export class StorageService {
     userId: string,
     docType: 'id_front' | 'id_back' | 'face',
   ): Promise<string> {
-    const filename = `${docType}_${userId}_${Date.now()}`;
+    const filename = `${docType}_${userId}_${Date.now()}_${uuidv4()}`;
     return this.saveFile(file, `marketplace/seller-docs/${userId}`, filename);
   }
 
@@ -140,7 +200,7 @@ export class StorageService {
     userId: string,
     proofType: 'shipment' | 'delivery',
   ): Promise<string> {
-    const filename = `${proofType}_${userId}_${Date.now()}`;
+    const filename = `${proofType}_${userId}_${Date.now()}_${uuidv4()}`;
     return this.saveFile(file, `marketplace/orders/${orderId}`, filename);
   }
 
@@ -148,7 +208,7 @@ export class StorageService {
     file: Express.Multer.File,
     postId: string,
   ): Promise<{ url: string; publicId: string; width: number; height: number }> {
-    const filename = `post_${postId}_${Date.now()}`;
+    const filename = `post_${postId}_${Date.now()}_${uuidv4()}`;
     const url = await this.saveFile(file, 'posts/images', filename);
     return {
       url,
@@ -162,7 +222,7 @@ export class StorageService {
     file: Express.Multer.File,
     postId: string,
   ): Promise<{ url: string; publicId: string; width: number; height: number }> {
-    const filename = `post_video_${postId}_${Date.now()}`;
+    const filename = `post_video_${postId}_${Date.now()}_${uuidv4()}`;
     const url = await this.saveFile(file, 'posts/videos', filename);
     return {
       url,
@@ -251,7 +311,7 @@ export class StorageService {
         break;
     }
 
-    const filename = `msg_${type.toLowerCase()}_${messageId}_${Date.now()}`;
+    const filename = `msg_${type.toLowerCase()}_${messageId}_${Date.now()}_${uuidv4()}`;
     const url = await this.saveFile(file, folder, filename);
 
     return {
@@ -275,7 +335,7 @@ export class StorageService {
     duration?: number;
     thumbnail?: string;
   }> {
-    const filename = `${prefix}_${Date.now()}`;
+    const filename = `${prefix}_${Date.now()}_${uuidv4()}`;
     const url = await this.saveFile(file, subfolder, filename);
     return {
       url,
